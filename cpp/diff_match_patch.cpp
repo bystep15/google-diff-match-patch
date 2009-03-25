@@ -1619,7 +1619,10 @@ QList<Patch> diff_match_patch::patch_make(const QString &text1,
             patch_addContext(patch, prepatch_text);
             patches.append(patch);
             patch = Patch();
+            // Unlike Unidiff, our patch lists have a rolling context.
+            // http://code.google.com/p/google-diff-match-patch/wiki/Unidiff
             prepatch_text = postpatch_text;
+            char_count1 = char_count2;
           }
         }
         break;

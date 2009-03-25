@@ -736,11 +736,15 @@ void diff_match_patch_test::testPatchMake() {
   QList<Patch> patches;
   QString text1 = "The quick brown fox jumps over the lazy dog.";
   QString text2 = "That quick brown fox jumped over a lazy dog.";
-  QList<Diff> diffs = dmp.diff_main(text1, text2, false);
-  QString expectedPatch = "@@ -1,11 +1,12 @@\n Th\n-e\n+at\n  quick b\n@@ -21,18 +22,17 @@\n jump\n-s\n+ed\n  over \n-the\n+a\n  laz\n";
+  QString expectedPatch = "@@ -1,8 +1,7 @@\n Th\n-at\n+e\n  qui\n@@ -21,17 +21,18 @@\n jump\n-ed\n+s\n  over \n-a\n+the\n  laz\n";
+  patches = dmp.patch_make(text2, text1);
+  assertEquals("patch_make: Text2+Text1 inputs", expectedPatch, dmp.patch_toText(patches));
+
+  expectedPatch = "@@ -1,11 +1,12 @@\n Th\n-e\n+at\n  quick b\n@@ -22,18 +22,17 @@\n jump\n-s\n+ed\n  over \n-the\n+a\n  laz\n";
   patches = dmp.patch_make(text1, text2);
   assertEquals("patch_make: Text1+Text2 inputs", expectedPatch, dmp.patch_toText(patches));
 
+  QList<Diff> diffs = dmp.diff_main(text1, text2, false);
   patches = dmp.patch_make(diffs);
   assertEquals("patch_make: Diff input", expectedPatch, dmp.patch_toText(patches));
 

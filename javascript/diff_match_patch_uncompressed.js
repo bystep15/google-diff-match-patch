@@ -1622,7 +1622,10 @@ diff_match_patch.prototype.patch_make = function(a, opt_b, opt_c) {
             patches.push(patch);
             patch = new patch_obj();
             patchDiffLength = 0;
+            // Unlike Unidiff, our patch lists have a rolling context.
+            // http://code.google.com/p/google-diff-match-patch/wiki/Unidiff
             prepatch_text = postpatch_text;
+            char_count1 = char_count2;
           }
         }
         break;

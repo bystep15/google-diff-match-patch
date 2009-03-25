@@ -1751,7 +1751,10 @@ public class diff_match_patch {
             patch_addContext(patch, prepatch_text);
             patches.add(patch);
             patch = new Patch();
+            // Unlike Unidiff, our patch lists have a rolling context.
+            // http://code.google.com/p/google-diff-match-patch/wiki/Unidiff
             prepatch_text = postpatch_text;
+            char_count1 = char_count2;
           }
         }
         break;
