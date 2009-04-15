@@ -1401,6 +1401,8 @@ class diff_match_patch:
           patch = patch_obj()
           # Unlike Unidiff, our patch lists have a rolling context.
           # http://code.google.com/p/google-diff-match-patch/wiki/Unidiff
+          # Update prepatch text & pos to reflect the application of the
+          # just completed patch.
           prepatch_text = postpatch_text
           char_count1 = char_count2
 

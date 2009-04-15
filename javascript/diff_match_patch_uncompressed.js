@@ -1624,6 +1624,8 @@ diff_match_patch.prototype.patch_make = function(a, opt_b, opt_c) {
             patchDiffLength = 0;
             // Unlike Unidiff, our patch lists have a rolling context.
             // http://code.google.com/p/google-diff-match-patch/wiki/Unidiff
+            // Update prepatch text & pos to reflect the application of the
+            // just completed patch.
             prepatch_text = postpatch_text;
             char_count1 = char_count2;
           }
