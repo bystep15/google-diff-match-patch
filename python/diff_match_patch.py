@@ -297,7 +297,8 @@ class diff_match_patch:
       Array of diff tuples or None if no diff available.
     """
 
-    ms_end = time.time() + self.Diff_Timeout / 1000  # Don't run for too long.
+    # Unlike in most languages, Python counts time in seconds.
+    s_end = time.time() + self.Diff_Timeout  # Don't run for too long.
     max_d = len(text1) + len(text2) - 1
     doubleEnd = self.Diff_DualThreshold * 2 < max_d
     v_map1 = []
@@ -313,7 +314,7 @@ class diff_match_patch:
     front = (len(text1) + len(text2)) % 2
     for d in xrange(max_d):
       # Bail out if timeout reached.
-      if self.Diff_Timeout > 0 and time.time() > ms_end:
+      if self.Diff_Timeout > 0 and time.time() > s_end:
         return None
 
       # Walk the front path one step.
@@ -1167,7 +1168,7 @@ class diff_match_patch:
     score_text_length = max(score_text_length, self.Match_MinLength)
     score_text_length = min(score_text_length, self.Match_MaxLength)
 
-    def match_bitapScore (e, x):
+    def match_bitapScore(e, x):
       """Compute and return the score for a match with e errors and x location.
       Accesses loc, score_text_length and pattern through being a closure.
 
