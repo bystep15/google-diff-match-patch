@@ -429,8 +429,8 @@ class diff_match_patch:
         else:
           x -= 1
           y -= 1
-          assert (text1[x] == text2[y],
-                  "No diagonal.  Can't happen. (diff_path1)")
+          assert text1[x] == text2[y], ("No diagonal.  " +
+              "Can't happen. (diff_path1)")
           if last_op == self.DIFF_EQUAL:
             path[0] = (self.DIFF_EQUAL, text1[x] + path[0][1])
           else:
@@ -474,8 +474,8 @@ class diff_match_patch:
         else:
           x -= 1
           y -= 1
-          assert (text1[-x - 1] == text2[-y - 1],
-                 "No diagonal.  Can't happen. (diff_path2)")
+          assert text1[-x - 1] == text2[-y - 1], ("No diagonal.  " +
+              "Can't happen. (diff_path2)")
           if last_op == self.DIFF_EQUAL:
             path[-1] = (self.DIFF_EQUAL, path[-1][1] + text1[-x - 1])
           else:
@@ -1157,8 +1157,8 @@ class diff_match_patch:
       Best match index or None.
     """
     # Python doesn't have a maxint limit, so ignore this check.
-    #assert (self.Match_MaxBits == 0 or len(pattern) <= self.Match_MaxBits,
-    #        "Pattern too long for this application.")
+    #if self.Match_MaxBits != 0 and len(pattern) > self.Match_MaxBits:
+    #  raise ValueError("Pattern too long for this application.")
 
     # Initialise the alphabet.
     s = self.match_alphabet(pattern)
@@ -1357,7 +1357,7 @@ class diff_match_patch:
       text1 = a
       diffs = c
     else:
-      assert (False, "Unknown call format to patch_make.")
+      raise ValueError("Unknown call format to patch_make.")
 
     if not diffs:
       return []  # Get rid of the None case.
