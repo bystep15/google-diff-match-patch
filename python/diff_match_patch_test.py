@@ -1,4 +1,4 @@
-#!/usr/bin/python2.2
+#!/usr/bin/python
 
 """Test harness for diff_match_patch.py
 
@@ -41,8 +41,8 @@ class DiffMatchPatchTest(unittest.TestCase):
     return (text1, text2)
 
 
-  # DIFF TEST FUNCTIONS
-
+class DiffTest(DiffMatchPatchTest):
+  """DIFF TEST FUNCTIONS"""
 
   def testDiffCommonPrefix(self):
     # Detect and remove any common prefix.
@@ -442,8 +442,8 @@ class DiffMatchPatchTest(unittest.TestCase):
     self.assertEquals(texts_textmode, texts_linemode)
 
 
-  # MATCH TEST FUNCTIONS
-
+class MatchTest(DiffMatchPatchTest):
+  """MATCH TEST FUNCTIONS"""
 
   def testMatchAlphabet(self):
     # Initialise the bitmasks for Bitap
@@ -513,8 +513,8 @@ class DiffMatchPatchTest(unittest.TestCase):
     self.dmp.Match_Threshold = 0.5
 
 
-  # PATCH TEST FUNCTIONS
-
+class PatchTest(DiffMatchPatchTest):
+  """PATCH TEST FUNCTIONS"""
 
   def testPatchObj(self):
     # Patch Object
