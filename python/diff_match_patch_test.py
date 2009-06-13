@@ -353,6 +353,14 @@ class DiffTest(DiffMatchPatchTest):
     # Translation on deletion
     self.assertEquals(1, self.dmp.diff_xIndex([(self.dmp.DIFF_EQUAL, "a"), (self.dmp.DIFF_DELETE, "1234"), (self.dmp.DIFF_EQUAL, "xyz")], 3))
 
+  def testDiffLevenshtein(self):
+    # Levenshtein with trailing equality.
+    self.assertEquals(4, self.dmp.diff_levenshtein([(self.dmp.DIFF_DELETE, "abc"), (self.dmp.DIFF_INSERT, "1234"), (self.dmp.DIFF_EQUAL, "xyz")]))
+    # Levenshtein with leading equality.
+    self.assertEquals(4, self.dmp.diff_levenshtein([(self.dmp.DIFF_EQUAL, "xyz"), (self.dmp.DIFF_DELETE, "abc"), (self.dmp.DIFF_INSERT, "1234")]))
+    # Levenshtein with middle equality.
+    self.assertEquals(7, self.dmp.diff_levenshtein([(self.dmp.DIFF_DELETE, "abc"), (self.dmp.DIFF_EQUAL, "xyz"), (self.dmp.DIFF_INSERT, "1234")]))
+
   def testDiffPath(self):
     # Trace a path from back to front.
     # Single letters

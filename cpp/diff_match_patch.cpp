@@ -1262,6 +1262,26 @@ QString diff_match_patch::diff_text2(const QList<Diff> &diffs) {
 }
 
 
+int diff_match_patch::diff_levenshtein(const QList<Diff> &diffs) {
+  int levenshtein = 0;
+  int insertions = 0;
+  int deletions = 0;
+  foreach(Diff aDiff, diffs) {
+    if (aDiff.operation == INSERT) {
+      insertions += aDiff.text.length();
+    } else if (aDiff.operation == DELETE) {
+      deletions += aDiff.text.length();
+    } else if (aDiff.operation == EQUAL) {
+      levenshtein += qMax(insertions, deletions);
+      deletions = 0;
+      insertions = 0;
+    }
+  }
+  levenshtein += qMax(insertions, deletions);
+  return levenshtein;
+}
+
+
 QString diff_match_patch::diff_toDelta(const QList<Diff> &diffs) {
   QString text;
   foreach(Diff aDiff, diffs) {

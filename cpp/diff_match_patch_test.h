@@ -41,6 +41,7 @@ class diff_match_patch_test {
   void testDiffText();
   void testDiffDelta();
   void testDiffXIndex();
+  void testDiffLevenshtein();
   void testDiffPath();
   void testDiffMain();
 

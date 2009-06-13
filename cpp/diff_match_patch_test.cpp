@@ -410,6 +410,17 @@ void diff_match_patch_test::testDiffXIndex() {
   assertEquals("diff_xIndex: Translation on deletion.", 1, dmp.diff_xIndex(diffs, 3));
 }
 
+void diff_match_patch_test::testDiffLevenshtein() {
+  QList<Diff> diffs = diffList(Diff(DELETE, "abc"), Diff(INSERT, "1234"), Diff(EQUAL, "xyz"));
+  assertEquals("Levenshtein with trailing equality.", 4, dmp.diff_levenshtein(diffs));
+
+  diffs = diffList(Diff(EQUAL, "xyz"), Diff(DELETE, "abc"), Diff(INSERT, "1234"));
+  assertEquals("Levenshtein with leading equality.", 4, dmp.diff_levenshtein(diffs));
+
+  diffs = diffList(Diff(DELETE, "abc"), Diff(EQUAL, "xyz"), Diff(INSERT, "1234"));
+  assertEquals("Levenshtein with middle equality.", 7, dmp.diff_levenshtein(diffs));
+}
+
 void diff_match_patch_test::testDiffPath() {
   // Single letters
   // Trace a path from back to front.

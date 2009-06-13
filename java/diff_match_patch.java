@@ -1310,6 +1310,30 @@ public class diff_match_patch {
     return text.toString();
   }
 
+  /**
+   * Compute the Levenshtein distance; the number of inserted, deleted or
+   * substituted characters.
+   * @param diffs LinkedList of Diff objects.
+   * @return Number of changes.
+   */
+  public int diff_levenshtein(LinkedList<Diff> diffs) {
+    int levenshtein = 0;
+    int insertions = 0;
+    int deletions = 0;
+    for (Diff aDiff : diffs) {
+      if (aDiff.operation == Operation.INSERT) {
+        insertions += aDiff.text.length();
+      } else if (aDiff.operation == Operation.DELETE) {
+        deletions += aDiff.text.length();
+      } else if (aDiff.operation == Operation.EQUAL) {
+        levenshtein += Math.max(insertions, deletions);
+        deletions = 0;
+        insertions = 0;
+      }
+    }
+    levenshtein += Math.max(insertions, deletions);
+    return levenshtein;
+  }
 
   /**
    * Crush the diff into an encoded string which describes the operations

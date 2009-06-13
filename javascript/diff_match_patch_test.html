@@ -447,6 +447,15 @@
         assertEquals(1, dmp.diff_xIndex([[DIFF_EQUAL, 'a'], [DIFF_DELETE, '1234'], [DIFF_EQUAL, 'xyz']], 3));
       }
 
+      function testDiffLevenshtein() {
+        // Levenshtein with trailing equality.
+        assertEquals(4, dmp.diff_levenshtein([[DIFF_DELETE, 'abc'], [DIFF_INSERT, '1234'], [DIFF_EQUAL, 'xyz']]));
+        // Levenshtein with leading equality.
+        assertEquals(4, dmp.diff_levenshtein([[DIFF_EQUAL, 'xyz'], [DIFF_DELETE, 'abc'], [DIFF_INSERT, '1234']]));
+        // Levenshtein with middle equality.
+        assertEquals(7, dmp.diff_levenshtein([[DIFF_DELETE, 'abc'], [DIFF_EQUAL, 'xyz'], [DIFF_INSERT, '1234']]));
+      }
+
       function testDiffPath() {
         // Single letters
         // Trace a path from back to front.
@@ -814,7 +823,8 @@
             'testDiffLinesToChars', 'testDiffCharsToLines', 'testDiffCleanupMerge',
             'testDiffCleanupSemanticLossless', 'testDiffCleanupSemantic',
             'testDiffCleanupEfficiency', 'testDiffPrettyHtml', 'testDiffText',
-            'testDiffDelta', 'testDiffXIndex', 'testDiffPath', 'testDiffMain',
+            'testDiffDelta', 'testDiffXIndex', 'testDiffLevenshtein', 'testDiffPath',
+            'testDiffMain',
 
             'testMatchAlphabet', 'testMatchBitap', 'testMatchMain',
 

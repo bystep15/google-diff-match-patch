@@ -1,4 +1,4 @@
-#!/usr/bin/python2.2
+#!/usr/bin/python
 
 """Diff Match and Patch
 
@@ -1037,6 +1037,31 @@ class diff_match_patch:
       if op != self.DIFF_DELETE:
         text.append(data)
     return "".join(text)
+
+  def diff_levenshtein(self, diffs):
+    """Compute the Levenshtein distance; the number of inserted, deleted or
+    substituted characters.
+
+    Args:
+      diffs: Array of diff tuples.
+
+    Returns:
+      Number of changes.
+    """
+    levenshtein = 0
+    insertions = 0
+    deletions = 0
+    for (op, data) in diffs:
+      if op == self.DIFF_INSERT:
+        insertions += len(data)
+      elif op == self.DIFF_DELETE:
+        deletions += len(data)
+      elif op == self.DIFF_EQUAL:
+        levenshtein += max(insertions, deletions)
+        deletions = 0
+        insertions = 0
+    levenshtein += max(insertions, deletions)
+    return levenshtein
 
   def diff_toDelta(self, diffs):
     """Crush the diff into an encoded string which describes the operations

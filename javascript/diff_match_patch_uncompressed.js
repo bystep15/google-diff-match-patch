@@ -1220,6 +1220,34 @@ diff_match_patch.prototype.diff_text2 = function(diffs) {
 
 
 /**
+ * Compute the Levenshtein distance; the number of inserted, deleted or
+ * substituted characters.
+ * @param {Array.<Array.<*>>} diffs Array of diff tuples.
+ * @return {number} Number of changes.
+ */
+diff_match_patch.prototype.diff_levenshtein = function(diffs) {
+  var levenshtein = 0;
+  var insertions = 0;
+  var deletions = 0;
+  for (var x = 0; x < diffs.length; x++) {
+    var op = diffs[x][0];
+    var data = diffs[x][1];
+    if (op == DIFF_INSERT) {
+      insertions += data.length;
+    } else if (op == DIFF_DELETE) {
+      deletions += data.length;
+    } else if (op == DIFF_EQUAL) {
+      levenshtein += Math.max(insertions, deletions);
+      deletions = 0;
+      insertions = 0;
+    }
+  }
+  levenshtein += Math.max(insertions, deletions);
+  return levenshtein;
+};
+
+
+/**
  * Crush the diff into an encoded string which describes the operations
  * required to transform text1 into text2.
  * E.g. =3\t-2\t+ing  -> Keep 3 chars, delete 2 chars, insert 'ing'.

@@ -372,6 +372,15 @@ class diff_match_patch {
   QString diff_text2(const QList<Diff> &diffs);
 
   /**
+   * Compute the Levenshtein distance; the number of inserted, deleted or
+   * substituted characters.
+   * @param diffs LinkedList of Diff objects.
+   * @return Number of changes.
+   */
+ public:
+  int diff_levenshtein(const QList<Diff> &diffs);
+
+  /**
    * Crush the diff into an encoded string which describes the operations
    * required to transform text1 into text2.
    * E.g. =3\t-2\t+ing  -> Keep 3 chars, delete 2 chars, insert 'ing'.

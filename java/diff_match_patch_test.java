@@ -369,6 +369,17 @@ public class diff_match_patch_test extends TestCase {
     assertEquals("diff_xIndex: Translation on deletion.", 1, dmp.diff_xIndex(diffs, 3));
   }
 
+  public void testDiffLevenshtein() {
+    LinkedList<Diff> diffs = diffList(new Diff(DELETE, "abc"), new Diff(INSERT, "1234"), new Diff(EQUAL, "xyz"));
+    assertEquals("Levenshtein with trailing equality.", 4, dmp.diff_levenshtein(diffs));
+
+    diffs = diffList(new Diff(EQUAL, "xyz"), new Diff(DELETE, "abc"), new Diff(INSERT, "1234"));
+    assertEquals("Levenshtein with leading equality.", 4, dmp.diff_levenshtein(diffs));
+
+    diffs = diffList(new Diff(DELETE, "abc"), new Diff(EQUAL, "xyz"), new Diff(INSERT, "1234"));
+    assertEquals("Levenshtein with middle equality.", 7, dmp.diff_levenshtein(diffs));
+  }
+
   public void testDiffPath() {
     // First, check footprints are different.
     assertTrue("diff_footprint:", dmp.diff_footprint(1, 10) != dmp.diff_footprint(10, 1));
