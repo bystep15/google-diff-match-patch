@@ -23,7 +23,13 @@ C++: (ported by Mike Slemmer)
 * diff_match_patch_test.h
 * diff_match_patch_test.cpp
 
+C#: (ported by Matthaeus G. Chajdas)
+* DiffMatchPatch.cs
+* DiffMatchPatchTest.cs
+* nunit.framework.dll
+
 Demos: (in JavaScript)
 * demo_diff.html
 * demo_match.html
 * demo_patch.html
+
