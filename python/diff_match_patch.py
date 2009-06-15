@@ -1153,7 +1153,7 @@ class diff_match_patch:
       loc: The location to search around.
 
     Returns:
-      Best match index or None.
+      Best match index or -1.
     """
     loc = max(0, min(loc, len(text) - len(pattern)))
     if text == pattern:
@@ -1161,7 +1161,7 @@ class diff_match_patch:
       return 0
     elif not text:
       # Nothing to match.
-      return None
+      return -1
     elif text[loc:loc + len(pattern)] == pattern:
       # Perfect match at the perfect spot!  (Includes case of null pattern)
       return loc
@@ -1180,7 +1180,7 @@ class diff_match_patch:
       loc: The location to search around.
 
     Returns:
-      Best match index or None.
+      Best match index or -1.
     """
     # Python doesn't have a maxint limit, so ignore this check.
     #if self.Match_MaxBits != 0 and len(pattern) > self.Match_MaxBits:
@@ -1222,7 +1222,7 @@ class diff_match_patch:
 
     # Initialise the bit arrays.
     matchmask = 1 << (len(pattern) - 1)
-    best_loc = None
+    best_loc = -1
 
     bin_max = max(loc + loc, len(text))
     # Empty initialization added to appease pychecker.
@@ -1497,7 +1497,7 @@ class diff_match_patch:
       expected_loc = patch.start2 + delta
       text1 = self.diff_text1(patch.diffs)
       start_loc = self.match_main(text, text1, expected_loc)
-      if start_loc is None:
+      if start_loc == -1:
         # No match found.  :(
         results.append(False)
       else:

@@ -579,7 +579,7 @@
 
         assertEquals(2, dmp.match_bitap('abcdefghijk', 'cdefxyhijk', 5));
 
-        assertEquals(null, dmp.match_bitap('abcdefghijk', 'bxy', 1));
+        assertEquals(-1, dmp.match_bitap('abcdefghijk', 'bxy', 1));
 
         // Overflow
         assertEquals(2, dmp.match_bitap('123456789xx0', '3456789x0', 2));
@@ -599,14 +599,14 @@
 
         // Balance test
         dmp.Match_Balance = 0.6;  // Strict location, loose accuracy.
-        assertEquals(null, dmp.match_bitap('abcdefghijklmnopqrstuvwxyz', 'abcdefg', 24));
+        assertEquals(-1, dmp.match_bitap('abcdefghijklmnopqrstuvwxyz', 'abcdefg', 24));
 
         assertEquals(0, dmp.match_bitap('abcdefghijklmnopqrstuvwxyz', 'abcxdxexfgh', 1));
 
         dmp.Match_Balance = 0.4;  // Strict accuracy, loose location.
         assertEquals(0, dmp.match_bitap('abcdefghijklmnopqrstuvwxyz', 'abcdefg', 24));
 
-        assertEquals(null, dmp.match_bitap('abcdefghijklmnopqrstuvwxyz', 'abcxdxexfgh', 1));
+        assertEquals(-1, dmp.match_bitap('abcdefghijklmnopqrstuvwxyz', 'abcxdxexfgh', 1));
         dmp.Match_Balance = 0.5;
       }
 
@@ -615,7 +615,7 @@
         // Shortcut matches
         assertEquals(0, dmp.match_main('abcdef', 'abcdef', 1000));
 
-        assertEquals(null, dmp.match_main('', 'abcdef', 1));
+        assertEquals(-1, dmp.match_main('', 'abcdef', 1));
 
         assertEquals(3, dmp.match_main('abcdef', '', 3));
 

@@ -474,7 +474,7 @@ class MatchTest(DiffMatchPatchTest):
 
     self.assertEquals(2, self.dmp.match_bitap("abcdefghijk", "cdefxyhijk", 5))
 
-    self.assertEquals(None, self.dmp.match_bitap("abcdefghijk", "bxy", 1))
+    self.assertEquals(-1, self.dmp.match_bitap("abcdefghijk", "bxy", 1))
 
     # Overflow
     self.assertEquals(2, self.dmp.match_bitap("123456789xx0", "3456789x0", 2))
@@ -494,14 +494,14 @@ class MatchTest(DiffMatchPatchTest):
 
     # Balance test
     self.dmp.Match_Balance = 0.6  # Strict location, loose accuracy.
-    self.assertEquals(None, self.dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdefg", 24))
+    self.assertEquals(-1, self.dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdefg", 24))
 
     self.assertEquals(0, self.dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcxdxexfgh", 1))
 
     self.dmp.Match_Balance = 0.4  # Strict accuracy, loose location.
     self.assertEquals(0, self.dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdefg", 24))
 
-    self.assertEquals(None, self.dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcxdxexfgh", 1))
+    self.assertEquals(-1, self.dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcxdxexfgh", 1))
     self.dmp.Match_Balance = 0.5
 
   def testMatchMain(self):
@@ -509,7 +509,7 @@ class MatchTest(DiffMatchPatchTest):
     # Shortcut matches
     self.assertEquals(0, self.dmp.match_main("abcdef", "abcdef", 1000))
 
-    self.assertEquals(None, self.dmp.match_main("", "abcdef", 1))
+    self.assertEquals(-1, self.dmp.match_main("", "abcdef", 1))
 
     self.assertEquals(3, self.dmp.match_main("abcdef", "", 3))
 
