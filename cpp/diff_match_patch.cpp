@@ -1267,14 +1267,19 @@ int diff_match_patch::diff_levenshtein(const QList<Diff> &diffs) {
   int insertions = 0;
   int deletions = 0;
   foreach(Diff aDiff, diffs) {
-    if (aDiff.operation == INSERT) {
-      insertions += aDiff.text.length();
-    } else if (aDiff.operation == DELETE) {
-      deletions += aDiff.text.length();
-    } else if (aDiff.operation == EQUAL) {
-      levenshtein += qMax(insertions, deletions);
-      deletions = 0;
-      insertions = 0;
+    switch (aDiff.operation) {
+      case INSERT:
+        insertions += aDiff.text.length();
+        break;
+      case DELETE:
+        deletions += aDiff.text.length();
+        break;
+      case EQUAL:
+        // A deletion and an insertion is one substitution.
+        levenshtein += qMax(insertions, deletions);
+        insertions = 0;
+        deletions = 0;
+        break;
     }
   }
   levenshtein += qMax(insertions, deletions);

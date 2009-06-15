@@ -600,6 +600,29 @@ namespace nicTest
         }
 
         [Test()]
+        public void diff_levenshteinTest()
+        {
+            diff_match_patchTest target = new diff_match_patchTest();
+            List<Diff> diffs = new List<Diff> {
+                new Diff(Operation.DELETE, "abc"),
+                new Diff(Operation.INSERT, "1234"),
+                new Diff(Operation.EQUAL, "xyz")};
+            Assert.AreEqual(4, target.diff_levenshtein(diffs), "diff_levenshtein: Levenshtein with trailing equality.");
+
+            diffs = new List<Diff> {
+                new Diff(Operation.EQUAL, "xyz"),
+                new Diff(Operation.DELETE, "abc"),
+                new Diff(Operation.INSERT, "1234")};
+            Assert.AreEqual(4, target.diff_levenshtein(diffs), "diff_levenshtein: Levenshtein with leading equality.");
+
+            diffs = new List<Diff> {
+                new Diff(Operation.DELETE, "abc"), 
+                new Diff(Operation.EQUAL, "xyz"),
+                new Diff(Operation.INSERT, "1234")}; 
+            Assert.AreEqual(7, target.diff_levenshtein(diffs), "diff_levenshtein: Levenshtein with middle equality.");
+        }
+
+        [Test()]
         public void diff_pathTest()
         {
             diff_match_patchTest target = new diff_match_patchTest();
@@ -1106,3 +1129,4 @@ namespace nicTest
         }
     }
 }
+

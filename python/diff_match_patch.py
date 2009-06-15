@@ -1057,9 +1057,10 @@ class diff_match_patch:
       elif op == self.DIFF_DELETE:
         deletions += len(data)
       elif op == self.DIFF_EQUAL:
+        # A deletion and an insertion is one substitution.
         levenshtein += max(insertions, deletions)
-        deletions = 0
         insertions = 0
+        deletions = 0
     levenshtein += max(insertions, deletions)
     return levenshtein
 

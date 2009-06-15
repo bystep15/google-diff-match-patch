@@ -48,6 +48,7 @@ namespace DiffMatchPatch
         }
     }
 
+
     /**-
     * The data structure representing a diff is a Linked list of Diff objects:
     * {Diff(Operation.DELETE, "Hello"), Diff(Operation.INSERT, "Goodbye"),
@@ -58,6 +59,7 @@ namespace DiffMatchPatch
     {
         DELETE, INSERT, EQUAL
     }
+
 
     /**
     * Class representing one diff operation.
@@ -135,6 +137,7 @@ namespace DiffMatchPatch
         }
     }
 
+
     /**
      * Class representing one patch operation.
      */
@@ -204,13 +207,14 @@ namespace DiffMatchPatch
             return diff_match_patch.unescapeForEncodeUriCompatability(text.ToString());
         }
     }
+
+
     /**
- * Class containing the diff, match and patch methods.
- * Also Contains the behaviour settings.
- */
+     * Class containing the diff, match and patch methods.
+     * Also Contains the behaviour settings.
+     */
     public class diff_match_patch
     {
-
         // Defaults.
         // Set these on your diff_match_patch instance to override the defaults.
 
@@ -302,7 +306,6 @@ namespace DiffMatchPatch
             diff_cleanupMerge(diffs);
             return diffs;
         }
-
 
         /**
          * Find the differences between two texts.  Assumes that the texts do not
@@ -447,7 +450,6 @@ namespace DiffMatchPatch
             return diffs;
         }
 
-
         /**
          * Split two texts into a list of strings.  Reduce the texts to a string of
          * hashes where each Unicode character represents one line.
@@ -472,7 +474,6 @@ namespace DiffMatchPatch
             String chars2 = diff_linesToCharsMunge(text2, lineArray, lineHash);
             return new Object[] { chars1, chars2, lineArray };
         }
-
 
         /**
          * Split a text into a list of strings.  Reduce the texts to a string of
@@ -516,7 +517,6 @@ namespace DiffMatchPatch
             return chars.ToString();
         }
 
-
         /**
          * Rehydrate the text in a diff from a string of line hashes to real lines of
          * text.
@@ -537,7 +537,6 @@ namespace DiffMatchPatch
                 diff.text = text.ToString();
             }
         }
-
 
         /**
          * Explore the intersection points between the two texts.
@@ -706,7 +705,6 @@ namespace DiffMatchPatch
             return null;
         }
 
-
         /**
          * Work from the middle back to the start to determine the path.
          * @param v_map List of path sets.
@@ -775,7 +773,6 @@ namespace DiffMatchPatch
             }
             return path.ToList();
         }
-
 
         /**
          * Work from the middle back to the end to determine the path.
@@ -848,7 +845,6 @@ namespace DiffMatchPatch
             return path.ToList();
         }
 
-
         /**
          * Compute a good hash of two integers.
          * @param x First int.
@@ -867,7 +863,6 @@ namespace DiffMatchPatch
             result += y;
             return result;
         }
-
 
         /**
          * Determine the common prefix of two strings
@@ -889,7 +884,6 @@ namespace DiffMatchPatch
             return n;
         }
 
-
         /**
          * Determine the common suffix of two strings
          * @param text1 First string.
@@ -910,7 +904,6 @@ namespace DiffMatchPatch
             }
             return n;
         }
-
 
         /**
          * Do the two texts share a Substring which is at least half the length of
@@ -968,7 +961,6 @@ namespace DiffMatchPatch
             }
         }
 
-
         /**
          * Does a Substring of shorttext exist within longtext such that the
          * Substring is at least half the length of longtext?
@@ -1013,7 +1005,6 @@ namespace DiffMatchPatch
                 return null;
             }
         }
-
 
         /**
          * Reduce the number of edits by eliminating semantically trivial equalities.
@@ -1070,7 +1061,6 @@ namespace DiffMatchPatch
             }
             diff_cleanupSemanticLossless(diffs);
         }
-
 
         /**
          * Look for single edits surrounded on both sides by equalities
@@ -1153,7 +1143,6 @@ namespace DiffMatchPatch
                 pointer++;
             }
         }
-
 
         /**
          * Given two strings, comAdde a score representing whether the internal
@@ -1303,7 +1292,6 @@ namespace DiffMatchPatch
                 diff_cleanupMerge(diffs);
             }
         }
-
 
         /**
          * Reorder and merge like edit sections.  Merge equalities.
@@ -1455,7 +1443,6 @@ namespace DiffMatchPatch
             }
         }
 
-
         /**
          * loc is a location in text1, comAdde and return the equivalent location in
          * text2.
@@ -1500,7 +1487,6 @@ namespace DiffMatchPatch
             // Add the remaining character length.
             return last_chars2 + (loc - last_chars1);
         }
-
 
         /**
          * Convert a Diff list into a pretty HTML report.
@@ -1574,6 +1560,38 @@ namespace DiffMatchPatch
             return text.ToString();
         }
 
+        /**
+         * Compute the Levenshtein distance; the number of inserted, deleted or
+         * substituted characters.
+         * @param diffs LinkedList of Diff objects.
+         * @return Number of changes.
+         */
+        public int diff_levenshtein(List<Diff> diffs)
+        {
+            int levenshtein = 0;
+            int insertions = 0;
+            int deletions = 0;
+            foreach (Diff aDiff in diffs)
+            {
+                switch (aDiff.operation)
+                {
+                    case Operation.INSERT:
+                        insertions += aDiff.text.Length;
+                        break;
+                    case Operation.DELETE:
+                        deletions += aDiff.text.Length;
+                        break;
+                    case Operation.EQUAL:
+                        // A deletion and an insertion is one substitution.
+                        levenshtein += Math.Max(insertions, deletions);
+                        insertions = 0;
+                        deletions = 0;
+                        break;
+                }
+            }
+            levenshtein += Math.Max(insertions, deletions);
+            return levenshtein;
+        }
 
         /**
          * Crush the diff into an encoded string which describes the operations
@@ -1612,7 +1630,6 @@ namespace DiffMatchPatch
             }
             return delta;
         }
-
 
         /**
          * Given the original text1, and an encoded string which describes the
@@ -1743,7 +1760,6 @@ namespace DiffMatchPatch
                 return match_bitap(text, pattern, loc);
             }
         }
-
 
         /**
          * Locate the best instance of 'pattern' in 'text' near 'loc' using the
@@ -1877,7 +1893,6 @@ namespace DiffMatchPatch
             return best_loc;
         }
 
-
         /**
          * Compute and return the score for a match with e errors and x location.
          * @param e Number of errors in match.
@@ -1894,7 +1909,6 @@ namespace DiffMatchPatch
             return (e / (float)pattern.Length / Match_Balance)
                 + (d / (float)score_text_length / (1.0 - Match_Balance));
         }
-
 
         /**
          * Initialise the alphabet for the Bitap algorithm.
@@ -1970,7 +1984,6 @@ namespace DiffMatchPatch
             patch.length2 += prefix.Length + suffix.Length;
         }
 
-
         /**
          * Compute a list of patches to turn text1 into text2.
          * A set of diffs will be computed.
@@ -1990,7 +2003,6 @@ namespace DiffMatchPatch
             return patch_make(text1, diffs);
         }
 
-
         /**
          * Compute a list of patches to turn text1 into text2.
          * text1 will be derived from the provided diffs.
@@ -2003,7 +2015,6 @@ namespace DiffMatchPatch
             String text1 = diff_text1(diffs);
             return patch_make(text1, diffs);
         }
-
 
         /**
          * Compute a list of patches to turn text1 into text2.
@@ -2114,7 +2125,6 @@ namespace DiffMatchPatch
             return patches;
         }
 
-
         /**
          * Given an array of patches, return another array that is identical.
          * @param patches Array of patch objects.
@@ -2139,7 +2149,6 @@ namespace DiffMatchPatch
             }
             return patchesCopy;
         }
-
 
         /**
          * Merge a set of patches onto the text.  Return a patched text, as well
@@ -2417,7 +2426,6 @@ namespace DiffMatchPatch
             }
         }
 
-
         /**
          * Take a list of patches and return a textual representation.
          * @param patches List of Patch objects.
@@ -2432,7 +2440,6 @@ namespace DiffMatchPatch
             }
             return text.ToString();
         }
-
 
         /**
          * Parse a textual representation of patches and return a List of Patch
@@ -2550,11 +2557,11 @@ namespace DiffMatchPatch
          * Unescape selected chars for compatability with JavaScript's encodeURI.
          * In speed critical applications this could be dropped since the
          * receiving application will certainly decode these fine.
-         * Note that this function is case-sensitive.  Thus "%3f" would not be
+         * Note that this function is case-sensitive.  Thus "%3F" would not be
          * unescaped.  But this is ok because it is only called with the output of
-         * URLEncoder.encode which returns uppercase hex.
+         * HttpUtility.UrlEncode which returns lowercase hex.
          * 
-         * Example: "%3F" -> "?", "%24" -> "$", etc.
+         * Example: "%3f" -> "?", "%24" -> "$", etc.
          * 
          * @param str The string to escape.
          * @return The escaped string.
@@ -2570,3 +2577,4 @@ namespace DiffMatchPatch
         }
     }
 }
+

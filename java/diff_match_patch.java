@@ -1321,14 +1321,19 @@ public class diff_match_patch {
     int insertions = 0;
     int deletions = 0;
     for (Diff aDiff : diffs) {
-      if (aDiff.operation == Operation.INSERT) {
+      switch (aDiff.operation) {
+      case INSERT:
         insertions += aDiff.text.length();
-      } else if (aDiff.operation == Operation.DELETE) {
+        break;
+      case DELETE:
         deletions += aDiff.text.length();
-      } else if (aDiff.operation == Operation.EQUAL) {
+        break;
+      case EQUAL:
+        // A deletion and an insertion is one substitution.
         levenshtein += Math.max(insertions, deletions);
-        deletions = 0;
         insertions = 0;
+        deletions = 0;
+        break;
       }
     }
     levenshtein += Math.max(insertions, deletions);
