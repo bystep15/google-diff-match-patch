@@ -2560,9 +2560,9 @@ namespace DiffMatchPatch
          * Note that this function is case-sensitive.  Thus "%3F" would not be
          * unescaped.  But this is ok because it is only called with the output of
          * HttpUtility.UrlEncode which returns lowercase hex.
-         * 
+         *
          * Example: "%3f" -> "?", "%24" -> "$", etc.
-         * 
+         *
          * @param str The string to escape.
          * @return The escaped string.
          */
@@ -2577,4 +2577,3 @@ namespace DiffMatchPatch
         }
     }
 }
-

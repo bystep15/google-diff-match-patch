@@ -26,7 +26,7 @@ using System.Text;
 using NUnit.Framework;
 
 namespace nicTest
-{    
+{
     [TestFixture()]
     public class diff_match_patchTest : diff_match_patch
     {
@@ -174,44 +174,44 @@ namespace nicTest
             target.diff_cleanupSemanticLossless(diffs);
             CollectionAssert.AreEqual(
                 new List<Diff>{
-                    new Diff(Operation.EQUAL, "AAA\r\n\r\n"), 
+                    new Diff(Operation.EQUAL, "AAA\r\n\r\n"),
                     new Diff(Operation.INSERT, "BBB\r\nDDD\r\n\r\n"),
                     new Diff(Operation.EQUAL, "BBB\r\nEEE")}, diffs);
 
             diffs = new List<Diff>{
-                new Diff(Operation.EQUAL, "AAA\r\nBBB"), 
-                new Diff(Operation.INSERT, " DDD\r\nBBB"), 
+                new Diff(Operation.EQUAL, "AAA\r\nBBB"),
+                new Diff(Operation.INSERT, " DDD\r\nBBB"),
                 new Diff(Operation.EQUAL, " EEE")};
             target.diff_cleanupSemanticLossless(diffs);
             CollectionAssert.AreEqual(
                 new List<Diff>{
-                    new Diff(Operation.EQUAL, "AAA\r\n"), 
-                    new Diff(Operation.INSERT, "BBB DDD\r\n"), 
+                    new Diff(Operation.EQUAL, "AAA\r\n"),
+                    new Diff(Operation.INSERT, "BBB DDD\r\n"),
                     new Diff(Operation.EQUAL, "BBB EEE")}, diffs);
 
             diffs = new List<Diff>{
-                new Diff(Operation.EQUAL, "The c"), 
-                new Diff(Operation.INSERT, "ow and the c"), 
+                new Diff(Operation.EQUAL, "The c"),
+                new Diff(Operation.INSERT, "ow and the c"),
                 new Diff(Operation.EQUAL, "at.")};
             target.diff_cleanupSemanticLossless(diffs);
             CollectionAssert.AreEqual(new List<Diff>{
-                new Diff(Operation.EQUAL, "The "), 
+                new Diff(Operation.EQUAL, "The "),
                 new Diff(Operation.INSERT, "cow and the "),
                 new Diff(Operation.EQUAL, "cat.")}, diffs);
 
             diffs = new List<Diff>{
-                new Diff(Operation.EQUAL, "The-c"), 
+                new Diff(Operation.EQUAL, "The-c"),
                 new Diff(Operation.INSERT, "ow-and-the-c"),
                 new Diff(Operation.EQUAL, "at.")};
             target.diff_cleanupSemanticLossless(diffs);
             CollectionAssert.AreEqual(new List<Diff>{
-                new Diff(Operation.EQUAL, "The-"), 
-                new Diff(Operation.INSERT, "cow-and-the-"), 
+                new Diff(Operation.EQUAL, "The-"),
+                new Diff(Operation.INSERT, "cow-and-the-"),
                 new Diff(Operation.EQUAL, "cat.")}, diffs);
 
             diffs = new List<Diff>{
-                new Diff(Operation.EQUAL, "a"), 
-                new Diff(Operation.DELETE, "a"), 
+                new Diff(Operation.EQUAL, "a"),
+                new Diff(Operation.DELETE, "a"),
                 new Diff(Operation.EQUAL, "ax")};
             target.diff_cleanupSemanticLossless(diffs);
             CollectionAssert.AreEqual(new List<Diff>{
@@ -219,12 +219,12 @@ namespace nicTest
                 new Diff(Operation.EQUAL, "aax")}, diffs);
 
             diffs = new List<Diff>{
-                new Diff(Operation.EQUAL, "xa"), 
-                new Diff(Operation.DELETE, "a"), 
+                new Diff(Operation.EQUAL, "xa"),
+                new Diff(Operation.DELETE, "a"),
                 new Diff(Operation.EQUAL, "a")};
             target.diff_cleanupSemanticLossless(diffs);
             CollectionAssert.AreEqual(new List<Diff>{
-                new Diff(Operation.EQUAL, "xaa"), 
+                new Diff(Operation.EQUAL, "xaa"),
                 new Diff(Operation.DELETE, "a")}, diffs);
         }
 
@@ -246,54 +246,54 @@ namespace nicTest
             CollectionAssert.AreEqual(
                 new List<Diff>{
                     new Diff(Operation.DELETE, "a"),
-                    new Diff(Operation.INSERT, "b"), 
-                    new Diff(Operation.EQUAL, "cd"), 
+                    new Diff(Operation.INSERT, "b"),
+                    new Diff(Operation.EQUAL, "cd"),
                     new Diff(Operation.DELETE, "e")}, diffs);
 
             diffs = new List<Diff>{
-                new Diff(Operation.DELETE, "a"), 
-                new Diff(Operation.EQUAL, "b"), 
+                new Diff(Operation.DELETE, "a"),
+                new Diff(Operation.EQUAL, "b"),
                 new Diff(Operation.DELETE, "c")};
             target.diff_cleanupSemantic(diffs);
             CollectionAssert.AreEqual(
                 new List<Diff>{
-                    new Diff(Operation.DELETE, "abc"), 
+                    new Diff(Operation.DELETE, "abc"),
                     new Diff(Operation.INSERT, "b")}, diffs);
 
             diffs = new List<Diff>{
-                new Diff(Operation.DELETE, "ab"), 
-                new Diff(Operation.EQUAL, "cd"), 
-                new Diff(Operation.DELETE, "e"), 
-                new Diff(Operation.EQUAL, "f"), 
+                new Diff(Operation.DELETE, "ab"),
+                new Diff(Operation.EQUAL, "cd"),
+                new Diff(Operation.DELETE, "e"),
+                new Diff(Operation.EQUAL, "f"),
                 new Diff(Operation.INSERT, "g")};
             target.diff_cleanupSemantic(diffs);
             CollectionAssert.AreEqual(new List<Diff>{
-                new Diff(Operation.DELETE, "abcdef"), 
+                new Diff(Operation.DELETE, "abcdef"),
                 new Diff(Operation.INSERT, "cdfg")}, diffs);
 
             diffs = new List<Diff>{
-                new Diff(Operation.INSERT, "1"), 
-                new Diff(Operation.EQUAL, "A"), 
-                new Diff(Operation.DELETE, "B"), 
-                new Diff(Operation.INSERT, "2"), 
-                new Diff(Operation.EQUAL, "_"), 
-                new Diff(Operation.INSERT, "1"), 
-                new Diff(Operation.EQUAL, "A"), 
-                new Diff(Operation.DELETE, "B"), 
+                new Diff(Operation.INSERT, "1"),
+                new Diff(Operation.EQUAL, "A"),
+                new Diff(Operation.DELETE, "B"),
+                new Diff(Operation.INSERT, "2"),
+                new Diff(Operation.EQUAL, "_"),
+                new Diff(Operation.INSERT, "1"),
+                new Diff(Operation.EQUAL, "A"),
+                new Diff(Operation.DELETE, "B"),
                 new Diff(Operation.INSERT, "2")};
             target.diff_cleanupSemantic(diffs);
             CollectionAssert.AreEqual(new List<Diff>{
-                new Diff(Operation.DELETE, "AB_AB"), 
+                new Diff(Operation.DELETE, "AB_AB"),
                 new Diff(Operation.INSERT, "1A2_1A2")}, diffs);
 
             diffs = new List<Diff>{
-                new Diff(Operation.EQUAL, "The c"), 
+                new Diff(Operation.EQUAL, "The c"),
                 new Diff(Operation.DELETE, "ow and the c"),
                 new Diff(Operation.EQUAL, "at.")};
             target.diff_cleanupSemantic(diffs);
             CollectionAssert.AreEqual(new List<Diff>{
-                new Diff(Operation.EQUAL, "The "), 
-                new Diff(Operation.DELETE, "cow and the "), 
+                new Diff(Operation.EQUAL, "The "),
+                new Diff(Operation.DELETE, "cow and the "),
                 new Diff(Operation.EQUAL, "cat.")}, diffs);
         }
 
@@ -357,63 +357,63 @@ namespace nicTest
             CollectionAssert.AreEqual(new List<Diff>(), diffs);
 
             diffs = new List<Diff>{
-                new Diff(Operation.DELETE, "ab"), 
-                new Diff(Operation.INSERT, "12"), 
-                new Diff(Operation.EQUAL, "wxyz"), 
-                new Diff(Operation.DELETE, "cd"), 
+                new Diff(Operation.DELETE, "ab"),
+                new Diff(Operation.INSERT, "12"),
+                new Diff(Operation.EQUAL, "wxyz"),
+                new Diff(Operation.DELETE, "cd"),
                 new Diff(Operation.INSERT, "34")};
             target.diff_cleanupEfficiency(diffs);
             CollectionAssert.AreEqual(new List<Diff>{
-                new Diff(Operation.DELETE, "ab"), 
-                new Diff(Operation.INSERT, "12"), 
-                new Diff(Operation.EQUAL, "wxyz"), 
-                new Diff(Operation.DELETE, "cd"), 
+                new Diff(Operation.DELETE, "ab"),
+                new Diff(Operation.INSERT, "12"),
+                new Diff(Operation.EQUAL, "wxyz"),
+                new Diff(Operation.DELETE, "cd"),
                 new Diff(Operation.INSERT, "34")}, diffs);
 
             diffs = new List<Diff>{
-                new Diff(Operation.DELETE, "ab"), 
-                new Diff(Operation.INSERT, "12"), 
-                new Diff(Operation.EQUAL, "xyz"), 
-                new Diff(Operation.DELETE, "cd"), 
+                new Diff(Operation.DELETE, "ab"),
+                new Diff(Operation.INSERT, "12"),
+                new Diff(Operation.EQUAL, "xyz"),
+                new Diff(Operation.DELETE, "cd"),
                 new Diff(Operation.INSERT, "34")};
             target.diff_cleanupEfficiency(diffs);
             CollectionAssert.AreEqual(new List<Diff>{
-                new Diff(Operation.DELETE, "abxyzcd"), 
+                new Diff(Operation.DELETE, "abxyzcd"),
                 new Diff(Operation.INSERT, "12xyz34")}, diffs);
 
             diffs = new List<Diff>{
                 new Diff(Operation.INSERT, "12"),
-                new Diff(Operation.EQUAL, "x"), 
-                new Diff(Operation.DELETE, "cd"), 
+                new Diff(Operation.EQUAL, "x"),
+                new Diff(Operation.DELETE, "cd"),
                 new Diff(Operation.INSERT, "34")};
             target.diff_cleanupEfficiency(diffs);
             CollectionAssert.AreEqual(new List<Diff>{
-                new Diff(Operation.DELETE, "xcd"), 
+                new Diff(Operation.DELETE, "xcd"),
                 new Diff(Operation.INSERT, "12x34")}, diffs);
 
             diffs = new List<Diff>{
-                new Diff(Operation.DELETE, "ab"), 
-                new Diff(Operation.INSERT, "12"), 
-                new Diff(Operation.EQUAL, "xy"), 
-                new Diff(Operation.INSERT, "34"), 
-                new Diff(Operation.EQUAL, "z"), 
-                new Diff(Operation.DELETE, "cd"), 
+                new Diff(Operation.DELETE, "ab"),
+                new Diff(Operation.INSERT, "12"),
+                new Diff(Operation.EQUAL, "xy"),
+                new Diff(Operation.INSERT, "34"),
+                new Diff(Operation.EQUAL, "z"),
+                new Diff(Operation.DELETE, "cd"),
                 new Diff(Operation.INSERT, "56")};
             target.diff_cleanupEfficiency(diffs);
             CollectionAssert.AreEqual(new List<Diff>{
-                new Diff(Operation.DELETE, "abxyzcd"), 
+                new Diff(Operation.DELETE, "abxyzcd"),
                 new Diff(Operation.INSERT, "12xy34z56")}, diffs);
 
             target.Diff_EditCost = 5;
             diffs = new List<Diff>{
-                new Diff(Operation.DELETE, "ab"), 
-                new Diff(Operation.INSERT, "12"), 
-                new Diff(Operation.EQUAL, "wxyz"), 
-                new Diff(Operation.DELETE, "cd"), 
+                new Diff(Operation.DELETE, "ab"),
+                new Diff(Operation.INSERT, "12"),
+                new Diff(Operation.EQUAL, "wxyz"),
+                new Diff(Operation.DELETE, "cd"),
                 new Diff(Operation.INSERT, "34")};
             target.diff_cleanupEfficiency(diffs);
             CollectionAssert.AreEqual(new List<Diff>{
-                new Diff(Operation.DELETE, "abwxyzcd"), 
+                new Diff(Operation.DELETE, "abwxyzcd"),
                 new Diff(Operation.INSERT, "12wxyz34")}, diffs);
             target.Diff_EditCost = 4;
         }
@@ -424,8 +424,8 @@ namespace nicTest
             diff_match_patchTest target = new diff_match_patchTest();
             // Pretty print
             List<Diff> diffs = new List<Diff>{
-                new Diff(Operation.EQUAL, "a\n"), 
-                new Diff(Operation.DELETE, "<B>b</B>"), 
+                new Diff(Operation.EQUAL, "a\n"),
+                new Diff(Operation.DELETE, "<B>b</B>"),
                 new Diff(Operation.INSERT, "c&d")};
 
             Assert.AreEqual("<SPAN TITLE=\"i=0\">a&para;<BR></SPAN><DEL STYLE=\"background:#FFE6E6;\" TITLE=\"i=2\">&lt;B&gt;b&lt;/B&gt;</DEL><INS STYLE=\"background:#E6FFE6;\" TITLE=\"i=2\">c&amp;d</INS>",
@@ -436,7 +436,7 @@ namespace nicTest
         public void diff_charsToLinesTest()
         {
             diff_match_patchTest target = new diff_match_patchTest();
-            
+
             Assert.AreEqual(new Diff(Operation.EQUAL, "a"),
                 new Diff(Operation.EQUAL, "a"));
 
@@ -482,12 +482,12 @@ namespace nicTest
             diff_match_patchTest target = new diff_match_patchTest();
             List<Diff> diffs = new List<Diff>
             {
-                new Diff(Operation.EQUAL, "jump"), 
-                new Diff(Operation.DELETE, "s"), 
-                new Diff(Operation.INSERT, "ed"), 
-                new Diff(Operation.EQUAL, " over "), 
-                new Diff(Operation.DELETE, "the"), 
-                new Diff(Operation.INSERT, "a"), 
+                new Diff(Operation.EQUAL, "jump"),
+                new Diff(Operation.DELETE, "s"),
+                new Diff(Operation.INSERT, "ed"),
+                new Diff(Operation.EQUAL, " over "),
+                new Diff(Operation.DELETE, "the"),
+                new Diff(Operation.INSERT, "a"),
                 new Diff(Operation.EQUAL, " lazy")
             };
 
@@ -501,13 +501,13 @@ namespace nicTest
             diff_match_patchTest target = new diff_match_patchTest();
             // Convert a diff into delta string
             List<Diff> diffs = new List<Diff> {
-                new Diff(Operation.EQUAL, "jump"), 
-                new Diff(Operation.DELETE, "s"), 
-                new Diff(Operation.INSERT, "ed"), 
-                new Diff(Operation.EQUAL, " over "), 
-                new Diff(Operation.DELETE, "the"), 
-                new Diff(Operation.INSERT, "a"), 
-                new Diff(Operation.EQUAL, " lazy"), 
+                new Diff(Operation.EQUAL, "jump"),
+                new Diff(Operation.DELETE, "s"),
+                new Diff(Operation.INSERT, "ed"),
+                new Diff(Operation.EQUAL, " over "),
+                new Diff(Operation.DELETE, "the"),
+                new Diff(Operation.INSERT, "a"),
+                new Diff(Operation.EQUAL, " lazy"),
                 new Diff(Operation.INSERT, "old dog")};
             String text1 = target.diff_text1(diffs);
             Assert.AreEqual("jumps over the lazy", text1);
@@ -556,8 +556,8 @@ namespace nicTest
             char one = (char)1;
             char two = (char)2;
             diffs = new List<Diff> {
-                new Diff(Operation.EQUAL, "\u0680 " + zero + " \t %"), 
-                new Diff(Operation.DELETE, "\u0681 " + one + " \n ^"), 
+                new Diff(Operation.EQUAL, "\u0680 " + zero + " \t %"),
+                new Diff(Operation.DELETE, "\u0681 " + one + " \n ^"),
                 new Diff(Operation.INSERT, "\u0682 " + two + " \\ |")};
             text1 = target.diff_text1(diffs);
             Assert.AreEqual("\u0680 " + zero + " \t %\u0681 " + one + " \n ^", text1);
@@ -587,14 +587,14 @@ namespace nicTest
             diff_match_patchTest target = new diff_match_patchTest();
             // Translate a location in text1 to text2
             List<Diff> diffs = new List<Diff> {
-                new Diff(Operation.DELETE, "a"), 
-                new Diff(Operation.INSERT, "1234"), 
+                new Diff(Operation.DELETE, "a"),
+                new Diff(Operation.INSERT, "1234"),
                 new Diff(Operation.EQUAL, "xyz")};
             Assert.AreEqual(5, target.diff_xIndex(diffs, 2), "diff_xIndex: Translation on equality.");
 
             diffs = new List<Diff> {
-                new Diff(Operation.EQUAL, "a"), 
-                new Diff(Operation.DELETE, "1234"), 
+                new Diff(Operation.EQUAL, "a"),
+                new Diff(Operation.DELETE, "1234"),
                 new Diff(Operation.EQUAL, "xyz")};
             Assert.AreEqual(1, target.diff_xIndex(diffs, 3), "diff_xIndex: Translation on deletion.");
         }
@@ -616,9 +616,9 @@ namespace nicTest
             Assert.AreEqual(4, target.diff_levenshtein(diffs), "diff_levenshtein: Levenshtein with leading equality.");
 
             diffs = new List<Diff> {
-                new Diff(Operation.DELETE, "abc"), 
+                new Diff(Operation.DELETE, "abc"),
                 new Diff(Operation.EQUAL, "xyz"),
-                new Diff(Operation.INSERT, "1234")}; 
+                new Diff(Operation.INSERT, "1234")};
             Assert.AreEqual(7, target.diff_levenshtein(diffs), "diff_levenshtein: Levenshtein with middle equality.");
         }
 
@@ -676,29 +676,29 @@ namespace nicTest
                 row_set.Add(target.diff_footprint(7, 5));
                 v_map.Add(row_set);
             }
-            
+
             List<Diff> diffs = new List<Diff>{
-                new Diff(Operation.INSERT, "W"), 
-                new Diff(Operation.DELETE, "A"), 
-                new Diff(Operation.EQUAL, "1"), 
-                new Diff(Operation.DELETE, "B"), 
-                new Diff(Operation.EQUAL, "2"), 
-                new Diff(Operation.INSERT, "X"), 
-                new Diff(Operation.DELETE, "C"), 
-                new Diff(Operation.EQUAL, "3"), 
+                new Diff(Operation.INSERT, "W"),
+                new Diff(Operation.DELETE, "A"),
+                new Diff(Operation.EQUAL, "1"),
+                new Diff(Operation.DELETE, "B"),
+                new Diff(Operation.EQUAL, "2"),
+                new Diff(Operation.INSERT, "X"),
+                new Diff(Operation.DELETE, "C"),
+                new Diff(Operation.EQUAL, "3"),
                 new Diff(Operation.DELETE, "D")};
             CollectionAssert.AreEqual(diffs, target.diff_path1(v_map, "A1B2C3D", "W12X3"), "diff_path1: Single letters.");
 
             // Trace a path from front to back.
             v_map.RemoveAt(v_map.Count - 1);
             diffs = new List<Diff>{
-                new Diff(Operation.EQUAL, "4"), 
-                new Diff(Operation.DELETE, "E"), 
-                new Diff(Operation.INSERT, "Y"), 
-                new Diff(Operation.EQUAL, "5"), 
-                new Diff(Operation.DELETE, "F"), 
-                new Diff(Operation.EQUAL, "6"), 
-                new Diff(Operation.DELETE, "G"), 
+                new Diff(Operation.EQUAL, "4"),
+                new Diff(Operation.DELETE, "E"),
+                new Diff(Operation.INSERT, "Y"),
+                new Diff(Operation.EQUAL, "5"),
+                new Diff(Operation.DELETE, "F"),
+                new Diff(Operation.EQUAL, "6"),
+                new Diff(Operation.DELETE, "G"),
                 new Diff(Operation.INSERT, "Z")};
             CollectionAssert.AreEqual(diffs, target.diff_path2(v_map, "4E5F6G", "4Y56Z"), "diff_path2: Single letters.");
 
@@ -733,8 +733,8 @@ namespace nicTest
                 v_map.Add(row_set);
             }
             diffs = new List<Diff>{
-                new Diff(Operation.INSERT, "WX"), 
-                new Diff(Operation.DELETE, "AB"), 
+                new Diff(Operation.INSERT, "WX"),
+                new Diff(Operation.DELETE, "AB"),
                 new Diff(Operation.EQUAL, "12")};
             CollectionAssert.AreEqual(diffs, target.diff_path1(v_map, "AB12", "WX12"), "diff_path1: Double letters.");
 
@@ -767,7 +767,7 @@ namespace nicTest
             }
             diffs = new List<Diff>{
                 new Diff(Operation.DELETE, "CD"),
-                new Diff(Operation.EQUAL, "34"), 
+                new Diff(Operation.EQUAL, "34"),
                 new Diff(Operation.INSERT, "YZ")};
             CollectionAssert.AreEqual(diffs, target.diff_path2(v_map, "CD34", "34YZ"), "diff_path2: Double letters.");
         }
@@ -818,14 +818,20 @@ namespace nicTest
 
             target.Diff_DualThreshold = 32;
             target.Diff_Timeout = 0.001f;  // 1ms
-            // This test may 'fail' on extremely fast computers.  If so, just increase the text lengths.
-            Assert.IsNull(target.diff_map("`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.", "I am the very model of a modern major general,\nI've information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical."), "diff_main: Timeout.");
+            String a = "`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n";
+            String b = "I am the very model of a modern major general,\nI've information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical.\n";
+            // Increase the text lengths by 1024 times to ensure a timeout.
+            for (int x = 0; x < 10; x++) {
+              a = a + a;
+              b = b + b;
+            }
+            Assert.IsNull(target.diff_map(a, b), "diff_main: Timeout.");
             target.Diff_Timeout = 0;
 
             // Test the linemode speedup
             // Must be long to pass the 200 char cutoff.
-            String a = "1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n";
-            String b = "abcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\n";
+            a = "1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n";
+            b = "abcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\n";
             CollectionAssert.AreEqual(target.diff_main(a, b, true), target.diff_main(a, b, false), "diff_main: Simple.");
 
             a = "1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n";
@@ -852,7 +858,7 @@ namespace nicTest
         public void diff_matchBitapTest()
         {
             diff_match_patchTest target = new diff_match_patchTest();
-            
+
             // Bitap algorithm
             target.Match_Balance = 0.5f;
             target.Match_Threshold = 0.5f;
@@ -892,7 +898,7 @@ namespace nicTest
             Assert.AreEqual(-1, target.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcxdxexfgh", 1), "match_bitap: Balance test #4.");
             target.Match_Balance = 0.5f;
         }
-        
+
         [Test()]
         public void diff_matchMainTest()
         {
@@ -921,12 +927,12 @@ namespace nicTest
             p.length1 = 18;
             p.length2 = 17;
             p.diffs = new List<Diff> {
-                new Diff(Operation.EQUAL, "jump"), 
-                new Diff(Operation.DELETE, "s"), 
-                new Diff(Operation.INSERT, "ed"), 
-                new Diff(Operation.EQUAL, " over "), 
-                new Diff(Operation.DELETE, "the"), 
-                new Diff(Operation.INSERT, "a"), 
+                new Diff(Operation.EQUAL, "jump"),
+                new Diff(Operation.DELETE, "s"),
+                new Diff(Operation.INSERT, "ed"),
+                new Diff(Operation.EQUAL, " over "),
+                new Diff(Operation.DELETE, "the"),
+                new Diff(Operation.INSERT, "a"),
                 new Diff(Operation.EQUAL, "\nlaz")};
             String strp = "@@ -21,18 +22,17 @@\n jump\n-s\n+ed\n  over \n-the\n+a\n %0alaz\n";
             Assert.AreEqual(strp, p.ToString(), "Patch: toString.");
@@ -955,7 +961,7 @@ namespace nicTest
             }
             catch (ArgumentException)
             {
-                
+
                 // Exception expected.
             }
         }
@@ -1015,9 +1021,9 @@ namespace nicTest
                 "patch_toText: Character encoding.");
 
             diffs = new List<Diff>{
-                new Diff(Operation.DELETE, "`1234567890-=[]\\;',./"), 
+                new Diff(Operation.DELETE, "`1234567890-=[]\\;',./"),
                 new Diff(Operation.INSERT, "~!@#$%^&*()_+{}|:\"<>?")};
-            CollectionAssert.AreEqual(diffs, 
+            CollectionAssert.AreEqual(diffs,
                 target.patch_fromText("@@ -1,21 +1,21 @@\n-%601234567890-=%5B%5D%5C;',./\n+~!@#$%25%5E&*()_+%7B%7D%7C:%22%3C%3E?\n") [0].diffs,
                 "patch_fromText: Character decoding.");
 
@@ -1045,11 +1051,11 @@ namespace nicTest
                 "patch_addPadding: Both edges full.");
 
             patches = target.patch_make("XY", "XtestY");
-            Assert.AreEqual("@@ -1,2 +1,6 @@\n X\n+test\n Y\n", 
+            Assert.AreEqual("@@ -1,2 +1,6 @@\n X\n+test\n Y\n",
                 target.patch_toText(patches),
                 "patch_addPadding: Both edges partial.");
             target.patch_addPadding(patches);
-            Assert.AreEqual("@@ -2,8 +2,12 @@\n %01%02%03X\n+test\n Y%00%01%02\n", 
+            Assert.AreEqual("@@ -2,8 +2,12 @@\n %01%02%03X\n+test\n Y%00%01%02\n",
                 target.patch_toText(patches),
                 "patch_addPadding: Both edges partial.");
 
@@ -1129,4 +1135,3 @@ namespace nicTest
         }
     }
 }
-

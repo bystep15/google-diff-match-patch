@@ -1232,7 +1232,7 @@ diff_match_patch.prototype.diff_levenshtein = function(diffs) {
   for (var x = 0; x < diffs.length; x++) {
     var op = diffs[x][0];
     var data = diffs[x][1];
-    switch (diffs[x][0]) {
+    switch (op) {
       case DIFF_INSERT:
         insertions += data.length;
         break;

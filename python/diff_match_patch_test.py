@@ -434,8 +434,13 @@ class DiffTest(DiffMatchPatchTest):
 
     # Timeout
     self.dmp.Diff_Timeout = 0.001  # 1ms
-    # This test may 'fail' on extremely fast computers.  If so, just increase the text lengths.
-    self.assertEquals(None, self.dmp.diff_map("`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.", "I am the very model of a modern major general,\nI've information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical."))
+    a = "`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n"
+    b = "I am the very model of a modern major general,\nI've information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical.\n"
+    # Increase the text lengths by 1024 times to ensure a timeout.
+    for x in xrange(10):
+      a = a + a
+      b = b + b
+    self.assertEquals(None, self.dmp.diff_map(a, b))
     self.dmp.Diff_Timeout = 0
 
     # Test the linemode speedup
