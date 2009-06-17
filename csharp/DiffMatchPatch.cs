@@ -25,7 +25,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
-using System.Runtime.CompilerServices;
 
 namespace DiffMatchPatch
 {
@@ -106,14 +105,14 @@ namespace DiffMatchPatch
                 return false;
             }
 
-            // If parameter cannot be cast to Point return false.
+            // If parameter cannot be cast to Diff return false.
             Diff p = obj as Diff;
             if ((System.Object)p == null)
             {
                 return false;
             }
 
-            // Return true if the fields match:
+            // Return true if the fields match.
             return p.operation == this.operation &&
                 p.text == this.text;
         }
@@ -126,7 +125,7 @@ namespace DiffMatchPatch
                 return false;
             }
 
-            // Return true if the fields match:
+            // Return true if the fields match.
             return obj.operation == this.operation &&
                 obj.text == this.text;
         }
@@ -856,8 +855,6 @@ namespace DiffMatchPatch
             // The maximum size for a long is 9,223,372,036,854,775,807
             // The maximum size for an int is 2,147,483,647
             // Two ints fit nicely in one long.
-            // The return value is usually destined as a key in a hash, so return an
-            // object rather than a primitive, thus skipping an automatic boxing.
             long result = x;
             result = result << 32;
             result += y;
