@@ -32,14 +32,15 @@ Aproximate pattern to search for in the text.  Due to limitations of the Bitap a
 <P><INPUT ID="loc" SIZE=4 MAXLENGTH=10 VALUE="30"> <SPAN ID="maxtextspan"></SPAN><BR>
 Aproximately where in the text is the pattern expected to be found?</P>
 
-<H3>Match balance:</H3>
-<P><INPUT TYPE="text" SIZE=3 MAXLENGTH=5 VALUE="0.6" ID="balance"><BR>
-Determines which is more important, spelling or location.  A balance of '0.1' matches nearly exact spelling at almost any location,
-a balance of '0.9' matches almost any spelling at nearly the exact location.</P>
+<H3>Match Distance:</H3>
+<P><INPUT TYPE="text" SIZE=3 MAXLENGTH=8 VALUE="1000" ID="distance"><BR>
+Determines how close the match must be to the fuzzy location (specified above).  An exact letter match which is 'distance' characters away from the fuzzy location would
+score as a complete mismatch.  A distance of '0' requires the match be at the exact location specified, a threshold of '1000'
+would require a perfect match to be within 800 characters of the fuzzy location to be found using a 0.8 threshold.</P>
 
 <H3>Match threshold:</H3>
 <P><INPUT TYPE="text" SIZE=3 MAXLENGTH=5 VALUE="0.8" ID="threshold"><BR>
-At what point does the match algorithm give up.  A threshold of '0.1' requires an almost perfect match, a threshold of '0.9' is much more forgiving.</P>
+At what point does the match algorithm give up.  A threshold of '0.0' requires a perfect match (of both letters and location), a threshold of '1.0' would match anything.</P>
 
 <INPUT TYPE="button" onClick="launch()" VALUE="Compute Match">
 </FORM>
@@ -56,7 +57,7 @@ function launch() {
   var pattern = document.getElementById('pattern').value;
   var loc = parseInt(document.getElementById('loc').value, 10);
 
-  dmp.Match_Balance = parseFloat(document.getElementById('balance').value);
+  dmp.Match_Distance = parseFloat(document.getElementById('distance').value);
   dmp.Match_Threshold = parseFloat(document.getElementById('threshold').value);
 
   var ms_start = (new Date()).getTime();
