@@ -571,10 +571,8 @@
 
       function testMatchBitap() {
         // Bitap algorithm
-        dmp.Match_Balance = 0.5;
+        dmp.Match_Distance = 100;
         dmp.Match_Threshold = 0.5;
-        dmp.Match_MinLength = 100;
-        dmp.Match_MaxLength = 1000;
         // Exact matches
         assertEquals(5, dmp.match_bitap('abcdefghijk', 'fgh', 5));
 
@@ -591,10 +589,13 @@
         assertEquals(2, dmp.match_bitap('123456789xx0', '3456789x0', 2));
 
         // Threshold test
-        dmp.Match_Threshold = 0.75;
+        dmp.Match_Threshold = 0.4;
         assertEquals(4, dmp.match_bitap('abcdefghijk', 'efxyhi', 1));
 
-        dmp.Match_Threshold = 0.1;
+        dmp.Match_Threshold = 0.3;
+        assertEquals(-1, dmp.match_bitap('abcdefghijk', 'efxyhi', 1));
+
+        dmp.Match_Threshold = 0.0;
         assertEquals(1, dmp.match_bitap('abcdefghijk', 'bcdef', 1));
         dmp.Match_Threshold = 0.5;
 
@@ -603,17 +604,14 @@
 
         assertEquals(8, dmp.match_bitap('abcdexyzabcde', 'abccde', 5));
 
-        // Balance test
-        dmp.Match_Balance = 0.6;  // Strict location, loose accuracy.
+        // Distance test
+        dmp.Match_Distance = 10;  // Strict location.
         assertEquals(-1, dmp.match_bitap('abcdefghijklmnopqrstuvwxyz', 'abcdefg', 24));
 
-        assertEquals(0, dmp.match_bitap('abcdefghijklmnopqrstuvwxyz', 'abcxdxexfgh', 1));
+        assertEquals(0, dmp.match_bitap('abcdefghijklmnopqrstuvwxyz', 'abcdxxefg', 1));
 
-        dmp.Match_Balance = 0.4;  // Strict accuracy, loose location.
+        dmp.Match_Distance = 1000;  // Loose location.
         assertEquals(0, dmp.match_bitap('abcdefghijklmnopqrstuvwxyz', 'abcdefg', 24));
-
-        assertEquals(-1, dmp.match_bitap('abcdefghijklmnopqrstuvwxyz', 'abcxdxexfgh', 1));
-        dmp.Match_Balance = 0.5;
       }
 
       function testMatchMain() {
@@ -627,10 +625,14 @@
 
         assertEquals(3, dmp.match_main('abcdef', 'de', 3));
 
+        // Beyond end match
+        assertEquals(3, dmp.match_main("abcdef", "defy", 4));
+
+        // Oversized pattern
+        assertEquals(0, dmp.match_main("abcdef", "abcdefy", 0));
+
         // Complex match
-        dmp.Match_Threshold = 0.7;
         assertEquals(4, dmp.match_main('I am the very model of a modern major general.', ' that berry ', 5));
-        dmp.Match_Threshold = 0.5;
       }
 
 

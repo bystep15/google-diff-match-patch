@@ -842,7 +842,7 @@ namespace nicTest
         }
 
         [Test()]
-        public void diff_matchAlphabetTest()
+        public void match_alphabetTest()
         {
             diff_match_patchTest target = new diff_match_patchTest();
             // Initialise the bitmasks for Bitap
@@ -855,15 +855,14 @@ namespace nicTest
             CollectionAssert.AreEqual(bitmask, target.match_alphabet("abcaba"), "match_alphabet: Duplicates.");
         }
 
-        public void diff_matchBitapTest()
+        [Test()]
+        public void match_bitapTest()
         {
             diff_match_patchTest target = new diff_match_patchTest();
 
             // Bitap algorithm
-            target.Match_Balance = 0.5f;
+            target.Match_Distance = 100;
             target.Match_Threshold = 0.5f;
-            target.Match_MinLength = 100;
-            target.Match_MaxLength = 1000;
             Assert.AreEqual(5, target.match_bitap("abcdefghijk", "fgh", 5), "match_bitap: Exact match #1.");
 
             Assert.AreEqual(5, target.match_bitap("abcdefghijk", "fgh", 0), "match_bitap: Exact match #2.");
@@ -876,31 +875,37 @@ namespace nicTest
 
             Assert.AreEqual(2, target.match_bitap("123456789xx0", "3456789x0", 2), "match_bitap: Overflow.");
 
-            target.Match_Threshold = 0.75f;
+            Assert.AreEqual(0, target.match_bitap("abcdef", "xxabc", 4), "match_bitap: Before start match.");
+
+            Assert.AreEqual(3, target.match_bitap("abcdef", "defyy", 4), "match_bitap: Beyond end match.");
+
+            Assert.AreEqual(0, target.match_bitap("abcdef", "xabcdefy", 0), "match_bitap: Oversized pattern.");
+
+            target.Match_Threshold = 0.4f;
             Assert.AreEqual(4, target.match_bitap("abcdefghijk", "efxyhi", 1), "match_bitap: Threshold #1.");
 
-            target.Match_Threshold = 0.1f;
-            Assert.AreEqual(1, target.match_bitap("abcdefghijk", "bcdef", 1), "match_bitap: Threshold #2.");
+            target.Match_Threshold = 0.3f;
+            Assert.AreEqual(-1, target.match_bitap("abcdefghijk", "efxyhi", 1), "match_bitap: Threshold #2.");
+
+            target.Match_Threshold = 0.0f;
+            Assert.AreEqual(1, target.match_bitap("abcdefghijk", "bcdef", 1), "match_bitap: Threshold #3.");
 
             target.Match_Threshold = 0.5f;
             Assert.AreEqual(0, target.match_bitap("abcdexyzabcde", "abccde", 3), "match_bitap: Multiple select #1.");
 
             Assert.AreEqual(8, target.match_bitap("abcdexyzabcde", "abccde", 5), "match_bitap: Multiple select #2.");
 
-            target.Match_Balance = 0.6f;  // Strict location, loose accuracy.
-            Assert.AreEqual(-1, target.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdefg", 24), "match_bitap: Balance test #1.");
+            target.Match_Distance = 10;  // Strict location.
+            Assert.AreEqual(-1, target.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdefg", 24), "match_bitap: Distance test #1.");
 
-            Assert.AreEqual(0, target.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcxdxexfgh", 1), "match_bitap: Balance test #2.");
+            Assert.AreEqual(0, target.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdxxefg", 1), "match_bitap: Distance test #2.");
 
-            target.Match_Balance = 0.4f;  // Strict accuracy, loose location.
-            Assert.AreEqual(0, target.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdefg", 24), "match_bitap: Balance test #3.");
-
-            Assert.AreEqual(-1, target.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcxdxexfgh", 1), "match_bitap: Balance test #4.");
-            target.Match_Balance = 0.5f;
+            target.Match_Distance = 1000;  // Loose location.
+            Assert.AreEqual(0, target.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdefg", 24), "match_bitap: Distance test #3.");
         }
 
         [Test()]
-        public void diff_matchMainTest()
+        public void match_mainTest()
         {
             diff_match_patchTest target = new diff_match_patchTest();
             // Full match
@@ -911,6 +916,10 @@ namespace nicTest
             Assert.AreEqual(3, target.match_main("abcdef", "", 3), "match_main: Null pattern.");
 
             Assert.AreEqual(3, target.match_main("abcdef", "de", 3), "match_main: Exact match.");
+
+            Assert.AreEqual(3, target.match_main("abcdef", "defy", 4), "match_main: Beyond end match.");
+
+            Assert.AreEqual(0, target.match_main("abcdef", "abcdefy", 0), "match_main: Oversized pattern.");
 
             target.Match_Threshold = 0.7f;
             Assert.AreEqual(4, target.match_main("I am the very model of a modern major general.", " that berry ", 5), "match_main: Complex match.");
@@ -1135,3 +1144,4 @@ namespace nicTest
         }
     }
 }
+

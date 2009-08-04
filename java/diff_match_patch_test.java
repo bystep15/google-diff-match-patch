@@ -587,10 +587,8 @@ public class diff_match_patch_test extends TestCase {
 
   public void testMatchBitap() {
     // Bitap algorithm
-    dmp.Match_Balance = 0.5f;
+    dmp.Match_Distance = 100;
     dmp.Match_Threshold = 0.5f;
-    dmp.Match_MinLength = 100;
-    dmp.Match_MaxLength = 1000;
     assertEquals("match_bitap: Exact match #1.", 5, dmp.match_bitap("abcdefghijk", "fgh", 5));
 
     assertEquals("match_bitap: Exact match #2.", 5, dmp.match_bitap("abcdefghijk", "fgh", 0));
@@ -603,27 +601,33 @@ public class diff_match_patch_test extends TestCase {
 
     assertEquals("match_bitap: Overflow.", 2, dmp.match_bitap("123456789xx0", "3456789x0", 2));
 
-    dmp.Match_Threshold = 0.75f;
+    assertEquals("match_bitap: Before start match.", 0, dmp.match_bitap("abcdef", "xxabc", 4));
+
+    assertEquals("match_bitap: Beyond end match.", 3, dmp.match_bitap("abcdef", "defyy", 4));
+
+    assertEquals("match_bitap: Oversized pattern.", 0, dmp.match_bitap("abcdef", "xabcdefy", 0));
+
+    dmp.Match_Threshold = 0.4f;
     assertEquals("match_bitap: Threshold #1.", 4, dmp.match_bitap("abcdefghijk", "efxyhi", 1));
 
-    dmp.Match_Threshold = 0.1f;
-    assertEquals("match_bitap: Threshold #2.", 1, dmp.match_bitap("abcdefghijk", "bcdef", 1));
+    dmp.Match_Threshold = 0.3f;
+    assertEquals("match_bitap: Threshold #2.", -1, dmp.match_bitap("abcdefghijk", "efxyhi", 1));
+
+    dmp.Match_Threshold = 0.0f;
+    assertEquals("match_bitap: Threshold #3.", 1, dmp.match_bitap("abcdefghijk", "bcdef", 1));
 
     dmp.Match_Threshold = 0.5f;
     assertEquals("match_bitap: Multiple select #1.", 0, dmp.match_bitap("abcdexyzabcde", "abccde", 3));
 
     assertEquals("match_bitap: Multiple select #2.", 8, dmp.match_bitap("abcdexyzabcde", "abccde", 5));
 
-    dmp.Match_Balance = 0.6f;  // Strict location, loose accuracy.
-    assertEquals("match_bitap: Balance test #1.", -1, dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdefg", 24));
+    dmp.Match_Distance = 10;  // Strict location.
+    assertEquals("match_bitap: Distance test #1.", -1, dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdefg", 24));
 
-    assertEquals("match_bitap: Balance test #2.", 0, dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcxdxexfgh", 1));
+    assertEquals("match_bitap: Distance test #2.", 0, dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdxxefg", 1));
 
-    dmp.Match_Balance = 0.4f;  // Strict accuracy, loose location.
-    assertEquals("match_bitap: Balance test #3.", 0, dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdefg", 24));
-
-    assertEquals("match_bitap: Balance test #4.", -1, dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcxdxexfgh", 1));
-    dmp.Match_Balance = 0.5f;
+    dmp.Match_Distance = 1000;  // Loose location.
+    assertEquals("match_bitap: Distance test #3.", 0, dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdefg", 24));
   }
 
   public void testMatchMain() {
@@ -635,6 +639,10 @@ public class diff_match_patch_test extends TestCase {
     assertEquals("match_main: Null pattern.", 3, dmp.match_main("abcdef", "", 3));
 
     assertEquals("match_main: Exact match.", 3, dmp.match_main("abcdef", "de", 3));
+
+    assertEquals("match_main: Beyond end match.", 3, dmp.match_main("abcdef", "defy", 4));
+
+    assertEquals("match_main: Oversized pattern.", 0, dmp.match_main("abcdef", "abcdefy", 0));
 
     dmp.Match_Threshold = 0.7f;
     assertEquals("match_main: Complex match.", 4, dmp.match_main("I am the very model of a modern major general.", " that berry ", 5));

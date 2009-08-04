@@ -53,20 +53,19 @@ public class diff_match_patch {
   // Defaults.
   // Set these on your diff_match_patch instance to override the defaults.
 
-  // Number of seconds to map a diff before giving up.  (0 for infinity)
+  // Number of seconds to map a diff before giving up (0 for infinity).
   public float Diff_Timeout = 1.0f;
   // Cost of an empty edit operation in terms of edit characters.
   public short Diff_EditCost = 4;
   // The size beyond which the double-ended diff activates.
   // Double-ending is twice as fast, but less accurate.
   public short Diff_DualThreshold = 32;
-  // Tweak the relative importance (0.0 = accuracy, 1.0 = proximity)
-  public float Match_Balance = 0.5f;
-  // At what point is no match declared (0.0 = perfection, 1.0 = very loose)
+  // At what point is no match declared (0.0 = perfection, 1.0 = very loose).
   public float Match_Threshold = 0.5f;
-  // The min and max cutoffs used when computing text lengths.
-  public int Match_MinLength = 100;
-  public int Match_MaxLength = 1000;
+  // How far to search for a match (0 = exact location, 1000+ = broad match).
+  // A match this many characters away from the expected location will add
+  // 1.0 to the score (0.0 is a perfect match).
+  public int Match_Distance = 1000;
   // Chunk size for context length.
   public short Patch_Margin = 4;
 
@@ -137,10 +136,10 @@ public class diff_match_patch {
     diffs = diff_compute(text1, text2, checklines);
 
     // Restore the prefix and suffix
-    if (commonprefix.length() != 0) {
+    if (!commonprefix.isEmpty()) {
       diffs.addFirst(new Diff(Operation.EQUAL, commonprefix));
     }
-    if (commonsuffix.length() != 0) {
+    if (!commonsuffix.isEmpty()) {
       diffs.addLast(new Diff(Operation.EQUAL, commonsuffix));
     }
 
@@ -163,13 +162,13 @@ public class diff_match_patch {
                                           boolean checklines) {
     LinkedList<Diff> diffs = new LinkedList<Diff>();
 
-    if (text1.length() == 0) {
+    if (text1.isEmpty()) {
       // Just add some text (speedup)
       diffs.add(new Diff(Operation.INSERT, text2));
       return diffs;
     }
 
-    if (text2.length() == 0) {
+    if (text2.isEmpty()) {
       // Just delete some text (speedup)
       diffs.add(new Diff(Operation.DELETE, text1));
       return diffs;
@@ -854,7 +853,7 @@ public class diff_match_patch {
         bestEquality2 = equality2;
         bestScore = diff_cleanupSemanticScore(equality1, edit)
             + diff_cleanupSemanticScore(edit, equality2);
-        while (edit.length() != 0 && equality2.length() != 0
+        while (!edit.isEmpty() && !equality2.isEmpty()
             && edit.charAt(0) == equality2.charAt(0)) {
           equality1 += edit.charAt(0);
           edit = edit.substring(1) + equality2.charAt(0);
@@ -872,7 +871,7 @@ public class diff_match_patch {
 
         if (!prevDiff.text.equals(bestEquality1)) {
           // We have an improvement, save it back to the diff.
-          if (bestEquality1.length() != 0) {
+          if (!bestEquality1.isEmpty()) {
             prevDiff.text = bestEquality1;
           } else {
             pointer.previous(); // Walk past nextDiff.
@@ -883,7 +882,7 @@ public class diff_match_patch {
             pointer.next(); // Walk past nextDiff.
           }
           thisDiff.text = bestEdit;
-          if (bestEquality2.length() != 0) {
+          if (!bestEquality2.isEmpty()) {
             nextDiff.text = bestEquality2;
           } else {
             pointer.remove(); // Delete nextDiff.
@@ -908,7 +907,7 @@ public class diff_match_patch {
    * @return The score.
    */
   private int diff_cleanupSemanticScore(String one, String two) {
-    if (one.length() == 0 || two.length() == 0) {
+    if (one.isEmpty() || two.isEmpty()) {
       // Edges are the best.
       return 5;
     }
@@ -1127,10 +1126,10 @@ public class diff_match_patch {
             }
           }
           // Insert the merged records.
-          if (text_delete.length() != 0) {
+          if (!text_delete.isEmpty()) {
             pointer.add(new Diff(Operation.DELETE, text_delete));
           }
-          if (text_insert.length() != 0) {
+          if (!text_insert.isEmpty()) {
             pointer.add(new Diff(Operation.INSERT, text_insert));
           }
           // Step forward to the equality.
@@ -1152,7 +1151,7 @@ public class diff_match_patch {
       thisDiff = pointer.hasNext() ? pointer.next() : null;
     }
     // System.out.println(diff);
-    if (diffs.getLast().text.length() == 0) {
+    if (diffs.getLast().text.isEmpty()) {
       diffs.removeLast();  // Remove the dummy entry at the end.
     }
 
@@ -1370,7 +1369,7 @@ public class diff_match_patch {
       }
     }
     String delta = text.toString();
-    if (delta.length() != 0) {
+    if (!delta.isEmpty()) {
       // Strip off trailing tab character.
       delta = delta.substring(0, delta.length() - 1);
       delta = unescapeForEncodeUriCompatability(delta);
@@ -1393,7 +1392,7 @@ public class diff_match_patch {
     int pointer = 0;  // Cursor in text1
     String[] tokens = delta.split("\t");
     for (String token : tokens) {
-      if (token.length() == 0) {
+      if (token.isEmpty()) {
         // Blank tokens are ok (from a trailing \t).
         continue;
       }
@@ -1470,14 +1469,15 @@ public class diff_match_patch {
    * @return Best match index or -1.
    */
   public int match_main(String text, String pattern, int loc) {
-    loc = Math.max(0, Math.min(loc, text.length() - pattern.length()));
+    loc = Math.max(0, Math.min(loc, text.length()));
     if (text.equals(pattern)) {
       // Shortcut (potentially not guaranteed by the algorithm)
       return 0;
-    } else if (text.length() == 0) {
+    } else if (text.isEmpty()) {
       // Nothing to match.
       return -1;
-    } else if (text.substring(loc, loc + pattern.length()).equals(pattern)) {
+    } else if (loc + pattern.length() <= text.length()
+        && text.substring(loc, loc + pattern.length()).equals(pattern)) {
       // Perfect match at the perfect spot!  (Includes case of null pattern)
       return loc;
     } else {
@@ -1502,24 +1502,19 @@ public class diff_match_patch {
     // Initialise the alphabet.
     Map<Character, Integer> s = match_alphabet(pattern);
 
-    int score_text_length = text.length();
-    // Coerce the text length between reasonable maximums and minimums.
-    score_text_length = Math.max(score_text_length, Match_MinLength);
-    score_text_length = Math.min(score_text_length, Match_MaxLength);
-
     // Highest score beyond which we give up.
     double score_threshold = Match_Threshold;
     // Is there a nearby exact match? (speedup)
     int best_loc = text.indexOf(pattern, loc);
     if (best_loc != -1) {
-      score_threshold = Math.min(match_bitapScore(0, best_loc, loc,
-          score_text_length, pattern), score_threshold);
+      score_threshold = Math.min(match_bitapScore(0, best_loc, loc, pattern),
+          score_threshold);
     }
     // What about in the other direction? (speedup)
     best_loc = text.lastIndexOf(pattern, loc + pattern.length());
     if (best_loc != -1) {
-      score_threshold = Math.min(match_bitapScore(0, best_loc, loc,
-          score_text_length, pattern), score_threshold);
+      score_threshold = Math.min(match_bitapScore(0, best_loc, loc, pattern),
+          score_threshold);
     }
 
     // Initialise the bit arrays.
@@ -1527,20 +1522,18 @@ public class diff_match_patch {
     best_loc = -1;
 
     int bin_min, bin_mid;
-    int bin_max = Math.max(loc + loc, text.length());
+    int bin_max = pattern.length() + text.length();
     // Empty initialization added to appease Java compiler.
     int[] last_rd = new int[0];
     for (int d = 0; d < pattern.length(); d++) {
       // Scan for the best match; each iteration allows for one more error.
-      int[] rd = new int[text.length()];
-
       // Run a binary search to determine how far from 'loc' we can stray at
       // this error level.
-      bin_min = loc;
+      bin_min = 0;
       bin_mid = bin_max;
       while (bin_min < bin_mid) {
-        if (match_bitapScore(d, bin_mid, loc, score_text_length, pattern)
-            < score_threshold) {
+        if (match_bitapScore(d, loc + bin_mid, loc, pattern)
+            <= score_threshold) {
           bin_min = bin_mid;
         } else {
           bin_max = bin_mid;
@@ -1549,38 +1542,38 @@ public class diff_match_patch {
       }
       // Use the result from this iteration as the maximum for the next.
       bin_max = bin_mid;
-      int start = Math.max(0, loc - (bin_mid - loc) - 1);
-      int finish = Math.min(text.length() - 1, pattern.length() + bin_mid);
+      int start = Math.max(1, loc - bin_mid + 1);
+      int finish = Math.min(loc + bin_mid, text.length()) + pattern.length();
 
-      if (text.charAt(finish) == pattern.charAt(pattern.length() - 1)) {
-        rd[finish] = (1 << (d + 1)) - 1;
-      } else {
-        rd[finish] = (1 << d) - 1;
-      }
-      for (int j = finish - 1; j >= start; j--) {
+      int[] rd = new int[finish + 2];
+      rd[finish + 1] = (1 << d) - 1;
+      for (int j = finish; j >= start; j--) {
+        int charMatch;
+        if (text.length() <= j - 1 || !s.containsKey(text.charAt(j - 1))) {
+          // Out of range.
+          charMatch = 0;
+        } else {
+          charMatch = s.get(text.charAt(j - 1));
+        }        
         if (d == 0) {
           // First pass: exact match.
-          rd[j] = ((rd[j + 1] << 1) | 1) & (s.containsKey(text.charAt(j))
-              ? s.get(text.charAt(j))
-              : 0);
+          rd[j] = ((rd[j + 1] << 1) | 1) & charMatch;
         } else {
           // Subsequent passes: fuzzy match.
-          rd[j] = ((rd[j + 1] << 1) | 1) & (s.containsKey(text.charAt(j))
-              ? s.get(text.charAt(j)) : 0) | ((last_rd[j + 1] << 1) | 1)
-              | ((last_rd[j] << 1) | 1) | last_rd[j + 1];
+          rd[j] = ((rd[j + 1] << 1) | 1) & charMatch
+              | (((last_rd[j + 1] | last_rd[j]) << 1) | 1) | last_rd[j + 1];
         }
         if ((rd[j] & matchmask) != 0) {
-          double score = match_bitapScore(d, j, loc, score_text_length,
-                                          pattern);
+          double score = match_bitapScore(d, j - 1, loc, pattern);
           // This match will almost certainly be better than any existing
           // match.  But check anyway.
           if (score <= score_threshold) {
             // Told you so.
             score_threshold = score;
-            best_loc = j;
-            if (j > loc) {
+            best_loc = j - 1;
+            if (best_loc > loc) {
               // When passing loc, don't exceed our current distance from loc.
-              start = Math.max(0, loc - (j - loc));
+              start = Math.max(1, 2 * loc - best_loc);
             } else {
               // Already passed loc, downhill from here on in.
               break;
@@ -1588,8 +1581,7 @@ public class diff_match_patch {
           }
         }
       }
-      if (match_bitapScore(d + 1, loc, loc, score_text_length, pattern)
-          > score_threshold) {
+      if (match_bitapScore(d + 1, loc, loc, pattern) > score_threshold) {
         // No hope for a (better) match at greater error levels.
         break;
       }
@@ -1604,15 +1596,17 @@ public class diff_match_patch {
    * @param e Number of errors in match.
    * @param x Location of match.
    * @param loc Expected location of match.
-   * @param score_text_length Coerced version of text's length.
    * @param pattern Pattern being sought.
-   * @return Overall score for match.
+   * @return Overall score for match (0.0 = good, 1.0 = bad).
    */
-  private double match_bitapScore(int e, int x, int loc,
-                                  int score_text_length, String pattern) {
-    int d = Math.abs(loc - x);
-    return (e / (float) pattern.length() / Match_Balance)
-        + (d / (float) score_text_length / (1.0 - Match_Balance));
+  private double match_bitapScore(int e, int x, int loc, String pattern) {
+    float accuracy = (float) e / pattern.length();
+    int proximity = Math.abs(loc - x);
+    if (Match_Distance == 0) {
+      // Dodge divide by zero error.
+      return proximity == 0 ? 1.0 : accuracy;
+    }
+    return accuracy + proximity / (float) Match_Distance;
   }
 
 
@@ -1661,13 +1655,13 @@ public class diff_match_patch {
     // Add the prefix.
     String prefix = text.substring(Math.max(0, patch.start2 - padding),
         patch.start2);
-    if (prefix.length() != 0) {
+    if (!prefix.isEmpty()) {
       patch.diffs.addFirst(new Diff(Operation.EQUAL, prefix));
     }
     // Add the suffix.
     String suffix = text.substring(patch.start2 + patch.length1,
         Math.min(text.length(), patch.start2 + patch.length1 + padding));
-    if (suffix.length() != 0) {
+    if (!suffix.isEmpty()) {
       patch.diffs.addLast(new Diff(Operation.EQUAL, suffix));
     }
 
@@ -2005,7 +1999,7 @@ public class diff_match_patch {
         empty = true;
         patch.start1 = start1 - precontext.length();
         patch.start2 = start2 - precontext.length();
-        if (precontext.length() != 0) {
+        if (!precontext.isEmpty()) {
           patch.length1 = patch.length2 = precontext.length();
           patch.diffs.add(new Diff(Operation.EQUAL, precontext));
         }
@@ -2050,7 +2044,7 @@ public class diff_match_patch {
         } else {
           postcontext = diff_text1(bigpatch.diffs);
         }
-        if (postcontext.length() != 0) {
+        if (!postcontext.isEmpty()) {
           patch.length1 += postcontext.length();
           patch.length2 += postcontext.length();
           if (!patch.diffs.isEmpty()
@@ -2093,7 +2087,7 @@ public class diff_match_patch {
   public List<Patch> patch_fromText(String textline)
       throws IllegalArgumentException {
     List<Patch> patches = new LinkedList<Patch>();
-    if (textline.length() == 0) {
+    if (textline.isEmpty()) {
       return patches;
     }
     List<String> textList = Arrays.asList(textline.split("\n"));
@@ -2113,7 +2107,7 @@ public class diff_match_patch {
       patch = new Patch();
       patches.add(patch);
       patch.start1 = Integer.parseInt(m.group(1));
-      if (m.group(2).length() == 0) {
+      if (m.group(2).isEmpty()) {
         patch.start1--;
         patch.length1 = 1;
       } else if (m.group(2).equals("0")) {
@@ -2124,7 +2118,7 @@ public class diff_match_patch {
       }
 
       patch.start2 = Integer.parseInt(m.group(3));
-      if (m.group(4).length() == 0) {
+      if (m.group(4).isEmpty()) {
         patch.start2--;
         patch.length2 = 1;
       } else if (m.group(4).equals("0")) {

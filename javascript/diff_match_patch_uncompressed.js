@@ -32,20 +32,19 @@ function diff_match_patch() {
   // Defaults.
   // Redefine these in your program to override the defaults.
 
-  // Number of seconds to map a diff before giving up.  (0 for infinity)
+  // Number of seconds to map a diff before giving up (0 for infinity).
   this.Diff_Timeout = 1.0;
   // Cost of an empty edit operation in terms of edit characters.
   this.Diff_EditCost = 4;
   // The size beyond which the double-ended diff activates.
   // Double-ending is twice as fast, but less accurate.
   this.Diff_DualThreshold = 32;
-  // Tweak the relative importance (0.0 = accuracy, 1.0 = proximity)
-  this.Match_Balance = 0.5;
-  // At what point is no match declared (0.0 = perfection, 1.0 = very loose)
+  // At what point is no match declared (0.0 = perfection, 1.0 = very loose).
   this.Match_Threshold = 0.5;
-  // The min and max cutoffs used when computing text lengths.
-  this.Match_MinLength = 100;
-  this.Match_MaxLength = 1000;
+  // How far to search for a match (0 = exact location, 1000+ = broad match).
+  // A match this many characters away from the expected location will add
+  // 1.0 to the score (0.0 is a perfect match).
+  this.Match_Distance = 1000;
   // Chunk size for context length.
   this.Patch_Margin = 4;
 
@@ -1350,11 +1349,11 @@ diff_match_patch.prototype.diff_fromDelta = function(text1, delta) {
  * @return {number} Best match index or -1.
  */
 diff_match_patch.prototype.match_main = function(text, pattern, loc) {
-  loc = Math.max(0, Math.min(loc, text.length - pattern.length));
+  loc = Math.max(0, Math.min(loc, text.length));
   if (text == pattern) {
     // Shortcut (potentially not guaranteed by the algorithm)
     return 0;
-  } else if (text.length === 0) {
+  } else if (!text.length) {
     // Nothing to match.
     return -1;
   } else if (text.substring(loc, loc + pattern.length) == pattern) {
@@ -1384,25 +1383,24 @@ diff_match_patch.prototype.match_bitap = function(text, pattern, loc) {
   // Initialise the alphabet.
   var s = this.match_alphabet(pattern);
 
-  var score_text_length = text.length;
-  // Coerce the text length between reasonable maximums and minimums.
-  score_text_length = Math.max(score_text_length, this.Match_MinLength);
-  score_text_length = Math.min(score_text_length, this.Match_MaxLength);
-
   var dmp = this;  // 'this' becomes 'window' in a closure.
 
   /**
    * Compute and return the score for a match with e errors and x location.
-   * Accesses loc, score_text_length and pattern through being a closure.
-   * @param {number} e Number of errors in match
-   * @param {number} x Location of match
-   * @return {number} Overall score for match
+   * Accesses loc and pattern through being a closure.
+   * @param {number} e Number of errors in match.
+   * @param {number} x Location of match.
+   * @return {number} Overall score for match (0.0 = good, 1.0 = bad).
    * @private
    */
   function match_bitapScore(e, x) {
-    var d = Math.abs(loc - x);
-    return (e / pattern.length / dmp.Match_Balance) +
-           (d / score_text_length / (1.0 - dmp.Match_Balance));
+    var accuracy = e / pattern.length;
+    var proximity = Math.abs(loc - x);
+    if (!dmp.Match_Distance) {
+      // Dodge divide by zero error.
+      return proximity ? 1.0 : accuracy;
+    }
+    return accuracy + proximity / dmp.Match_Distance;
   }
 
   // Highest score beyond which we give up.
@@ -1423,18 +1421,16 @@ diff_match_patch.prototype.match_bitap = function(text, pattern, loc) {
   best_loc = -1;
 
   var bin_min, bin_mid;
-  var bin_max = Math.max(loc + loc, text.length);
+  var bin_max = pattern.length + text.length;
   var last_rd;
   for (var d = 0; d < pattern.length; d++) {
     // Scan for the best match; each iteration allows for one more error.
-    var rd = Array(text.length);
-
     // Run a binary search to determine how far from 'loc' we can stray at this
     // error level.
-    bin_min = loc;
+    bin_min = 0;
     bin_mid = bin_max;
     while (bin_min < bin_mid) {
-      if (match_bitapScore(d, bin_mid) < score_threshold) {
+      if (match_bitapScore(d, loc + bin_mid) <= score_threshold) {
         bin_min = bin_mid;
       } else {
         bin_max = bin_mid;
@@ -1443,35 +1439,33 @@ diff_match_patch.prototype.match_bitap = function(text, pattern, loc) {
     }
     // Use the result from this iteration as the maximum for the next.
     bin_max = bin_mid;
-    var start = Math.max(0, loc - (bin_mid - loc) - 1);
-    var finish = Math.min(text.length - 1, pattern.length + bin_mid);
+    var start = Math.max(1, loc - bin_mid + 1);
+    var finish = Math.min(loc + bin_mid, text.length) + pattern.length;
 
-    if (text.charAt(finish) == pattern.charAt(pattern.length - 1)) {
-      rd[finish] = (1 << (d + 1)) - 1;
-    } else {
-      rd[finish] = (1 << d) - 1;
-    }
-    for (var j = finish - 1; j >= start; j--) {
-      // The alphabet (s) is a sparse hash, so the following lines generate
+    var rd = Array(finish + 2);
+    rd[finish + 1] = (1 << d) - 1;
+    for (var j = finish; j >= start; j--) {
+      // The alphabet (s) is a sparse hash, so the following line generates
       // warnings.
+      var charMatch = s[text.charAt(j - 1)];
       if (d === 0) {  // First pass: exact match.
-        rd[j] = ((rd[j + 1] << 1) | 1) & s[text.charAt(j)];
+        rd[j] = ((rd[j + 1] << 1) | 1) & charMatch;
       } else {  // Subsequent passes: fuzzy match.
-        rd[j] = ((rd[j + 1] << 1) | 1) & s[text.charAt(j)] |
-                ((last_rd[j + 1] << 1) | 1) | ((last_rd[j] << 1) | 1) |
+        rd[j] = ((rd[j + 1] << 1) | 1) & charMatch |
+                (((last_rd[j + 1] | last_rd[j]) << 1) | 1) |
                 last_rd[j + 1];
       }
       if (rd[j] & matchmask) {
-        var score = match_bitapScore(d, j);
+        var score = match_bitapScore(d, j - 1);
         // This match will almost certainly be better than any existing match.
         // But check anyway.
         if (score <= score_threshold) {
           // Told you so.
           score_threshold = score;
-          best_loc = j;
-          if (j > loc) {
+          best_loc = j - 1;
+          if (best_loc > loc) {
             // When passing loc, don't exceed our current distance from loc.
-            start = Math.max(0, loc - (j - loc));
+            start = Math.max(1, 2 * loc - best_loc);
           } else {
             // Already passed loc, downhill from here on in.
             break;

@@ -64,7 +64,7 @@ function launch() {
   var ms_end = (new Date()).getTime();
 
   document.getElementById('datediv').innerHTML = 'Time: ' + (ms_end - ms_start) / 1000  + 's';
-  if (match === null) {
+  if (match == -1) {
     document.getElementById('outputdiv').innerHTML = 'No match found.';
   } else {
     var quote = text.substring(match, match + pattern.length);

@@ -167,10 +167,8 @@ diff_match_patch::diff_match_patch() :
   Diff_Timeout(1.0f),
   Diff_EditCost(4),
   Diff_DualThreshold(32),
-  Match_Balance(0.5f),
   Match_Threshold(0.5f),
-  Match_MinLength(100),
-  Match_MaxLength(1000),
+  Match_Distance(1000),
   Patch_Margin(4),
   Match_MaxBits(32) {
 }
@@ -207,10 +205,10 @@ QList<Diff> diff_match_patch::diff_main(const QString &text1, const QString &tex
   diffs = diff_compute(textChopped1, textChopped2, checklines);
 
   // Restore the prefix and suffix
-  if (commonprefix.length() != 0) {
+  if (!commonprefix.isEmpty()) {
     diffs.prepend(Diff(EQUAL, commonprefix));
   }
-  if (commonsuffix.length() != 0) {
+  if (!commonsuffix.isEmpty()) {
     diffs.append(Diff(EQUAL, commonsuffix));
   }
 
@@ -223,13 +221,13 @@ QList<Diff> diff_match_patch::diff_main(const QString &text1, const QString &tex
 QList<Diff> diff_match_patch::diff_compute(QString text1, QString text2, bool checklines) {
   QList<Diff> diffs;
 
-  if (text1.length() == 0) {
+  if (text1.isEmpty()) {
     // Just add some text (speedup)
     diffs.append(Diff(INSERT, text2));
     return diffs;
   }
 
-  if (text2.length() == 0) {
+  if (text2.isEmpty()) {
     // Just delete some text (speedup)
     diffs.append(Diff(DELETE, text1));
     return diffs;
@@ -840,7 +838,7 @@ void diff_match_patch::diff_cleanupSemanticLossless(QList<Diff> &diffs) {
         bestEquality2 = equality2;
         bestScore = diff_cleanupSemanticScore(equality1, edit)
             + diff_cleanupSemanticScore(edit, equality2);
-        while (edit.length() != 0 && equality2.length() != 0
+        while (!edit.isEmpty() && !equality2.isEmpty()
             && edit[0] == equality2[0]) {
           equality1 += edit[0];
           edit = edit.mid(1) + equality2[0];
@@ -858,7 +856,7 @@ void diff_match_patch::diff_cleanupSemanticLossless(QList<Diff> &diffs) {
 
         if (prevDiff->text != bestEquality1) {
           // We have an improvement, save it back to the diff.
-          if (bestEquality1.length() != 0) {
+          if (!bestEquality1.isEmpty()) {
             prevDiff->text = bestEquality1;
           } else {
             pointer.previous();  // Walk past nextDiff.
@@ -869,7 +867,7 @@ void diff_match_patch::diff_cleanupSemanticLossless(QList<Diff> &diffs) {
             pointer.next();  // Walk past nextDiff.
           }
           thisDiff->text = bestEdit;
-          if (bestEquality2.length() != 0) {
+          if (!bestEquality2.isEmpty()) {
             nextDiff->text = bestEquality2;
           } else {
             pointer.remove(); // Delete nextDiff.
@@ -887,7 +885,7 @@ void diff_match_patch::diff_cleanupSemanticLossless(QList<Diff> &diffs) {
 
 int diff_match_patch::diff_cleanupSemanticScore(const QString &one,
                                                 const QString &two) {
-  if (one.length() == 0 || two.length() == 0) {
+  if (one.isEmpty() || two.isEmpty()) {
     // Edges are the best.
     return 10;
   }
@@ -1095,10 +1093,10 @@ void diff_match_patch::diff_cleanupMerge(QList<Diff> &diffs) {
             }
           }
           // Insert the merged records.
-          if (text_delete.length() != 0) {
+          if (!text_delete.isEmpty()) {
             pointer.insert(Diff(DELETE, text_delete));
           }
-          if (text_insert.length() != 0) {
+          if (!text_insert.isEmpty()) {
             pointer.insert(Diff(INSERT, text_insert));
           }
           // Step forward to the equality.
@@ -1121,7 +1119,7 @@ void diff_match_patch::diff_cleanupMerge(QList<Diff> &diffs) {
       thisDiff = pointer.hasNext() ? &pointer.next() : NULL;
   }
   // System.out.println(diff);
-  if (diffs.back().text.length() == 0) {
+  if (diffs.back().text.isEmpty()) {
     diffs.removeLast();  // Remove the dummy entry at the end.
   }
 
@@ -1307,7 +1305,7 @@ QString diff_match_patch::diff_toDelta(const QList<Diff> &diffs) {
         break;
     }
   }
-  if (text.length() != 0) {
+  if (!text.isEmpty()) {
     // Strip off trailing tab character.
     text = text.mid(0, text.length() - 1);
   }
@@ -1321,7 +1319,7 @@ QList<Diff> diff_match_patch::diff_fromDelta(const QString &text1,
   int pointer = 0;  // Cursor in text1
   QStringList tokens = delta.split("\t");
   foreach(QString token, tokens) {
-    if (token.length() == 0) {
+    if (token.isEmpty()) {
       // Blank tokens are ok (from a trailing \t).
       continue;
     }
@@ -1369,14 +1367,15 @@ QList<Diff> diff_match_patch::diff_fromDelta(const QString &text1,
 
 int diff_match_patch::match_main(const QString &text, const QString &pattern,
                                  int loc) {
-  loc = qMax(0, qMin(loc, text.length() - pattern.length()));
+  loc = qMax(0, qMin(loc, text.length()));
   if (text == pattern) {
     // Shortcut (potentially not guaranteed by the algorithm)
     return 0;
-  } else if (text.length() == 0) {
+  } else if (text.isEmpty()) {
     // Nothing to match.
     return -1;
-  } else if (text.mid(loc, (loc + pattern.length()) - (loc)) == pattern) {
+  } else if (loc + pattern.length() <= text.length()
+      && text.mid(loc, pattern.length()) == pattern) {
     // Perfect match at the perfect spot!  (Includes case of null pattern)
     return loc;
   } else {
@@ -1395,24 +1394,19 @@ int diff_match_patch::match_bitap(const QString &text, const QString &pattern,
   // Initialise the alphabet.
   QMap<QChar, int> s = match_alphabet(pattern);
 
-  int score_text_length = text.length();
-  // Coerce the text length between reasonable maximums and minimums.
-  score_text_length = qMax(score_text_length, Match_MinLength);
-  score_text_length = qMin(score_text_length, Match_MaxLength);
-
   // Highest score beyond which we give up.
   double score_threshold = Match_Threshold;
   // Is there a nearby exact match? (speedup)
   int best_loc = text.indexOf(pattern, loc);
   if (best_loc != -1) {
-    score_threshold = qMin(match_bitapScore(0, best_loc, loc,
-        score_text_length, pattern), score_threshold);
+    score_threshold = qMin(match_bitapScore(0, best_loc, loc, pattern),
+        score_threshold);
   }
   // What about in the other direction? (speedup)
   best_loc = text.lastIndexOf(pattern, loc + pattern.length());
   if (best_loc != -1) {
-    score_threshold = qMin(match_bitapScore(0, best_loc, loc,
-        score_text_length, pattern), score_threshold);
+    score_threshold = qMin(match_bitapScore(0, best_loc, loc, pattern),
+        score_threshold);
   }
 
   // Initialise the bit arrays.
@@ -1420,21 +1414,18 @@ int diff_match_patch::match_bitap(const QString &text, const QString &pattern,
   best_loc = -1;
 
   int bin_min, bin_mid;
-  int bin_max = qMax(loc + loc, text.length());
-  // Empty initialization added to appease Java compiler.
-  QVector<int> last_rd;
-  QVector<int> rd;
+  int bin_max = pattern.length() + text.length();
+  int *rd;
+  int *last_rd = NULL;
   for (int d = 0; d < pattern.length(); d++) {
     // Scan for the best match; each iteration allows for one more error.
-    rd = QVector<int>(text.length());
-
     // Run a binary search to determine how far from 'loc' we can stray at
     // this error level.
-    bin_min = loc;
+    bin_min = 0;
     bin_mid = bin_max;
     while (bin_min < bin_mid) {
-      if (match_bitapScore(d, bin_mid, loc, score_text_length, pattern)
-          < score_threshold) {
+      if (match_bitapScore(d, loc + bin_mid, loc, pattern)
+          <= score_threshold) {
         bin_min = bin_mid;
       } else {
         bin_max = bin_mid;
@@ -1443,40 +1434,39 @@ int diff_match_patch::match_bitap(const QString &text, const QString &pattern,
     }
     // Use the result from this iteration as the maximum for the next.
     bin_max = bin_mid;
-    int start = qMax(0, loc - (bin_mid - loc) - 1);
-    int finish = qMin(text.length() - 1, pattern.length() + bin_mid);
+    int start = qMax(1, loc - bin_mid + 1);
+    int finish = qMin(loc + bin_mid, text.length()) + pattern.length();
 
-    if (text[finish] == pattern[pattern.length() - 1]) {
-      rd[finish] = (1 << (d + 1)) - 1;
-    } else {
-      rd[finish] = (1 << d) - 1;
-    }
-    for (int j = finish - 1; j >= start; j--) {
+    rd = new int[finish + 2];
+    rd[finish + 1] = (1 << d) - 1;
+    for (int j = finish; j >= start; j--) {
+      int charMatch;
+      if (text.length() <= j - 1) {
+        // Out of range.
+        charMatch = 0;
+      } else {
+        charMatch = s.value(text[j - 1], 0);
+      }
       if (d == 0) {
         // First pass: exact match.
-        rd[j] = ((rd[j + 1] << 1) | 1) & (s.contains(text[j])
-            ? s.value(text[j])
-            : 0);
+        rd[j] = ((rd[j + 1] << 1) | 1) & charMatch;
       } else {
         // Subsequent passes: fuzzy match.
-        rd[j] =
-            (((rd[j + 1] << 1) | 1)
-            & (s.contains(text[j]) ? s.value(text[j]) : 0))
-            | ((last_rd[j + 1] << 1) | 1)
-            | ((last_rd[j] << 1) | 1)
+        rd[j] = ((rd[j + 1] << 1) | 1) & charMatch
+            | (((last_rd[j + 1] | last_rd[j]) << 1) | 1)
             | last_rd[j + 1];
       }
       if ((rd[j] & matchmask) != 0) {
-        double score = match_bitapScore(d, j, loc, score_text_length, pattern);
+        double score = match_bitapScore(d, j - 1, loc, pattern);
         // This match will almost certainly be better than any existing
         // match.  But check anyway.
         if (score <= score_threshold) {
           // Told you so.
           score_threshold = score;
-          best_loc = j;
-          if (j > loc) {
+          best_loc = j - 1;
+          if (best_loc > loc) {
             // When passing loc, don't exceed our current distance from loc.
-            start = qMax(0, loc - (j - loc));
+            start = qMax(1, 2 * loc - best_loc);
           } else {
             // Already passed loc, downhill from here on in.
             break;
@@ -1484,23 +1474,28 @@ int diff_match_patch::match_bitap(const QString &text, const QString &pattern,
         }
       }
     }
-    if (match_bitapScore(d + 1, loc, loc, score_text_length, pattern)
-        > score_threshold) {
+    if (match_bitapScore(d + 1, loc, loc, pattern) > score_threshold) {
       // No hope for a (better) match at greater error levels.
       break;
     }
+    delete [] last_rd;
     last_rd = rd;
   }
+  delete [] last_rd;
+  delete [] rd;
   return best_loc;
 }
 
 
 double diff_match_patch::match_bitapScore(int e, int x, int loc,
-                                          int score_text_length,
                                           const QString &pattern) {
-  int d = qAbs(loc - x);
-  return (e / static_cast<float> (pattern.length()) / Match_Balance)
-      + (d / static_cast<float> (score_text_length) / (1.0 - Match_Balance));
+  float accuracy = static_cast<float> (e) / pattern.length();
+  int proximity = qAbs(loc - x);
+  if (Match_Distance == 0) {
+    // Dodge divide by zero error.
+    return proximity == 0 ? 1.0 : accuracy;
+  }
+  return accuracy + proximity / static_cast<float> (Match_Distance);
 }
 
 
@@ -1528,7 +1523,7 @@ void diff_match_patch::patch_addContext(Patch &patch, const QString &text) {
   int padding = 0;
   // Increase the context until we're unique (but don't let the pattern
   // expand beyond Match_MaxBits).
-  if (text.length() != 0) {
+  if (!text.isEmpty()) {
     // Bug in QString:
     // QString("").indexOf(QString("")) == 0
     // QString("").lastIndexOf(QString("")) == -1
@@ -1545,14 +1540,14 @@ void diff_match_patch::patch_addContext(Patch &patch, const QString &text) {
   // Add the prefix.
   QString prefix = text.mid(qMax(0, patch.start2 - padding),
       patch.start2 - qMax(0, patch.start2 - padding));
-  if (prefix.length() != 0) {
+  if (!prefix.isEmpty()) {
     patch.diffs.prepend(Diff(EQUAL, prefix));
   }
   // Add the suffix.
   QString suffix = text.mid(patch.start2 + patch.length1,
       qMin(text.length(), patch.start2 + patch.length1 + padding)
       - (patch.start2 + patch.length1));
-  if (suffix.length() != 0) {
+  if (!suffix.isEmpty()) {
     patch.diffs.append(Diff(EQUAL, suffix));
   }
 
@@ -1857,7 +1852,7 @@ void diff_match_patch::patch_splitMax(QList<Patch> &patches) {
       empty = true;
       patch.start1 = start1 - precontext.length();
       patch.start2 = start2 - precontext.length();
-      if (precontext.length() != 0) {
+      if (!precontext.isEmpty()) {
         patch.length1 = patch.length2 = precontext.length();
         patch.diffs.append(Diff(EQUAL, precontext));
       }
@@ -1902,7 +1897,7 @@ void diff_match_patch::patch_splitMax(QList<Patch> &patches) {
       } else {
         postcontext = diff_text1(bigpatch.diffs);
       }
-      if (postcontext.length() != 0) {
+      if (!postcontext.isEmpty()) {
         patch.length1 += postcontext.length();
         patch.length2 += postcontext.length();
         if (!patch.diffs.isEmpty()
@@ -1932,7 +1927,7 @@ QString diff_match_patch::patch_toText(const QList<Patch> &patches) {
 
 QList<Patch> diff_match_patch::patch_fromText(const QString &textline) {
   QList<Patch> patches;
-  if (textline.length() == 0) {
+  if (textline.isEmpty()) {
     return patches;
   }
   QStringList text = textline.split("\n", QString::SkipEmptyParts);
@@ -1947,7 +1942,7 @@ QList<Patch> diff_match_patch::patch_fromText(const QString &textline) {
 
     patch = Patch();
     patch.start1 = patchHeader.cap(1).toInt();
-    if (patchHeader.cap(2).length() == 0) {
+    if (patchHeader.cap(2).isEmpty()) {
       patch.start1--;
       patch.length1 = 1;
     } else if (patchHeader.cap(2) == "0") {
@@ -1958,7 +1953,7 @@ QList<Patch> diff_match_patch::patch_fromText(const QString &textline) {
     }
 
     patch.start2 = patchHeader.cap(3).toInt();
-    if (patchHeader.cap(4).length() == 0) {
+    if (patchHeader.cap(4).isEmpty()) {
       patch.start2--;
       patch.length2 = 1;
     } else if (patchHeader.cap(4) == "0") {

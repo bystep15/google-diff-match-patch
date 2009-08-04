@@ -465,10 +465,8 @@ class MatchTest(DiffMatchPatchTest):
     self.assertEquals({"a":37, "b":18, "c":8}, self.dmp.match_alphabet("abcaba"))
 
   def testMatchBitap(self):
-    self.dmp.Match_Balance = 0.5
+    self.dmp.Match_Distance = 100
     self.dmp.Match_Threshold = 0.5
-    self.dmp.Match_MinLength = 100
-    self.dmp.Match_MaxLength = 1000
     # Exact matches
     self.assertEquals(5, self.dmp.match_bitap("abcdefghijk", "fgh", 5))
 
@@ -484,11 +482,20 @@ class MatchTest(DiffMatchPatchTest):
     # Overflow
     self.assertEquals(2, self.dmp.match_bitap("123456789xx0", "3456789x0", 2))
 
+    self.assertEquals(0, self.dmp.match_bitap("abcdef", "xxabc", 4))
+
+    self.assertEquals(3, self.dmp.match_bitap("abcdef", "defyy", 4))
+
+    self.assertEquals(0, self.dmp.match_bitap("abcdef", "xabcdefy", 0))
+
     # Threshold test
-    self.dmp.Match_Threshold = 0.75
+    self.dmp.Match_Threshold = 0.4
     self.assertEquals(4, self.dmp.match_bitap("abcdefghijk", "efxyhi", 1))
 
-    self.dmp.Match_Threshold = 0.1
+    self.dmp.Match_Threshold = 0.3
+    self.assertEquals(-1, self.dmp.match_bitap("abcdefghijk", "efxyhi", 1))
+
+    self.dmp.Match_Threshold = 0.0
     self.assertEquals(1, self.dmp.match_bitap("abcdefghijk", "bcdef", 1))
     self.dmp.Match_Threshold = 0.5
 
@@ -497,17 +504,15 @@ class MatchTest(DiffMatchPatchTest):
 
     self.assertEquals(8, self.dmp.match_bitap("abcdexyzabcde", "abccde", 5))
 
-    # Balance test
-    self.dmp.Match_Balance = 0.6  # Strict location, loose accuracy.
+    # Distance test
+    self.dmp.Match_Distance = 10  # Strict location.
     self.assertEquals(-1, self.dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdefg", 24))
 
-    self.assertEquals(0, self.dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcxdxexfgh", 1))
+    self.assertEquals(0, self.dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdxxefg", 1))
 
-    self.dmp.Match_Balance = 0.4  # Strict accuracy, loose location.
+    self.dmp.Match_Distance = 1000  # Loose location.
     self.assertEquals(0, self.dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcdefg", 24))
 
-    self.assertEquals(-1, self.dmp.match_bitap("abcdefghijklmnopqrstuvwxyz", "abcxdxexfgh", 1))
-    self.dmp.Match_Balance = 0.5
 
   def testMatchMain(self):
     # Full match
@@ -519,6 +524,10 @@ class MatchTest(DiffMatchPatchTest):
     self.assertEquals(3, self.dmp.match_main("abcdef", "", 3))
 
     self.assertEquals(3, self.dmp.match_main("abcdef", "de", 3))
+
+    self.assertEquals(3, self.dmp.match_main("abcdef", "defy", 4))
+
+    self.assertEquals(0, self.dmp.match_main("abcdef", "abcdefy", 0))
 
     # Complex match
     self.dmp.Match_Threshold = 0.7

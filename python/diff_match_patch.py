@@ -42,20 +42,19 @@ class diff_match_patch:
     Redefine these in your program to override the defaults.
     """
 
-    # Number of seconds to map a diff before giving up.  (0 for infinity)
+    # Number of seconds to map a diff before giving up (0 for infinity).
     self.Diff_Timeout = 1.0
     # Cost of an empty edit operation in terms of edit characters.
     self.Diff_EditCost = 4
     # The size beyond which the double-ended diff activates.
     # Double-ending is twice as fast, but less accurate.
     self.Diff_DualThreshold = 32
-    # Tweak the relative importance (0.0 = accuracy, 1.0 = proximity)
-    self.Match_Balance = 0.5
-    # At what point is no match declared (0.0 = perfection, 1.0 = very loose)
+    # At what point is no match declared (0.0 = perfection, 1.0 = very loose).
     self.Match_Threshold = 0.5
-    # The min and max cutoffs used when computing text lengths.
-    self.Match_MinLength = 100
-    self.Match_MaxLength = 1000
+    # How far to search for a match (0 = exact location, 1000+ = broad match).
+    # A match this many characters away from the expected location will add
+    # 1.0 to the score (0.0 is a perfect match).
+    self.Match_Distance = 1000
     # Chunk size for context length.
     self.Patch_Margin = 4
 
@@ -1155,7 +1154,7 @@ class diff_match_patch:
     Returns:
       Best match index or -1.
     """
-    loc = max(0, min(loc, len(text) - len(pattern)))
+    loc = max(0, min(loc, len(text)))
     if text == pattern:
       # Shortcut (potentially not guaranteed by the algorithm)
       return 0
@@ -1189,25 +1188,23 @@ class diff_match_patch:
     # Initialise the alphabet.
     s = self.match_alphabet(pattern)
 
-    score_text_length = len(text)
-    # Coerce the text length between reasonable maximums and minimums.
-    score_text_length = max(score_text_length, self.Match_MinLength)
-    score_text_length = min(score_text_length, self.Match_MaxLength)
-
     def match_bitapScore(e, x):
       """Compute and return the score for a match with e errors and x location.
-      Accesses loc, score_text_length and pattern through being a closure.
+      Accesses loc and pattern through being a closure.
 
       Args:
         e: Number of errors in match.
         x: Location of match.
 
       Returns:
-        Overall score for match.
+        Overall score for match (0.0 = good, 1.0 = bad).
       """
-      d = float(abs(loc - x))
-      return ((float(e) / len(pattern) / self.Match_Balance) +
-              (d / score_text_length / (1.0 - self.Match_Balance)))
+      accuracy = float(e) / len(pattern)
+      proximity = abs(loc - x)
+      if not self.Match_Distance:
+        # Dodge divide by zero error.
+        return proximity and 1.0 or accuracy
+      return accuracy + proximity / float(self.Match_Distance)
 
     # Highest score beyond which we give up.
     score_threshold = self.Match_Threshold
@@ -1224,19 +1221,17 @@ class diff_match_patch:
     matchmask = 1 << (len(pattern) - 1)
     best_loc = -1
 
-    bin_max = max(loc + loc, len(text))
+    bin_max = len(pattern) + len(text)
     # Empty initialization added to appease pychecker.
     last_rd = None
     for d in xrange(len(pattern)):
       # Scan for the best match each iteration allows for one more error.
-      rd = [None for x in xrange(len(text))]
-
       # Run a binary search to determine how far from 'loc' we can stray at
       # this error level.
-      bin_min = loc
+      bin_min = 0
       bin_mid = bin_max
       while bin_min < bin_mid:
-        if match_bitapScore(d, bin_mid) < score_threshold:
+        if match_bitapScore(d, loc + bin_mid) <= score_threshold:
           bin_min = bin_mid
         else:
           bin_max = bin_mid
@@ -1244,30 +1239,33 @@ class diff_match_patch:
 
       # Use the result from this iteration as the maximum for the next.
       bin_max = bin_mid
-      start = max(0, loc - (bin_mid - loc) - 1)
-      finish = min(len(text) - 1, len(pattern) + bin_mid)
+      start = max(1, loc - bin_mid + 1)
+      finish = min(loc + bin_mid, len(text)) + len(pattern)
 
-      if text[finish] == pattern[-1]:
-        rd[finish] = (1 << (d + 1)) - 1
-      else:
-        rd[finish] = (1 << d) - 1
-      for j in xrange(finish - 1, start - 1, -1):
+      rd = range(finish + 1)
+      rd.append((1 << d) - 1)
+      for j in xrange(finish, start - 1, -1):
+        if len(text) <= j - 1:
+          # Out of range.
+          charMatch = 0
+        else:
+          charMatch = s.get(text[j - 1], 0)
         if d == 0:  # First pass: exact match.
-          rd[j] = ((rd[j + 1] << 1) | 1) & s.get(text[j], 0)
+          rd[j] = ((rd[j + 1] << 1) | 1) & charMatch
         else:  # Subsequent passes: fuzzy match.
-          rd[j] = ((rd[j + 1] << 1) | 1) & s.get(text[j], 0) | ((last_rd[j + 1]
-              << 1) | 1) | ((last_rd[j] << 1) | 1) | last_rd[j + 1]
+          rd[j] = ((rd[j + 1] << 1) | 1) & charMatch | (
+              ((last_rd[j + 1] | last_rd[j]) << 1) | 1) | last_rd[j + 1]
         if rd[j] & matchmask:
-          score = match_bitapScore(d, j)
+          score = match_bitapScore(d, j - 1)
           # This match will almost certainly be better than any existing match.
           # But check anyway.
           if score <= score_threshold:
             # Told you so.
             score_threshold = score
-            best_loc = j
-            if j > loc:
+            best_loc = j - 1
+            if best_loc > loc:
               # When passing loc, don't exceed our current distance from loc.
-              start = max(0, loc - (j - loc))
+              start = max(1, 2 * loc - best_loc)
             else:
               # Already passed loc, downhill from here on in.
               break

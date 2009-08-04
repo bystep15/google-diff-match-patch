@@ -217,20 +217,19 @@ namespace DiffMatchPatch
         // Defaults.
         // Set these on your diff_match_patch instance to override the defaults.
 
-        // Number of seconds to map a diff before giving up.  (0 for infinity)
+        // Number of seconds to map a diff before giving up (0 for infinity).
         public float Diff_Timeout = 1.0f;
         // Cost of an empty edit operation in terms of edit characters.
         public short Diff_EditCost = 4;
         // The size beyond which the double-ended diff activates.
         // Double-ending is twice as fast, but less accurate.
         public short Diff_DualThreshold = 32;
-        // Tweak the relative importance (0.0 = accuracy, 1.0 = proximity)
-        public float Match_Balance = 0.5f;
-        // At what point is no match declared (0.0 = perfection, 1.0 = very loose)
+        // At what point is no match declared (0.0 = perfection, 1.0 = very loose).
         public float Match_Threshold = 0.5f;
-        // The min and max cutoffs used when comAdding text lengths.
-        public int Match_MinLength = 100;
-        public int Match_MaxLength = 1000;
+        // How far to search for a match (0 = exact location, 1000+ = broad match).
+        // A match this many characters away from the expected location will add
+        // 1.0 to the score (0.0 is a perfect match).
+        public int Match_Distance = 1000;
         // Chunk size for context length.
         public short Patch_Margin = 4;
 
@@ -1735,7 +1734,7 @@ namespace DiffMatchPatch
          */
         public int match_main(String text, String pattern, int loc)
         {
-            loc = Math.Max(0, Math.Min(loc, text.Length - pattern.Length));
+            loc = Math.Max(0, Math.Min(loc, text.Length));
             if (text == pattern)
             {
                 // Shortcut (potentially not guaranteed by the algorithm)
@@ -1746,7 +1745,8 @@ namespace DiffMatchPatch
                 // Nothing to match.
                 return -1;
             }
-            else if (text.Substring(loc, pattern.Length) == pattern)
+            else if (loc + pattern.Length <= text.Length
+                && text.Substring(loc, pattern.Length) == pattern)
             {
                 // Perfect match at the perfect spot!  (Includes case of null pattern)
                 return loc;
@@ -1774,11 +1774,6 @@ namespace DiffMatchPatch
             // Initialise the alphabet.
             Dictionary<char, int> s = match_alphabet(pattern);
 
-            int score_text_length = text.Length;
-            // Coerce the text length between reasonable maximums and minimums.
-            score_text_length = Math.Max(score_text_length, Match_MinLength);
-            score_text_length = Math.Min(score_text_length, Match_MaxLength);
-
             // Highest score beyond which we give up.
             double score_threshold = Match_Threshold;
             // Is there a nearby exact match? (speedup)
@@ -1786,14 +1781,15 @@ namespace DiffMatchPatch
             if (best_loc != -1)
             {
                 score_threshold = Math.Min(match_bitapScore(0, best_loc, loc,
-                    score_text_length, pattern), score_threshold);
+                    pattern), score_threshold);
             }
             // What about in the other direction? (speedup)
-            best_loc = text.LastIndexOf(pattern, loc + pattern.Length);
+            best_loc = text.LastIndexOf(pattern,
+                Math.Min(loc + pattern.Length, text.Length));
             if (best_loc != -1)
             {
                 score_threshold = Math.Min(match_bitapScore(0, best_loc, loc,
-                    score_text_length, pattern), score_threshold);
+                    pattern), score_threshold);
             }
 
             // Initialise the bit arrays.
@@ -1801,22 +1797,20 @@ namespace DiffMatchPatch
             best_loc = -1;
 
             int bin_min, bin_mid;
-            int bin_max = Math.Max(loc + loc, text.Length);
-            // Empty initialization added to appease Java compiler.
+            int bin_max = pattern.Length + text.Length;
+            // Empty initialization added to appease C# compiler.
             int[] last_rd = new int[0];
             for (int d = 0; d < pattern.Length; d++)
             {
                 // Scan for the best match; each iteration allows for one more error.
-                int[] rd = new int[text.Length];
-
                 // Run a binary search to determine how far from 'loc' we can stray at
                 // this error level.
-                bin_min = loc;
+                bin_min = 0;
                 bin_mid = bin_max;
                 while (bin_min < bin_mid)
                 {
-                    if (match_bitapScore(d, bin_mid, loc, score_text_length, pattern)
-                        < score_threshold)
+                    if (match_bitapScore(d, loc + bin_mid, loc, pattern)
+                        <= score_threshold)
                     {
                         bin_min = bin_mid;
                     }
@@ -1828,48 +1822,49 @@ namespace DiffMatchPatch
                 }
                 // Use the result from this iteration as the maximum for the next.
                 bin_max = bin_mid;
-                int start = Math.Max(0, loc - (bin_mid - loc) - 1);
-                int finish = Math.Min(text.Length - 1, pattern.Length + bin_mid);
+                int start = Math.Max(1, loc - bin_mid + 1);
+                int finish = Math.Min(loc + bin_mid, text.Length) + pattern.Length;
 
-                if (text[finish] == pattern[pattern.Length - 1])
+                int[] rd = new int[finish + 2];
+                rd[finish + 1] = (1 << d) - 1;
+                for (int j = finish; j >= start; j--)
                 {
-                    rd[finish] = (1 << (d + 1)) - 1;
-                }
-                else
-                {
-                    rd[finish] = (1 << d) - 1;
-                }
-                for (int j = finish - 1; j >= start; j--)
-                {
+                    int charMatch;
+                    if (text.Length <= j - 1 || !s.ContainsKey(text[j - 1]))
+                    {
+                        // Out of range.
+                        charMatch = 0;
+                    }
+                    else
+                    {
+                        charMatch = s[text[j - 1]];
+                    }
                     if (d == 0)
                     {
                         // First pass: exact match.
-                        rd[j] = ((rd[j + 1] << 1) | 1) & (s.ContainsKey(text[j])
-                            ? s[text[j]]
-                            : 0);
+                        rd[j] = ((rd[j + 1] << 1) | 1) & charMatch;
                     }
                     else
                     {
                         // Subsequent passes: fuzzy match.
-                        rd[j] = ((rd[j + 1] << 1) | 1) & (s.ContainsKey(text[j])
-                            ? s[text[j]] : 0) | ((last_rd[j + 1] << 1) | 1)
-                            | ((last_rd[j] << 1) | 1) | last_rd[j + 1];
+                        rd[j] = ((rd[j + 1] << 1) | 1) & charMatch
+                            | (((last_rd[j + 1] | last_rd[j]) << 1) | 1)
+                            | last_rd[j + 1];
                     }
                     if ((rd[j] & matchmask) != 0)
                     {
-                        double score = match_bitapScore(d, j, loc, score_text_length,
-                                                        pattern);
+                        double score = match_bitapScore(d, j - 1, loc, pattern);
                         // This match will almost certainly be better than any existing
                         // match.  But check anyway.
                         if (score <= score_threshold)
                         {
                             // Told you so.
                             score_threshold = score;
-                            best_loc = j;
-                            if (j > loc)
+                            best_loc = j - 1;
+                            if (best_loc > loc)
                             {
                                 // When passing loc, don't exceed our current distance from loc.
-                                start = Math.Max(0, loc - (j - loc));
+                                start = Math.Max(1, 2 * loc - best_loc);
                             }
                             else
                             {
@@ -1879,8 +1874,7 @@ namespace DiffMatchPatch
                         }
                     }
                 }
-                if (match_bitapScore(d + 1, loc, loc, score_text_length, pattern)
-                    > score_threshold)
+                if (match_bitapScore(d + 1, loc, loc, pattern) > score_threshold)
                 {
                     // No hope for a (better) match at greater error levels.
                     break;
@@ -1895,16 +1889,19 @@ namespace DiffMatchPatch
          * @param e Number of errors in match.
          * @param x Location of match.
          * @param loc Expected location of match.
-         * @param score_text_length Coerced version of text's length.
          * @param pattern Pattern being sought.
-         * @return Overall score for match.
+         * @return Overall score for match (0.0 = good, 1.0 = bad).
          */
-        private double match_bitapScore(int e, int x, int loc,
-                                        int score_text_length, String pattern)
+        private double match_bitapScore(int e, int x, int loc, String pattern)
         {
-            int d = Math.Abs(loc - x);
-            return (e / (float)pattern.Length / Match_Balance)
-                + (d / (float)score_text_length / (1.0 - Match_Balance));
+            float accuracy = (float)e / pattern.Length;
+            int proximity = Math.Abs(loc - x);
+            if (Match_Distance == 0)
+            {
+                // Dodge divide by zero error.
+                return proximity == 0 ? 1.0 : accuracy;
+            }
+            return accuracy + proximity / (float) Match_Distance;
         }
 
         /**
@@ -2574,3 +2571,4 @@ namespace DiffMatchPatch
         }
     }
 }
+

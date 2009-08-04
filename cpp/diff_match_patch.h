@@ -123,20 +123,19 @@ class diff_match_patch {
   // Defaults.
   // Set these on your diff_match_patch instance to override the defaults.
 
-  // Number of seconds to map a diff before giving up.  (0 for infinity)
+  // Number of seconds to map a diff before giving up (0 for infinity).
   float Diff_Timeout;
   // Cost of an empty edit operation in terms of edit characters.
   short Diff_EditCost;
   // The size beyond which the double-ended diff activates.
   // Double-ending is twice as fast, but less accurate.
   short Diff_DualThreshold;
-  // Tweak the relative importance (0.0 = accuracy, 1.0 = proximity)
-  float Match_Balance;
-  // At what point is no match declared (0.0 = perfection, 1.0 = very loose)
+  // At what point is no match declared (0.0 = perfection, 1.0 = very loose).
   float Match_Threshold;
-  // The min and max cutoffs used when computing text lengths.
-  int Match_MinLength;
-  int Match_MaxLength;
+  // How far to search for a match (0 = exact location, 1000+ = broad match).
+  // A match this many characters away from the expected location will add
+  // 1.0 to the score (0.0 is a perfect match).
+  int Match_Distance;
   // Chunk size for context length.
   short Patch_Margin;
 
@@ -433,13 +432,11 @@ class diff_match_patch {
    * @param e Number of errors in match.
    * @param x Location of match.
    * @param loc Expected location of match.
-   * @param score_text_length Coerced version of text's length.
    * @param pattern Pattern being sought.
-   * @return Overall score for match.
+   * @return Overall score for match (0.0 = good, 1.0 = bad).
    */
  private:
-  double match_bitapScore(int e, int x, int loc,
-                          int score_text_length, const QString &pattern);
+  double match_bitapScore(int e, int x, int loc, const QString &pattern);
 
   /**
    * Initialise the alphabet for the Bitap algorithm.
