@@ -20,7 +20,7 @@
 
 <html>
   <head>
-    <script type="text/javascript"><!--
+    <script type="text/javascript">
       // Depending on the URL argument, test the compressed or uncompressed version.
       var uncompressed = (document.location.search == '?uncompressed');
       if (uncompressed) {
@@ -30,9 +30,9 @@
         document.write('<TITLE>Test harness for diff_match_patch.js</TITLE>');
         document.write('<scr'+'ipt type="text/javascript" src="diff_match_patch.js"></scr'+'ipt>');
       }
-    //--></script>
+    </script>
 
-    <script type="text/javascript"><!--
+    <script type="text/javascript">
       // Counters for unit test results.
       var test_good = 0;
       var test_bad = 0;
@@ -126,6 +126,9 @@
 
         // Non-null case
         assertEquals(4, dmp.diff_commonPrefix('1234abcdef', '1234xyz'));
+
+        // Whole case
+        assertEquals(4, dmp.diff_commonPrefix('1234', '1234xyz'));
       }
 
       function testDiffCommonSuffix() {
@@ -135,6 +138,9 @@
 
         // Non-null case
         assertEquals(4, dmp.diff_commonSuffix('abcdef1234', 'xyz1234'));
+
+        // Whole case
+        assertEquals(4, dmp.diff_commonSuffix('1234', 'xyz1234'));
       }
 
       function testDiffHalfMatch() {
@@ -751,9 +757,14 @@
 
       function testPatchSplitMax() {
         // Assumes that dmp.Match_MaxBits is 32.
-        var patches = dmp.patch_make('abcdef1234567890123456789012345678901234567890123456789012345678901234567890uvwxyz', 'abcdefuvwxyz');
+        var patches = dmp.patch_make('abcdefghijklmnopqrstuvwxyz01234567890', 'XabXcdXefXghXijXklXmnXopXqrXstXuvXwxXyzX01X23X45X67X89X0');
         dmp.patch_splitMax(patches);
-        assertEquals('@@ -3,32 +3,8 @@\n cdef\n-123456789012345678901234\n 5678\n@@ -27,32 +3,8 @@\n cdef\n-567890123456789012345678\n 9012\n@@ -51,30 +3,8 @@\n cdef\n-9012345678901234567890\n uvwx\n', dmp.patch_toText(patches));
+        assertEquals('@@ -1,32 +1,46 @@\n+X\n ab\n+X\n cd\n+X\n ef\n+X\n gh\n+X\n ij\n+X\n kl\n+X\n mn\n+X\n op\n+X\n qr\n+X\n st\n+X\n uv\n+X\n wx\n+X\n yz\n+X\n 012345\n@@ -25,13 +39,18 @@\n zX01\n+X\n 23\n+X\n 45\n+X\n 67\n+X\n 89\n+X\n 0\n', dmp.patch_toText(patches));
+
+        patches = dmp.patch_make('abcdef1234567890123456789012345678901234567890123456789012345678901234567890uvwxyz', 'abcdefuvwxyz');
+        var oldToText = dmp.patch_toText(patches);
+        dmp.patch_splitMax(patches);
+        assertEquals(oldToText, dmp.patch_toText(patches));
 
         patches = dmp.patch_make('1234567890123456789012345678901234567890123456789012345678901234567890', 'abc');
         dmp.patch_splitMax(patches);
@@ -765,19 +776,19 @@
       }
 
       function testPatchAddPadding() {
-        // Both edges full
+        // Both edges full.
         var patches = dmp.patch_make('', 'test');
         assertEquals('@@ -0,0 +1,4 @@\n+test\n', dmp.patch_toText(patches));
         dmp.patch_addPadding(patches);
-        assertEquals('@@ -1,8 +1,12 @@\n %00%01%02%03\n+test\n %00%01%02%03\n', dmp.patch_toText(patches));
+        assertEquals('@@ -1,8 +1,12 @@\n %01%02%03%04\n+test\n %01%02%03%04\n', dmp.patch_toText(patches));
 
-        // Both edges partial
+        // Both edges partial.
         patches = dmp.patch_make('XY', 'XtestY');
         assertEquals('@@ -1,2 +1,6 @@\n X\n+test\n Y\n', dmp.patch_toText(patches));
         dmp.patch_addPadding(patches);
-        assertEquals('@@ -2,8 +2,12 @@\n %01%02%03X\n+test\n Y%00%01%02\n', dmp.patch_toText(patches));
+        assertEquals('@@ -2,8 +2,12 @@\n %02%03%04X\n+test\n Y%01%02%03\n', dmp.patch_toText(patches));
 
-        // Both edges none
+        // Both edges none.
         patches = dmp.patch_make('XXXXYYYY', 'XXXXtestYYYY');
         assertEquals('@@ -1,8 +1,12 @@\n XXXX\n+test\n YYYY\n', dmp.patch_toText(patches));
         dmp.patch_addPadding(patches);
@@ -785,42 +796,63 @@
       }
 
       function testPatchApply() {
-        // Exact match
+        dmp.Match_Distance = 1000;
+        dmp.Match_Threshold = 0.5;
+        dmp.Patch_DeleteThreshold = 0.5;
+
+        // Exact match.
         var patches = dmp.patch_make('The quick brown fox jumps over the lazy dog.', 'That quick brown fox jumped over a lazy dog.');
         var results = dmp.patch_apply(patches, 'The quick brown fox jumps over the lazy dog.');
         assertEquivalent(['That quick brown fox jumped over a lazy dog.', [true, true]], results);
 
-        // Partial match
+        // Partial match.
         results = dmp.patch_apply(patches, 'The quick red rabbit jumps over the tired tiger.');
         assertEquivalent(['That quick red rabbit jumped over a tired tiger.', [true, true]], results);
 
-        // Failed match
+        // Failed match.
         results = dmp.patch_apply(patches, 'I am the very model of a modern major general.');
         assertEquivalent(['I am the very model of a modern major general.', [false, false]], results);
 
-        // No side effects
+        // Big delete, small change.
+        patches = dmp.patch_make('x1234567890123456789012345678901234567890123456789012345678901234567890y', 'xabcy');
+        results = dmp.patch_apply(patches, 'x123456789012345678901234567890-----++++++++++-----123456789012345678901234567890y');
+        assertEquivalent(['xabcy', [true, true]], results);
+
+        // Big delete, big change 1.
+        patches = dmp.patch_make('x1234567890123456789012345678901234567890123456789012345678901234567890y', 'xabcy');
+        results = dmp.patch_apply(patches, 'x12345678901234567890---------------++++++++++---------------12345678901234567890y');
+        assertEquivalent(['xabc12345678901234567890---------------++++++++++---------------12345678901234567890y', [false, true]], results);
+
+        // Big delete, big change 2.
+        dmp.Patch_DeleteThreshold = 0.6;
+        patches = dmp.patch_make('x1234567890123456789012345678901234567890123456789012345678901234567890y', 'xabcy');
+        results = dmp.patch_apply(patches, 'x12345678901234567890---------------++++++++++---------------12345678901234567890y');
+        assertEquivalent(['xabcy', [true, true]], results);
+        dmp.Patch_DeleteThreshold = 0.5;
+
+        // No side effects.
         patches = dmp.patch_make('', 'test');
         var patchstr = dmp.patch_toText(patches);
         dmp.patch_apply(patches, '');
         assertEquals(patchstr, dmp.patch_toText(patches));
 
-        // No side effects with major delete
+        // No side effects with major delete.
         patches = dmp.patch_make('The quick brown fox jumps over the lazy dog.', 'Woof');
         patchstr = dmp.patch_toText(patches);
         dmp.patch_apply(patches, 'The quick brown fox jumps over the lazy dog.');
         assertEquals(patchstr, dmp.patch_toText(patches));
 
-        // Edge exact match
+        // Edge exact match.
         patches = dmp.patch_make('', 'test');
         results = dmp.patch_apply(patches, '');
         assertEquivalent(['test', [true]], results);
 
-        // Near edge exact match
+        // Near edge exact match.
         patches = dmp.patch_make('XY', 'XtestY');
         results = dmp.patch_apply(patches, 'XY');
         assertEquivalent(['XtestY', [true]], results);
 
-        // Edge partial match
+        // Edge partial match.
         patches = dmp.patch_make('y', 'y123');
         results = dmp.patch_apply(patches, 'x');
         assertEquivalent(['x123', [true]], results);
@@ -845,11 +877,11 @@
         }
       }
 
-    //--></script>
+    </script>
   </head>
   <body>
 
-    <script type="text/javascript"><!--
+    <script type="text/javascript">
       if (uncompressed) {
         document.write('<H1>Test harness for diff_match_patch_uncompressed.js</H1>');
         document.write('[ Switch to <A HREF="?compressed">Compressed</A>. ]');
@@ -857,18 +889,18 @@
         document.write('<H1>Test harness for diff_match_patch.js</H1>');
         document.write('[ Switch to <A HREF="?uncompressed">Uncompressed</A>. ]');
       }
-    //--></script>
+    </script>
 
     <P>If debugging errors, start with the first reported error,
     subsequent tests often rely on earlier ones.</P>
 
-    <script type="text/javascript"><!--
+    <script type="text/javascript">
       var startTime = (new Date()).getTime();
       runTests();
       var endTime = (new Date()).getTime();
       document.write('<H3>Done.</H3>');
       document.write('<P>Tests passed: ' + test_good + '<BR>Tests failed: ' + test_bad + '</P>');
       document.write('<P>Total time: ' + (endTime - startTime) + ' ms</P>');
-    //--></script>
+    </script>
   </body>
 </html>

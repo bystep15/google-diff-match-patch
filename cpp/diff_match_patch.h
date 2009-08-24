@@ -136,6 +136,11 @@ class diff_match_patch {
   // A match this many characters away from the expected location will add
   // 1.0 to the score (0.0 is a perfect match).
   int Match_Distance;
+  // When deleting a large block of text (over ~64 characters), how close does
+  // the contents have to match the expected contents. (0.0 = perfection,
+  // 1.0 = very loose).  Note that Match_Threshold controls how closely the
+  // end points of a delete need to match.
+  float Patch_DeleteThreshold;
   // Chunk size for context length.
   short Patch_Margin;
 
@@ -492,7 +497,7 @@ class diff_match_patch {
 
   /**
    * Compute a list of patches to turn text1 into text2.
-   * text2 is not provided, diffs are the delta between texgt1 and text2.
+   * text2 is not provided, diffs are the delta between text1 and text2.
    * @param text1 Old text.
    * @param diffs Array of diff tuples for text1 to text2.
    * @return LinkedList of Patch objects.
@@ -505,7 +510,7 @@ class diff_match_patch {
    * @param patches Array of patch objects.
    * @return Array of patch objects.
    */
- protected:
+ public:
   QList<Patch> patch_deepCopy(QList<Patch> &patches);
 
   /**
@@ -521,10 +526,11 @@ class diff_match_patch {
 
   /**
    * Add some padding on text start and end so that edges can match something.
+   * Intended to be called only from within patch_apply.
    * @param patches Array of patch objects.
    * @return The padding string added to each side.
    */
- protected:
+ public:
   QString patch_addPadding(QList<Patch> &patches);
 
   /**

@@ -52,6 +52,9 @@ class DiffTest(DiffMatchPatchTest):
     # Non-null case
     self.assertEquals(4, self.dmp.diff_commonPrefix("1234abcdef", "1234xyz"))
 
+    # Whole case
+    self.assertEquals(4, self.dmp.diff_commonPrefix("1234", "1234xyz"))
+
   def testDiffCommonSuffix(self):
     # Detect and remove any common suffix.
     # Null case
@@ -59,6 +62,9 @@ class DiffTest(DiffMatchPatchTest):
 
     # Non-null case
     self.assertEquals(4, self.dmp.diff_commonSuffix("abcdef1234", "xyz1234"))
+
+    # Whole case
+    self.assertEquals(4, self.dmp.diff_commonSuffix("1234", "xyz1234"))
 
   def testDiffHalfMatch(self):
     # Detect a halfmatch.
@@ -642,11 +648,15 @@ class PatchTest(DiffMatchPatchTest):
     self.assertEquals(expectedPatch, self.dmp.patch_toText(patches))
 
   def testPatchSplitMax(self):
-    # Python's really got no need for this function, but other languages do.
-    self.dmp.Match_MaxBits = 32
-    patches = self.dmp.patch_make("abcdef1234567890123456789012345678901234567890123456789012345678901234567890uvwxyz", "abcdefuvwxyz")
+    # Assumes that Match_MaxBits is 32.
+    patches = self.dmp.patch_make("abcdefghijklmnopqrstuvwxyz01234567890", "XabXcdXefXghXijXklXmnXopXqrXstXuvXwxXyzX01X23X45X67X89X0")
     self.dmp.patch_splitMax(patches)
-    self.assertEquals("@@ -3,32 +3,8 @@\n cdef\n-123456789012345678901234\n 5678\n@@ -27,32 +3,8 @@\n cdef\n-567890123456789012345678\n 9012\n@@ -51,30 +3,8 @@\n cdef\n-9012345678901234567890\n uvwx\n", self.dmp.patch_toText(patches))
+    self.assertEquals("@@ -1,32 +1,46 @@\n+X\n ab\n+X\n cd\n+X\n ef\n+X\n gh\n+X\n ij\n+X\n kl\n+X\n mn\n+X\n op\n+X\n qr\n+X\n st\n+X\n uv\n+X\n wx\n+X\n yz\n+X\n 012345\n@@ -25,13 +39,18 @@\n zX01\n+X\n 23\n+X\n 45\n+X\n 67\n+X\n 89\n+X\n 0\n", self.dmp.patch_toText(patches))
+
+    patches = self.dmp.patch_make("abcdef1234567890123456789012345678901234567890123456789012345678901234567890uvwxyz", "abcdefuvwxyz")
+    oldToText = self.dmp.patch_toText(patches)
+    self.dmp.patch_splitMax(patches)
+    self.assertEquals(oldToText, self.dmp.patch_toText(patches))
 
     patches = self.dmp.patch_make("1234567890123456789012345678901234567890123456789012345678901234567890", "abc")
     self.dmp.patch_splitMax(patches)
@@ -655,64 +665,83 @@ class PatchTest(DiffMatchPatchTest):
     patches = self.dmp.patch_make("abcdefghij , h : 0 , t : 1 abcdefghij , h : 0 , t : 1 abcdefghij , h : 0 , t : 1", "abcdefghij , h : 1 , t : 1 abcdefghij , h : 1 , t : 1 abcdefghij , h : 0 , t : 1")
     self.dmp.patch_splitMax(patches)
     self.assertEquals("@@ -2,32 +2,32 @@\n bcdefghij , h : \n-0\n+1\n  , t : 1 abcdef\n@@ -29,32 +29,32 @@\n bcdefghij , h : \n-0\n+1\n  , t : 1 abcdef\n", self.dmp.patch_toText(patches))
-    self.dmp.Match_MaxBits = 0
 
   def testPatchAddPadding(self):
-    # Both edges full
+    # Both edges full.
     patches = self.dmp.patch_make("", "test")
     self.assertEquals("@@ -0,0 +1,4 @@\n+test\n", self.dmp.patch_toText(patches))
     self.dmp.patch_addPadding(patches)
-    self.assertEquals("@@ -1,8 +1,12 @@\n %00%01%02%03\n+test\n %00%01%02%03\n", self.dmp.patch_toText(patches))
+    self.assertEquals("@@ -1,8 +1,12 @@\n %01%02%03%04\n+test\n %01%02%03%04\n", self.dmp.patch_toText(patches))
 
-    # Both edges partial
+    # Both edges partial.
     patches = self.dmp.patch_make("XY", "XtestY")
     self.assertEquals("@@ -1,2 +1,6 @@\n X\n+test\n Y\n", self.dmp.patch_toText(patches))
     self.dmp.patch_addPadding(patches)
-    self.assertEquals("@@ -2,8 +2,12 @@\n %01%02%03X\n+test\n Y%00%01%02\n", self.dmp.patch_toText(patches))
+    self.assertEquals("@@ -2,8 +2,12 @@\n %02%03%04X\n+test\n Y%01%02%03\n", self.dmp.patch_toText(patches))
 
-    # Both edges none
+    # Both edges none.
     patches = self.dmp.patch_make("XXXXYYYY", "XXXXtestYYYY")
     self.assertEquals("@@ -1,8 +1,12 @@\n XXXX\n+test\n YYYY\n", self.dmp.patch_toText(patches))
     self.dmp.patch_addPadding(patches)
     self.assertEquals("@@ -5,8 +5,12 @@\n XXXX\n+test\n YYYY\n", self.dmp.patch_toText(patches))
 
   def testPatchApply(self):
-    # Exact match
+    self.dmp.Match_Distance = 1000
+    self.dmp.Match_Threshold = 0.5
+    self.dmp.Patch_DeleteThreshold = 0.5
+    # Exact match.
     patches = self.dmp.patch_make("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.")
     results = self.dmp.patch_apply(patches, "The quick brown fox jumps over the lazy dog.")
     self.assertEquals(("That quick brown fox jumped over a lazy dog.", [True, True]), results)
 
-    # Partial match
+    # Partial match.
     results = self.dmp.patch_apply(patches, "The quick red rabbit jumps over the tired tiger.")
     self.assertEquals(("That quick red rabbit jumped over a tired tiger.", [True, True]), results)
 
-    # Failed match
+    # Failed match.
     results = self.dmp.patch_apply(patches, "I am the very model of a modern major general.")
     self.assertEquals(("I am the very model of a modern major general.", [False, False]), results)
 
-    # No side effects
+    # Big delete, small change.
+    patches = self.dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy")
+    results = self.dmp.patch_apply(patches, "x123456789012345678901234567890-----++++++++++-----123456789012345678901234567890y")
+    self.assertEquals(("xabcy", [True, True]), results)
+
+    # Big delete, big change 1.
+    patches = self.dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy")
+    results = self.dmp.patch_apply(patches, "x12345678901234567890---------------++++++++++---------------12345678901234567890y")
+    self.assertEquals(("xabc12345678901234567890---------------++++++++++---------------12345678901234567890y", [False, True]), results)
+
+    # Big delete, big change 2.
+    self.dmp.Patch_DeleteThreshold = 0.6
+    patches = self.dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy")
+    results = self.dmp.patch_apply(patches, "x12345678901234567890---------------++++++++++---------------12345678901234567890y")
+    self.assertEquals(("xabcy", [True, True]), results)
+    self.dmp.Patch_DeleteThreshold = 0.5
+
+    # No side effects.
     patches = self.dmp.patch_make("", "test")
     patchstr = self.dmp.patch_toText(patches)
     results = self.dmp.patch_apply(patches, "")
     self.assertEquals(patchstr, self.dmp.patch_toText(patches))
 
-    # No side effects with major delete
+    # No side effects with major delete.
     patches = self.dmp.patch_make("The quick brown fox jumps over the lazy dog.", "Woof")
     patchstr = self.dmp.patch_toText(patches)
     self.dmp.patch_apply(patches, "The quick brown fox jumps over the lazy dog.")
     self.assertEquals(patchstr, self.dmp.patch_toText(patches))
 
-    # Edge exact match
+    # Edge exact match.
     patches = self.dmp.patch_make("", "test")
     self.dmp.patch_apply(patches, "")
     self.assertEquals(("test", [True]), results)
 
-    # Near edge exact match
+    # Near edge exact match.
     patches = self.dmp.patch_make("XY", "XtestY")
     results = self.dmp.patch_apply(patches, "XY")
     self.assertEquals(("XtestY", [True]), results)
 
-    # Edge partial match
+    # Edge partial match.
     patches = self.dmp.patch_make("y", "y123")
     results = self.dmp.patch_apply(patches, "x")
     self.assertEquals(("x123", [True]), results)

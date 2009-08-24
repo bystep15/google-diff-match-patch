@@ -15,7 +15,7 @@ pattern contains errors and doesn't exactly match what is found in the text.
 This implementation also accepts an expected location, near which the match should be found.
 The candidate matches are scored based on a) the number of spelling differences between the 
 pattern and the text and b) the distance between the candidate match and the expected location.
-The match balance parameter sets the relative importance of these two metrics.</P>
+The match distance parameter sets the relative importance of these two metrics.</P>
 
 <FORM action="#" onsubmit="return false">
 <H3>Text:</H3>
@@ -32,7 +32,7 @@ Aproximate pattern to search for in the text.  Due to limitations of the Bitap a
 <P><INPUT ID="loc" SIZE=4 MAXLENGTH=10 VALUE="30"> <SPAN ID="maxtextspan"></SPAN><BR>
 Aproximately where in the text is the pattern expected to be found?</P>
 
-<H3>Match Distance:</H3>
+<H3>Match distance:</H3>
 <P><INPUT TYPE="text" SIZE=3 MAXLENGTH=8 VALUE="1000" ID="distance"><BR>
 Determines how close the match must be to the fuzzy location (specified above).  An exact letter match which is 'distance' characters away from the fuzzy location would
 score as a complete mismatch.  A distance of '0' requires the match be at the exact location specified, a threshold of '1000'

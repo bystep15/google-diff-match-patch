@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 
 import name.fraser.neil.plaintext.diff_match_patch.Diff;
+import name.fraser.neil.plaintext.diff_match_patch.LinesToCharsResult;
 import name.fraser.neil.plaintext.diff_match_patch.Patch;
 
 public class diff_match_patch_test extends TestCase {
@@ -54,6 +55,8 @@ public class diff_match_patch_test extends TestCase {
     assertEquals("diff_commonPrefix: Null case.", 0, dmp.diff_commonPrefix("abc", "xyz"));
 
     assertEquals("diff_commonPrefix: Non-null case.", 4, dmp.diff_commonPrefix("1234abcdef", "1234xyz"));
+
+    assertEquals("diff_commonPrefix: Whole case.", 4, dmp.diff_commonPrefix("1234", "1234xyz"));
   }
 
   public void testDiffCommonSuffix() {
@@ -61,6 +64,8 @@ public class diff_match_patch_test extends TestCase {
     assertEquals("diff_commonSuffix: Null case.", 0, dmp.diff_commonSuffix("abc", "xyz"));
 
     assertEquals("diff_commonSuffix: Non-null case.", 4, dmp.diff_commonSuffix("abcdef1234", "xyz1234"));
+
+    assertEquals("diff_commonSuffix: Whole case.", 4, dmp.diff_commonSuffix("1234", "xyz1234"));
   }
 
   public void testDiffHalfmatch() {
@@ -84,24 +89,23 @@ public class diff_match_patch_test extends TestCase {
     tmpVector.add("");
     tmpVector.add("alpha\n");
     tmpVector.add("beta\n");
-    assertArrayEquals("diff_linesToChars:", new Object[]{"\u0001\u0002\u0001", "\u0002\u0001\u0002", tmpVector}, dmp.diff_linesToChars("alpha\nbeta\nalpha\n", "beta\nalpha\nbeta\n"));
+    assertLinesToCharsResultEquals("diff_linesToChars:", new LinesToCharsResult("\u0001\u0002\u0001", "\u0002\u0001\u0002", tmpVector), dmp.diff_linesToChars("alpha\nbeta\nalpha\n", "beta\nalpha\nbeta\n"));
 
     tmpVector.clear();
     tmpVector.add("");
     tmpVector.add("alpha\r\n");
     tmpVector.add("beta\r\n");
     tmpVector.add("\r\n");
-    assertArrayEquals("diff_linesToChars:", new Object[]{"", "\u0001\u0002\u0003\u0003", tmpVector}, dmp.diff_linesToChars("", "alpha\r\nbeta\r\n\r\n\r\n"));
+    assertLinesToCharsResultEquals("diff_linesToChars:", new LinesToCharsResult("", "\u0001\u0002\u0003\u0003", tmpVector), dmp.diff_linesToChars("", "alpha\r\nbeta\r\n\r\n\r\n"));
 
     tmpVector.clear();
     tmpVector.add("");
     tmpVector.add("a");
     tmpVector.add("b");
-    assertArrayEquals("diff_linesToChars:", new Object[]{"\u0001", "\u0002", tmpVector}, dmp.diff_linesToChars("a", "b"));
+    assertLinesToCharsResultEquals("diff_linesToChars:", new LinesToCharsResult("\u0001", "\u0002", tmpVector), dmp.diff_linesToChars("a", "b"));
 
     // More than 256
     int n = 300;
-    //StringBuilder lineList = new StringBuilder();
     tmpVector.clear();
     StringBuilder lineList = new StringBuilder();
     StringBuilder charList = new StringBuilder();
@@ -115,7 +119,7 @@ public class diff_match_patch_test extends TestCase {
     String chars = charList.toString();
     assertEquals(n, chars.length());
     tmpVector.add(0, "");
-    assertArrayEquals("diff_linesToChars: More than 256.", new Object[]{chars, "", tmpVector}, dmp.diff_linesToChars(lines, ""));
+    assertLinesToCharsResultEquals("diff_linesToChars: More than 256.", new LinesToCharsResult(chars, "", tmpVector), dmp.diff_linesToChars(lines, ""));
   }
 
   public void testDiffCharsToLines() {
@@ -759,17 +763,22 @@ public class diff_match_patch_test extends TestCase {
   public void testPatchSplitMax() {
     // Assumes that Match_MaxBits is 32.
     LinkedList<Patch> patches;
-    patches = dmp.patch_make("abcdef1234567890123456789012345678901234567890123456789012345678901234567890uvwxyz", "abcdefuvwxyz");
+    patches = dmp.patch_make("abcdefghijklmnopqrstuvwxyz01234567890", "XabXcdXefXghXijXklXmnXopXqrXstXuvXwxXyzX01X23X45X67X89X0");
     dmp.patch_splitMax(patches);
-    assertEquals("patch_splitMax: #1.", "@@ -3,32 +3,8 @@\n cdef\n-123456789012345678901234\n 5678\n@@ -27,32 +3,8 @@\n cdef\n-567890123456789012345678\n 9012\n@@ -51,30 +3,8 @@\n cdef\n-9012345678901234567890\n uvwx\n", dmp.patch_toText(patches));
+    assertEquals("patch_splitMax: #1.", "@@ -1,32 +1,46 @@\n+X\n ab\n+X\n cd\n+X\n ef\n+X\n gh\n+X\n ij\n+X\n kl\n+X\n mn\n+X\n op\n+X\n qr\n+X\n st\n+X\n uv\n+X\n wx\n+X\n yz\n+X\n 012345\n@@ -25,13 +39,18 @@\n zX01\n+X\n 23\n+X\n 45\n+X\n 67\n+X\n 89\n+X\n 0\n", dmp.patch_toText(patches));
+
+    patches = dmp.patch_make("abcdef1234567890123456789012345678901234567890123456789012345678901234567890uvwxyz", "abcdefuvwxyz");
+    String oldToText = dmp.patch_toText(patches);
+    dmp.patch_splitMax(patches);
+    assertEquals("patch_splitMax: #2.", oldToText, dmp.patch_toText(patches));
 
     patches = dmp.patch_make("1234567890123456789012345678901234567890123456789012345678901234567890", "abc");
     dmp.patch_splitMax(patches);
-    assertEquals("patch_splitMax: #2.", "@@ -1,32 +1,4 @@\n-1234567890123456789012345678\n 9012\n@@ -29,32 +1,4 @@\n-9012345678901234567890123456\n 7890\n@@ -57,14 +1,3 @@\n-78901234567890\n+abc\n", dmp.patch_toText(patches));
+    assertEquals("patch_splitMax: #3.", "@@ -1,32 +1,4 @@\n-1234567890123456789012345678\n 9012\n@@ -29,32 +1,4 @@\n-9012345678901234567890123456\n 7890\n@@ -57,14 +1,3 @@\n-78901234567890\n+abc\n", dmp.patch_toText(patches));
 
     patches = dmp.patch_make("abcdefghij , h : 0 , t : 1 abcdefghij , h : 0 , t : 1 abcdefghij , h : 0 , t : 1", "abcdefghij , h : 1 , t : 1 abcdefghij , h : 1 , t : 1 abcdefghij , h : 0 , t : 1");
     dmp.patch_splitMax(patches);
-    assertEquals("patch_splitMax: #3.", "@@ -2,32 +2,32 @@\n bcdefghij , h : \n-0\n+1\n  , t : 1 abcdef\n@@ -29,32 +29,32 @@\n bcdefghij , h : \n-0\n+1\n  , t : 1 abcdef\n", dmp.patch_toText(patches));
+    assertEquals("patch_splitMax: #4.", "@@ -2,32 +2,32 @@\n bcdefghij , h : \n-0\n+1\n  , t : 1 abcdef\n@@ -29,32 +29,32 @@\n bcdefghij , h : \n-0\n+1\n  , t : 1 abcdef\n", dmp.patch_toText(patches));
   }
 
   public void testPatchAddPadding() {
@@ -777,12 +786,12 @@ public class diff_match_patch_test extends TestCase {
     patches = dmp.patch_make("", "test");
     assertEquals("patch_addPadding: Both edges full.", "@@ -0,0 +1,4 @@\n+test\n", dmp.patch_toText(patches));
     dmp.patch_addPadding(patches);
-    assertEquals("patch_addPadding: Both edges full.", "@@ -1,8 +1,12 @@\n %00%01%02%03\n+test\n %00%01%02%03\n", dmp.patch_toText(patches));
+    assertEquals("patch_addPadding: Both edges full.", "@@ -1,8 +1,12 @@\n %01%02%03%04\n+test\n %01%02%03%04\n", dmp.patch_toText(patches));
 
     patches = dmp.patch_make("XY", "XtestY");
     assertEquals("patch_addPadding: Both edges partial.", "@@ -1,2 +1,6 @@\n X\n+test\n Y\n", dmp.patch_toText(patches));
     dmp.patch_addPadding(patches);
-    assertEquals("patch_addPadding: Both edges partial.", "@@ -2,8 +2,12 @@\n %01%02%03X\n+test\n Y%00%01%02\n", dmp.patch_toText(patches));
+    assertEquals("patch_addPadding: Both edges partial.", "@@ -2,8 +2,12 @@\n %02%03%04X\n+test\n Y%01%02%03\n", dmp.patch_toText(patches));
 
     patches = dmp.patch_make("XXXXYYYY", "XXXXtestYYYY");
     assertEquals("patch_addPadding: Both edges none.", "@@ -1,8 +1,12 @@\n XXXX\n+test\n YYYY\n", dmp.patch_toText(patches));
@@ -791,6 +800,9 @@ public class diff_match_patch_test extends TestCase {
   }
 
   public void testPatchApply() {
+    dmp.Match_Distance = 1000;
+    dmp.Match_Threshold = 0.5f;
+    dmp.Patch_DeleteThreshold = 0.5f;
     LinkedList<Patch> patches;
     patches = dmp.patch_make("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.");
     Object[] results = dmp.patch_apply(patches, "The quick brown fox jumps over the lazy dog.");
@@ -807,6 +819,26 @@ public class diff_match_patch_test extends TestCase {
     boolArray = (boolean[]) results[1];
     resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
     assertEquals("patch_apply: Failed match.", "I am the very model of a modern major general.\tfalse\tfalse", resultStr);
+
+    patches = dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
+    results = dmp.patch_apply(patches, "x123456789012345678901234567890-----++++++++++-----123456789012345678901234567890y");
+    boolArray = (boolean[]) results[1];
+    resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
+    assertEquals("patch_apply: Big delete, small change.", "xabcy\ttrue\ttrue", resultStr);
+
+    patches = dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
+    results = dmp.patch_apply(patches, "x12345678901234567890---------------++++++++++---------------12345678901234567890y");
+    boolArray = (boolean[]) results[1];
+    resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
+    assertEquals("patch_apply: Big delete, big change 1.", "xabc12345678901234567890---------------++++++++++---------------12345678901234567890y\tfalse\ttrue", resultStr);
+
+    dmp.Patch_DeleteThreshold = 0.6f;
+    patches = dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
+    results = dmp.patch_apply(patches, "x12345678901234567890---------------++++++++++---------------12345678901234567890y");
+    boolArray = (boolean[]) results[1];
+    resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
+    assertEquals("patch_apply: Big delete, big change 2.", "xabcy\ttrue\ttrue", resultStr);
+    dmp.Patch_DeleteThreshold = 0.5f;
 
     patches = dmp.patch_make("", "test");
     String patchStr = dmp.patch_toText(patches);
@@ -842,6 +874,14 @@ public class diff_match_patch_test extends TestCase {
     List<Object> list_a = Arrays.asList(a);
     List<Object> list_b = Arrays.asList(b);
     assertEquals(error_msg, list_a, list_b);
+  }
+
+
+  private void assertLinesToCharsResultEquals(String error_msg,
+      LinesToCharsResult a, LinesToCharsResult b) {
+    assertEquals(error_msg, a.chars1, b.chars1);
+    assertEquals(error_msg, a.chars2, b.chars2);
+    assertEquals(error_msg, a.lineArray, b.lineArray);
   }
 
   // Construct the two texts which made up the diff originally.

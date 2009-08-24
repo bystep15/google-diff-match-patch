@@ -26,7 +26,6 @@ C++: (ported by Mike Slemmer)
 C#: (ported by Matthaeus G. Chajdas)
 * DiffMatchPatch.cs
 * DiffMatchPatchTest.cs
-* nunit.framework.dll
 
 Demos: (in JavaScript)
 * demo_diff.html

@@ -169,6 +169,7 @@ diff_match_patch::diff_match_patch() :
   Diff_DualThreshold(32),
   Match_Threshold(0.5f),
   Match_Distance(1000),
+  Patch_DeleteThreshold(0.5f),
   Patch_Margin(4),
   Match_MaxBits(32) {
 }
@@ -191,15 +192,15 @@ QList<Diff> diff_match_patch::diff_main(const QString &text1, const QString &tex
 
   // Trim off common prefix (speedup)
   int commonlength = diff_commonPrefix(text1, text2);
-  const QString &commonprefix = text1.mid(0, commonlength);
+  const QString &commonprefix = text1.left(commonlength);
   QString textChopped1 = text1.mid(commonlength);
   QString textChopped2 = text2.mid(commonlength);
 
   // Trim off common suffix (speedup)
   commonlength = diff_commonSuffix(textChopped1, textChopped2);
-  const QString &commonsuffix = textChopped1.mid(textChopped1.length() - commonlength);
-  textChopped1 = textChopped1.mid(0, textChopped1.length() - commonlength);
-  textChopped2 = textChopped2.mid(0, textChopped2.length() - commonlength);
+  const QString &commonsuffix = textChopped1.right(commonlength);
+  textChopped1 = textChopped1.left(textChopped1.length() - commonlength);
+  textChopped2 = textChopped2.left(textChopped2.length() - commonlength);
 
   // Compute the diff on the middle block
   diffs = diff_compute(textChopped1, textChopped2, checklines);
@@ -234,13 +235,13 @@ QList<Diff> diff_match_patch::diff_compute(QString text1, QString text2, bool ch
   }
 
   {
-    QString longtext = text1.length() > text2.length() ? text1 : text2;
-    QString shorttext = text1.length() > text2.length() ? text2 : text1;
-    int i = longtext.indexOf(shorttext);
+    const QString longtext = text1.length() > text2.length() ? text1 : text2;
+    const QString shorttext = text1.length() > text2.length() ? text2 : text1;
+    const int i = longtext.indexOf(shorttext);
     if (i != -1) {
       // Shorter text is inside the longer text (speedup)
-      Operation op = (text1.length() > text2.length()) ? DELETE : INSERT;
-      diffs.append(Diff(op, longtext.mid(0, i)));
+      const Operation op = (text1.length() > text2.length()) ? DELETE : INSERT;
+      diffs.append(Diff(op, longtext.left(i)));
       diffs.append(Diff(EQUAL, shorttext));
       diffs.append(Diff(op, longtext.mid(i + shorttext.length())));
       return diffs;
@@ -249,17 +250,17 @@ QList<Diff> diff_match_patch::diff_compute(QString text1, QString text2, bool ch
   }
 
   // Check to see if the problem can be split in two.
-  QStringList hm = diff_halfMatch(text1, text2);
+  const QStringList hm = diff_halfMatch(text1, text2);
   if (hm.count() > 0) {
     // A half-match was found, sort out the return data.
-    QString text1_a = hm[0];
-    QString text1_b = hm[1];
-    QString text2_a = hm[2];
-    QString text2_b = hm[3];
-    QString mid_common = hm[4];
+    const QString text1_a = hm[0];
+    const QString text1_b = hm[1];
+    const QString text2_a = hm[2];
+    const QString text2_b = hm[3];
+    const QString mid_common = hm[4];
     // Send both pairs off for separate processing.
-    QList<Diff> diffs_a = diff_main(text1_a, text2_a, checklines);
-    QList<Diff> diffs_b = diff_main(text1_b, text2_b, checklines);
+    const QList<Diff> diffs_a = diff_main(text1_a, text2_a, checklines);
+    const QList<Diff> diffs_b = diff_main(text1_b, text2_b, checklines);
     // Merge the results.
     diffs = diffs_a;
     diffs.append(Diff(EQUAL, mid_common));
@@ -274,7 +275,7 @@ QList<Diff> diff_match_patch::diff_compute(QString text1, QString text2, bool ch
   QStringList linearray;
   if (checklines) {
     // Scan the text on a line-by-line basis first.
-    QList<QVariant> b = diff_linesToChars(text1, text2);
+    const QList<QVariant> b = diff_linesToChars(text1, text2);
     text1 = b[0].toString();
     text2 = b[1].toString();
     linearray = b[2].toStringList();
@@ -352,8 +353,8 @@ QList<QVariant> diff_match_patch::diff_linesToChars(const QString &text1,
   // So we'll insert a junk entry to avoid generating a null character.
   lineArray.append("");
 
-  QString chars1 = diff_linesToCharsMunge(text1, lineArray, lineHash);
-  QString chars2 = diff_linesToCharsMunge(text2, lineArray, lineHash);
+  const QString chars1 = diff_linesToCharsMunge(text1, lineArray, lineHash);
+  const QString chars2 = diff_linesToCharsMunge(text2, lineArray, lineHash);
 
   QList<QVariant> listRet;
   listRet.append(QVariant::fromValue(chars1));
@@ -378,7 +379,7 @@ QString diff_match_patch::diff_linesToCharsMunge(const QString &text,
     if (lineEnd == -1) {
       lineEnd = text.length() - 1;
     }
-    line = text.mid(lineStart, (lineEnd + 1) - (lineStart));
+    line = text.mid(lineStart, lineEnd + 1 - lineStart);
     lineStart = lineEnd + 1;
 
     if (lineHash.contains(line)) {
@@ -413,8 +414,11 @@ QList<Diff> diff_match_patch::diff_map(const QString &text1,
                                        const QString &text2) {
   QTime ms_end = QTime::currentTime()
       .addMSecs(static_cast<int> (Diff_Timeout * 1000));
-  const int max_d = text1.length() + text2.length() - 1;
-  bool doubleEnd = Diff_DualThreshold * 2 < max_d;
+  // Cache the text lengths to prevent multiple calls.
+  const int text1_length = text1.length();
+  const int text2_length = text2.length();
+  const int max_d = text1_length + text2_length - 1;
+  const bool doubleEnd = Diff_DualThreshold * 2 < max_d;
   QList<QSet<QPair<int, int> > > v_map1;
   QList<QSet<QPair<int, int> > > v_map2;
   QMap<int, int> v1;
@@ -427,7 +431,7 @@ QList<Diff> diff_match_patch::diff_map(const QString &text1,
   bool done = false;
   // If the total number of characters is odd, then the front path will
   // collide with the reverse path.
-  bool front = ((text1.length() + text2.length()) % 2 == 1);
+  const bool front = ((text1_length + text2_length) % 2 == 1);
   for (int d = 0; d < max_d; d++) {
     // Bail out if timeout reached.
     if (Diff_Timeout > 0 && QTime::currentTime() > ms_end) {
@@ -452,7 +456,7 @@ QList<Diff> diff_match_patch::diff_map(const QString &text1,
           footsteps.insert(footstep, d);
         }
       }
-      while (!done && x < text1.length() && y < text2.length()
+      while (!done && x < text1_length && y < text2_length
           && text1[x] == text2[y]) {
         x++;
         y++;
@@ -468,13 +472,13 @@ QList<Diff> diff_match_patch::diff_map(const QString &text1,
       }
       v1.insert(k, x);
       v_map1[d].insert(QPair<int, int>(x, y));
-      if (x == text1.length() && y == text2.length()) {
+      if (x == text1_length && y == text2_length) {
         // Reached the end in single-path mode.
         return diff_path1(v_map1, text1, text2);
       } else if (done) {
         // Front path ran over reverse path.
         v_map2 = v_map2.mid(0, footsteps.value(footstep) + 1);
-        QList<Diff> a = diff_path1(v_map1, text1.mid(0, x), text2.mid(0, y));
+        QList<Diff> a = diff_path1(v_map1, text1.left(x), text2.left(y));
         a += diff_path2(v_map2, text1.mid(x), text2.mid(y));
         return a;
       }
@@ -491,18 +495,18 @@ QList<Diff> diff_match_patch::diff_map(const QString &text1,
         }
         y = x - k;
 
-        footstep = QPair<int, int>(text1.length() - x, text2.length() - y);
+        footstep = QPair<int, int>(text1_length - x, text2_length - y);
         if (!front && (footsteps.contains(footstep))) {
           done = true;
         }
         if (front) {
           footsteps.insert(footstep, d);
         }
-        while (!done && x < text1.length() && y < text2.length()
-            && text1[text1.length() - x - 1] == text2[text2.length() - y - 1]) {
+        while (!done && x < text1_length && y < text2_length
+            && text1[text1_length - x - 1] == text2[text2_length - y - 1]) {
           x++;
           y++;
-          footstep = QPair<int, int>(text1.length() - x, text2.length() - y);
+          footstep = QPair<int, int>(text1_length - x, text2_length - y);
           if (!front && (footsteps.contains(footstep))) {
             done = true;
           }
@@ -516,10 +520,9 @@ QList<Diff> diff_match_patch::diff_map(const QString &text1,
           // Reverse path ran over front path.
           v_map1 = v_map1.mid(0, footsteps.value(footstep) + 1);
           QList<Diff> a
-              = diff_path1(v_map1, text1.mid(0, text1.length() - x),
-              text2.mid(0, text2.length() - y));
-          a += diff_path2(v_map2, text1.mid(text1.length() - x),
-              text2.mid(text2.length() - y));
+              = diff_path1(v_map1, text1.left(text1_length - x),
+              text2.left(text2_length - y));
+          a += diff_path2(v_map2, text1.right(x), text2.right(y));
           return a;
         }
       }
@@ -545,7 +548,7 @@ QList<Diff> diff_match_patch::diff_path1(
         if (last_op == DELETE) {
           path.front().text = text1[x] + path.front().text;
         } else {
-          path.prepend(Diff(DELETE, text1.mid(x, (x + 1) - (x))));
+          path.prepend(Diff(DELETE, text1.mid(x, 1)));
         }
         last_op = DELETE;
         break;
@@ -554,7 +557,7 @@ QList<Diff> diff_match_patch::diff_path1(
         if (last_op == INSERT) {
           path.front().text = text2[y] + path.front().text;
         } else {
-          path.prepend(Diff(INSERT, text2.mid(y, (y + 1) - (y))));
+          path.prepend(Diff(INSERT, text2.mid(y, 1)));
         }
         last_op = INSERT;
         break;
@@ -567,7 +570,7 @@ QList<Diff> diff_match_patch::diff_path1(
         if (last_op == EQUAL && !first) {
           path.front().text = text1[x] + path.front().text;
         } else {
-          path.prepend(Diff(EQUAL, text1.mid(x, (x + 1) - (x))));
+          path.prepend(Diff(EQUAL, text1.mid(x, 1)));
         }
         last_op = EQUAL;
       }
@@ -593,9 +596,7 @@ QList<Diff> diff_match_patch::diff_path2(
         if (last_op == DELETE) {
           path.back().text += text1[text1.length() - x - 1];
         } else {
-          path.append(Diff(DELETE,
-              text1.mid(text1.length() - x - 1, (text1.length() - x)
-              - (text1.length() - x - 1))));
+          path.append(Diff(DELETE, text1.mid(text1.length() - x - 1, 1)));
         }
         last_op = DELETE;
         break;
@@ -604,9 +605,7 @@ QList<Diff> diff_match_patch::diff_path2(
         if (last_op == INSERT) {
           path.back().text += text2[text2.length() - y - 1];
         } else {
-          path.append(Diff(INSERT,
-              text2.mid(text2.length() - y - 1, (text2.length() - y)
-              - (text2.length() - y - 1))));
+          path.append(Diff(INSERT, text2.mid(text2.length() - y - 1, 1)));
         }
         last_op = INSERT;
         break;
@@ -614,16 +613,13 @@ QList<Diff> diff_match_patch::diff_path2(
         x--;
         y--;
 
-        if (text1[text1.length() - x - 1]
-            != text2[text2.length() - y - 1]) {
+        if (text1[text1.length() - x - 1] != text2[text2.length() - y - 1]) {
           throw(QString("No diagonal.  Can't happen. (diff_path2)"));
         }
         if (last_op == EQUAL && !first) {
           path.back().text += text1[text1.length() - x - 1];
         } else {
-          path.append(Diff(EQUAL,
-              text1.mid(text1.length() - x - 1, (text1.length() - x)
-              - (text1.length() - x - 1))));
+          path.append(Diff(EQUAL, text1.mid(text1.length() - x - 1, 1)));
         }
         last_op = EQUAL;
       }
@@ -637,7 +633,7 @@ QList<Diff> diff_match_patch::diff_path2(
 int diff_match_patch::diff_commonPrefix(const QString &text1,
                                         const QString &text2) {
   // Performance analysis: http://neil.fraser.name/news/2007/10/09/
-  int n = qMin(text1.length(), text2.length());
+  const int n = qMin(text1.length(), text2.length());
   for (int i = 0; i < n; i++) {
     if (text1[i] != text2[i]) {
       return i;
@@ -650,11 +646,12 @@ int diff_match_patch::diff_commonPrefix(const QString &text1,
 int diff_match_patch::diff_commonSuffix(const QString &text1,
                                         const QString &text2) {
   // Performance analysis: http://neil.fraser.name/news/2007/10/09/
-  int n = qMin(text1.length(), text2.length());
-  for (int i = 0; i < n; i++) {
-    if (text1[text1.length() - i - 1]
-        != text2[text2.length() - i - 1]) {
-      return i;
+  const int text1_length = text1.length();
+  const int text2_length = text2.length();
+  const int n = qMin(text1_length, text2_length);
+  for (int i = 1; i <= n; i++) {
+    if (text1[text1_length - i] != text2[text2_length - i]) {
+      return i - 1;
     }
   }
   return n;
@@ -663,17 +660,17 @@ int diff_match_patch::diff_commonSuffix(const QString &text1,
 
 QStringList diff_match_patch::diff_halfMatch(const QString &text1,
                                              const QString &text2) {
-  QString longtext = text1.length() > text2.length() ? text1 : text2;
-  QString shorttext = text1.length() > text2.length() ? text2 : text1;
+  const QString longtext = text1.length() > text2.length() ? text1 : text2;
+  const QString shorttext = text1.length() > text2.length() ? text2 : text1;
   if (longtext.length() < 10 || shorttext.length() < 1) {
     return QStringList();  // Pointless.
   }
 
   // First check if the second quarter is the seed for a half-match.
-  QStringList hm1 = diff_halfMatchI(longtext, shorttext,
+  const QStringList hm1 = diff_halfMatchI(longtext, shorttext,
       (longtext.length() + 3) / 4);
   // Check again based on the third quarter.
-  QStringList hm2 = diff_halfMatchI(longtext, shorttext,
+  const QStringList hm2 = diff_halfMatchI(longtext, shorttext,
       (longtext.length() + 1) / 2);
   QStringList hm;
   if (hm1.isEmpty() && hm2.isEmpty()) {
@@ -702,21 +699,22 @@ QStringList diff_match_patch::diff_halfMatchI(const QString &longtext,
                                               const QString &shorttext,
                                               int i) {
   // Start with a 1/4 length substring at position i as a seed.
-  QString seed = longtext.mid(i, (i + (longtext.length() / 4)) - i);
+  const QString seed = longtext.mid(i, longtext.length() / 4);
   int j = -1;
   QString best_common;
   QString best_longtext_a, best_longtext_b;
   QString best_shorttext_a, best_shorttext_b;
   while ((j = shorttext.indexOf(seed, j + 1)) != -1) {
-    int prefixLength = diff_commonPrefix(longtext.mid(i), shorttext.mid(j));
-    int suffixLength = diff_commonSuffix(longtext.mid(0, i),
-        shorttext.mid(0, j));
+    const int prefixLength = diff_commonPrefix(longtext.mid(i),
+        shorttext.mid(j));
+    const int suffixLength = diff_commonSuffix(longtext.left(i),
+        shorttext.left(j));
     if (best_common.length() < suffixLength + prefixLength) {
-      best_common = shorttext.mid(j - suffixLength, (j) - (j - suffixLength))
-          + shorttext.mid(j, (j + prefixLength) - (j));
-      best_longtext_a = longtext.mid(0, i - suffixLength);
+      best_common = shorttext.mid(j - suffixLength, suffixLength)
+          + shorttext.mid(j, prefixLength);
+      best_longtext_a = longtext.left(i - suffixLength);
       best_longtext_b = longtext.mid(i + prefixLength);
-      best_shorttext_a = shorttext.mid(0, j - suffixLength);
+      best_shorttext_a = shorttext.left(j - suffixLength);
       best_shorttext_b = shorttext.mid(j + prefixLength);
     }
   }
@@ -827,8 +825,8 @@ void diff_match_patch::diff_cleanupSemanticLossless(QList<Diff> &diffs) {
         commonOffset = diff_commonSuffix(equality1, edit);
         if (commonOffset != 0) {
           commonString = edit.mid(edit.length() - commonOffset);
-          equality1 = equality1.mid(0, equality1.length() - commonOffset);
-          edit = commonString + edit.mid(0, edit.length() - commonOffset);
+          equality1 = equality1.left(equality1.length() - commonOffset);
+          edit = commonString + edit.left(edit.length() - commonOffset);
           equality2 = commonString + equality2;
         }
 
@@ -1071,10 +1069,10 @@ void diff_match_patch::diff_cleanupMerge(QList<Diff> &diffs) {
                 thisDiff = &pointer.previous();
                 if (thisDiff->operation != EQUAL)
                   throw(QString("Previous diff should have been an equality."));
-                thisDiff->text += text_insert.mid(0, commonlength);
+                thisDiff->text += text_insert.left(commonlength);
                 pointer.next();
               } else {
-                pointer.insert(Diff(EQUAL, text_insert.mid(0, commonlength)));
+                pointer.insert(Diff(EQUAL, text_insert.left(commonlength)));
               }
               text_insert = text_insert.mid(commonlength);
               text_delete = text_delete.mid(commonlength);
@@ -1144,7 +1142,7 @@ void diff_match_patch::diff_cleanupMerge(QList<Diff> &diffs) {
         if (thisDiff->text.endsWith(prevDiff->text)) {
           // Shift the edit over the previous equality.
           thisDiff->text = prevDiff->text
-              + thisDiff->text.mid(0, thisDiff->text.length()
+              + thisDiff->text.left(thisDiff->text.length()
               - prevDiff->text.length());
           nextDiff->text = prevDiff->text + nextDiff->text;
           pointer.previous();  // Walk past nextDiff.
@@ -1307,7 +1305,7 @@ QString diff_match_patch::diff_toDelta(const QList<Diff> &diffs) {
   }
   if (!text.isEmpty()) {
     // Strip off trailing tab character.
-    text = text.mid(0, text.length() - 1);
+    text = text.left(text.length() - 1);
   }
   return text;
 }
@@ -1340,7 +1338,7 @@ QList<Diff> diff_match_patch::diff_fromDelta(const QString &text1,
           throw(QString("Negative number in diff_fromDelta: %1").arg(param));
         }
         QString text;
-        text = text1.mid(pointer, (pointer + n) - (pointer));
+        text = text1.mid(pointer, n);
         pointer += n;
         if (token[0] == QChar('=')) {
           diffs.append(Diff(EQUAL, text));
@@ -1489,13 +1487,13 @@ int diff_match_patch::match_bitap(const QString &text, const QString &pattern,
 
 double diff_match_patch::match_bitapScore(int e, int x, int loc,
                                           const QString &pattern) {
-  float accuracy = static_cast<float> (e) / pattern.length();
-  int proximity = qAbs(loc - x);
+  const float accuracy = static_cast<float> (e) / pattern.length();
+  const int proximity = qAbs(loc - x);
   if (Match_Distance == 0) {
     // Dodge divide by zero error.
     return proximity == 0 ? 1.0 : accuracy;
   }
-  return accuracy + proximity / static_cast<float> (Match_Distance);
+  return accuracy + (proximity / static_cast<float> (Match_Distance));
 }
 
 
@@ -1518,8 +1516,7 @@ QMap<QChar, int> diff_match_patch::match_alphabet(const QString &pattern) {
 
 
 void diff_match_patch::patch_addContext(Patch &patch, const QString &text) {
-  QString pattern = text.mid(patch.start2, (patch.start2 + patch.length1)
-      - (patch.start2));
+  QString pattern = text.mid(patch.start2, patch.length1);
   int padding = 0;
   // Increase the context until we're unique (but don't let the pattern
   // expand beyond Match_MaxBits).
@@ -1575,7 +1572,7 @@ QList<Patch> diff_match_patch::patch_make(const QString &text1,
 
 QList<Patch> diff_match_patch::patch_make(const QList<Diff> &diffs) {
   // No origin string provided, compute our own.
-  QString text1 = diff_text1(diffs);
+  const QString text1 = diff_text1(diffs);
   return patch_make(text1, diffs);
 }
 
@@ -1707,14 +1704,26 @@ QPair<QString, QVector<bool> > diff_match_patch::patch_apply(
   // has an effective expected position of 22.
   int delta = 0;
   QVector<bool> results(patchesCopy.size());
-  int expected_loc, start_loc;
-  QString text1, text2;
-  QList<Diff> diffs;
-  int index1, index2;
   foreach(Patch aPatch, patchesCopy) {
-    expected_loc = aPatch.start2 + delta;
-    text1 = diff_text1(aPatch.diffs);
-    start_loc = match_main(text, text1, expected_loc);
+    int expected_loc = aPatch.start2 + delta;
+    QString text1 = diff_text1(aPatch.diffs);
+    int start_loc;
+    int end_loc = -1;
+    if (text1.length() > Match_MaxBits) {
+      // patch_splitMax will only provide an oversized pattern in the case of
+      // a monster delete.
+      start_loc = match_main(text, text1.left(Match_MaxBits), expected_loc);
+      if (start_loc != -1) {
+        end_loc = match_main(text, text1.right(Match_MaxBits),
+            expected_loc + text1.length() - Match_MaxBits);
+        if (end_loc == -1 || start_loc >= end_loc) {
+          // Can't find valid trailing context.  Drop this patch.
+          start_loc = -1;
+        }
+      }
+    } else {
+      start_loc = match_main(text, text1, expected_loc);
+    }
     if (start_loc == -1) {
       // No match found.  :(
       results[x] = false;
@@ -1722,34 +1731,45 @@ QPair<QString, QVector<bool> > diff_match_patch::patch_apply(
       // Found a match.  :)
       results[x] = true;
       delta = start_loc - expected_loc;
-      text2 = text.mid(start_loc,
-          qMin((start_loc + text1.length()) - start_loc, text.length()));
+      QString text2;
+      if (end_loc == -1) {
+        text2 = text.mid(start_loc, text1.length());
+      } else {
+        text2 = text.mid(start_loc, end_loc + Match_MaxBits - start_loc);
+      }
       if (text1 == text2) {
         // Perfect match, just shove the replacement text in.
         text = text.left(start_loc) + diff_text2(aPatch.diffs)
             + text.mid(start_loc + text1.length());
       } else {
         // Imperfect match.  Run a diff to get a framework of equivalent
-        // indicies.
-        diffs = diff_main(text1, text2, false);
-        diff_cleanupSemanticLossless(diffs);
-        index1 = 0;
-        foreach(Diff aDiff, aPatch.diffs) {
-          if (aDiff.operation != EQUAL) {
-            index2 = diff_xIndex(diffs, index1);
-            if (aDiff.operation == INSERT) {
-              // Insertion
-              text = text.left(start_loc + index2) + aDiff.text
-                  + text.mid(start_loc + index2);
-            } else if (aDiff.operation == DELETE) {
-              // Deletion
-              text = text.left(start_loc + index2)
-                  + text.mid(start_loc + diff_xIndex(diffs,
-                  index1 + aDiff.text.length()));
+        // indices.
+        QList<Diff> diffs = diff_main(text1, text2, false);
+        if (text1.length() > Match_MaxBits
+            && diff_levenshtein(diffs) / static_cast<float> (text1.length())
+            > Patch_DeleteThreshold) {
+          // The end points match, but the content is unacceptably bad.
+          results[x] = false;
+        } else {
+          diff_cleanupSemanticLossless(diffs);
+          int index1 = 0;
+          foreach(Diff aDiff, aPatch.diffs) {
+            if (aDiff.operation != EQUAL) {
+              int index2 = diff_xIndex(diffs, index1);
+              if (aDiff.operation == INSERT) {
+                // Insertion
+                text = text.left(start_loc + index2) + aDiff.text
+                    + text.mid(start_loc + index2);
+              } else if (aDiff.operation == DELETE) {
+                // Deletion
+                text = text.left(start_loc + index2)
+                    + text.mid(start_loc + diff_xIndex(diffs,
+                    index1 + aDiff.text.length()));
+              }
             }
-          }
-          if (aDiff.operation != DELETE) {
-            index1 += aDiff.text.length();
+            if (aDiff.operation != DELETE) {
+              index1 += aDiff.text.length();
+            }
           }
         }
       }
@@ -1765,7 +1785,7 @@ QPair<QString, QVector<bool> > diff_match_patch::patch_apply(
 
 QString diff_match_patch::patch_addPadding(QList<Patch> &patches) {
   QString nullPadding = "";
-  for (int x = 0; x < Patch_Margin; x++) {
+  for (int x = 1; x <= Patch_Margin; x++) {
     nullPadding += QChar((ushort)x);
   }
 
@@ -1811,7 +1831,7 @@ QString diff_match_patch::patch_addPadding(QList<Patch> &patches) {
     // Grow last equality.
     Diff &lastDiff = lastPatchDiffs.last();
     int extraLength = nullPadding.length() - lastDiff.text.length();
-    lastDiff.text += nullPadding.mid(0, extraLength);
+    lastDiff.text += nullPadding.left(extraLength);
     lastPatch.length1 += extraLength;
     lastPatch.length2 += extraLength;
   }
@@ -1867,6 +1887,15 @@ void diff_match_patch::patch_splitMax(QList<Patch> &patches) {
           patch.diffs.append(bigpatch.diffs.front());
           bigpatch.diffs.removeFirst();
           empty = false;
+        } else if (diff_type == DELETE && patch.diffs.size() == 1
+            && patch.diffs.front().operation == EQUAL
+            && diff_text.length() > 2 * patch_size) {
+          // This is a large deletion.  Let it pass in one chunk.
+          patch.length1 += diff_text.length();
+          start1 += diff_text.length();
+          empty = false;
+          patch.diffs.append(Diff(diff_type, diff_text));
+          bigpatch.diffs.removeFirst();
         } else {
           // Deletion or equality.  Only take as much as we can stomach.
           diff_text = diff_text.left(qMin(diff_text.length(),
@@ -1890,7 +1919,7 @@ void diff_match_patch::patch_splitMax(QList<Patch> &patches) {
       }
       // Compute the head context for the next patch.
       precontext = diff_text2(patch.diffs);
-      precontext = precontext.mid(qMax(0, precontext.length() - Patch_Margin));
+      precontext = precontext.mid(precontext.length() - Patch_Margin);
       // Append the end context for this patch.
       if (diff_text1(bigpatch.diffs).length() > Patch_Margin) {
         postcontext = diff_text1(bigpatch.diffs).left(Patch_Margin);

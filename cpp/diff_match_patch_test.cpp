@@ -82,6 +82,8 @@ void diff_match_patch_test::testDiffCommonPrefix() {
   assertEquals("diff_commonPrefix: Null case.", 0, dmp.diff_commonPrefix("abc", "xyz"));
 
   assertEquals("diff_commonPrefix: Non-null case.", 4, dmp.diff_commonPrefix("1234abcdef", "1234xyz"));
+
+  assertEquals("diff_commonPrefix: Whole case.", 4, dmp.diff_commonPrefix("1234", "1234xyz"));
 }
 
 void diff_match_patch_test::testDiffCommonSuffix() {
@@ -89,6 +91,8 @@ void diff_match_patch_test::testDiffCommonSuffix() {
   assertEquals("diff_commonSuffix: Null case.", 0, dmp.diff_commonSuffix("abc", "xyz"));
 
   assertEquals("diff_commonSuffix: Non-null case.", 4, dmp.diff_commonSuffix("abcdef1234", "xyz1234"));
+
+  assertEquals("diff_commonSuffix: Whole case.", 4, dmp.diff_commonSuffix("1234", "xyz1234"));
 }
 
 void diff_match_patch_test::testDiffHalfmatch() {
@@ -796,17 +800,22 @@ void diff_match_patch_test::testPatchMake() {
 void diff_match_patch_test::testPatchSplitMax() {
   // Assumes that Match_MaxBits is 32.
   QList<Patch> patches;
-  patches = dmp.patch_make("abcdef1234567890123456789012345678901234567890123456789012345678901234567890uvwxyz", "abcdefuvwxyz");
+  patches = dmp.patch_make("abcdefghijklmnopqrstuvwxyz01234567890", "XabXcdXefXghXijXklXmnXopXqrXstXuvXwxXyzX01X23X45X67X89X0");
   dmp.patch_splitMax(patches);
-  assertEquals("patch_splitMax: #1.", "@@ -3,32 +3,8 @@\n cdef\n-123456789012345678901234\n 5678\n@@ -27,32 +3,8 @@\n cdef\n-567890123456789012345678\n 9012\n@@ -51,30 +3,8 @@\n cdef\n-9012345678901234567890\n uvwx\n", dmp.patch_toText(patches));
+  assertEquals("patch_splitMax: #1.", "@@ -1,32 +1,46 @@\n+X\n ab\n+X\n cd\n+X\n ef\n+X\n gh\n+X\n ij\n+X\n kl\n+X\n mn\n+X\n op\n+X\n qr\n+X\n st\n+X\n uv\n+X\n wx\n+X\n yz\n+X\n 012345\n@@ -25,13 +39,18 @@\n zX01\n+X\n 23\n+X\n 45\n+X\n 67\n+X\n 89\n+X\n 0\n", dmp.patch_toText(patches));
+
+  patches = dmp.patch_make("abcdef1234567890123456789012345678901234567890123456789012345678901234567890uvwxyz", "abcdefuvwxyz");
+  QString oldToText = dmp.patch_toText(patches);
+  dmp.patch_splitMax(patches);
+  assertEquals("patch_splitMax: #2.", oldToText, dmp.patch_toText(patches));
 
   patches = dmp.patch_make("1234567890123456789012345678901234567890123456789012345678901234567890", "abc");
   dmp.patch_splitMax(patches);
-  assertEquals("patch_splitMax: #2.", "@@ -1,32 +1,4 @@\n-1234567890123456789012345678\n 9012\n@@ -29,32 +1,4 @@\n-9012345678901234567890123456\n 7890\n@@ -57,14 +1,3 @@\n-78901234567890\n+abc\n", dmp.patch_toText(patches));
+  assertEquals("patch_splitMax: #3.", "@@ -1,32 +1,4 @@\n-1234567890123456789012345678\n 9012\n@@ -29,32 +1,4 @@\n-9012345678901234567890123456\n 7890\n@@ -57,14 +1,3 @@\n-78901234567890\n+abc\n", dmp.patch_toText(patches));
 
   patches = dmp.patch_make("abcdefghij , h : 0 , t : 1 abcdefghij , h : 0 , t : 1 abcdefghij , h : 0 , t : 1", "abcdefghij , h : 1 , t : 1 abcdefghij , h : 1 , t : 1 abcdefghij , h : 0 , t : 1");
   dmp.patch_splitMax(patches);
-  assertEquals("patch_splitMax: #3.", "@@ -2,32 +2,32 @@\n bcdefghij , h : \n-0\n+1\n  , t : 1 abcdef\n@@ -29,32 +29,32 @@\n bcdefghij , h : \n-0\n+1\n  , t : 1 abcdef\n", dmp.patch_toText(patches));
+  assertEquals("patch_splitMax: #4.", "@@ -2,32 +2,32 @@\n bcdefghij , h : \n-0\n+1\n  , t : 1 abcdef\n@@ -29,32 +29,32 @@\n bcdefghij , h : \n-0\n+1\n  , t : 1 abcdef\n", dmp.patch_toText(patches));
 }
 
 void diff_match_patch_test::testPatchAddPadding() {
@@ -814,12 +823,12 @@ void diff_match_patch_test::testPatchAddPadding() {
   patches = dmp.patch_make("", "test");
   assertEquals("patch_addPadding: Both edges full.", "@@ -0,0 +1,4 @@\n+test\n", dmp.patch_toText(patches));
   dmp.patch_addPadding(patches);
-  assertEquals("patch_addPadding: Both edges full.", "@@ -1,8 +1,12 @@\n %00%01%02%03\n+test\n %00%01%02%03\n", dmp.patch_toText(patches));
+  assertEquals("patch_addPadding: Both edges full.", "@@ -1,8 +1,12 @@\n %01%02%03%04\n+test\n %01%02%03%04\n", dmp.patch_toText(patches));
 
   patches = dmp.patch_make("XY", "XtestY");
   assertEquals("patch_addPadding: Both edges partial.", "@@ -1,2 +1,6 @@\n X\n+test\n Y\n", dmp.patch_toText(patches));
   dmp.patch_addPadding(patches);
-  assertEquals("patch_addPadding: Both edges partial.", "@@ -2,8 +2,12 @@\n %01%02%03X\n+test\n Y%00%01%02\n", dmp.patch_toText(patches));
+  assertEquals("patch_addPadding: Both edges partial.", "@@ -2,8 +2,12 @@\n %02%03%04X\n+test\n Y%01%02%03\n", dmp.patch_toText(patches));
 
   patches = dmp.patch_make("XXXXYYYY", "XXXXtestYYYY");
   assertEquals("patch_addPadding: Both edges none.", "@@ -1,8 +1,12 @@\n XXXX\n+test\n YYYY\n", dmp.patch_toText(patches));
@@ -828,6 +837,9 @@ void diff_match_patch_test::testPatchAddPadding() {
 }
 
 void diff_match_patch_test::testPatchApply() {
+  dmp.Match_Distance = 1000;
+  dmp.Match_Threshold = 0.5f;
+  dmp.Patch_DeleteThreshold = 0.5f;
   QList<Patch> patches;
   patches = dmp.patch_make("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.");
   QPair<QString, QVector<bool> > results = dmp.patch_apply(patches, "The quick brown fox jumps over the lazy dog.");
@@ -844,6 +856,26 @@ void diff_match_patch_test::testPatchApply() {
   boolArray = results.second;
   resultStr = results.first + "\t" + (boolArray[0] ? QString("true") : QString("false")) + "\t" + (boolArray[1] ? QString("true") : QString("false"));
   assertEquals("patch_apply: Failed match.", "I am the very model of a modern major general.\tfalse\tfalse", resultStr);
+
+  patches = dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
+  results = dmp.patch_apply(patches, "x123456789012345678901234567890-----++++++++++-----123456789012345678901234567890y");
+  boolArray = results.second;
+  resultStr = results.first + "\t" + (boolArray[0] ? QString("true") : QString("false")) + "\t" + (boolArray[1] ? QString("true") : QString("false"));
+  assertEquals("patch_apply: Big delete, small change.", "xabcy\ttrue\ttrue", resultStr);
+
+  patches = dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
+  results = dmp.patch_apply(patches, "x12345678901234567890---------------++++++++++---------------12345678901234567890y");
+  boolArray = results.second;
+  resultStr = results.first + "\t" + (boolArray[0] ? QString("true") : QString("false")) + "\t" + (boolArray[1] ? QString("true") : QString("false"));
+  assertEquals("patch_apply: Big delete, large change 1.", "xabc12345678901234567890---------------++++++++++---------------12345678901234567890y\tfalse\ttrue", resultStr);
+
+  dmp.Patch_DeleteThreshold = 0.6f;
+  patches = dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
+  results = dmp.patch_apply(patches, "x12345678901234567890---------------++++++++++---------------12345678901234567890y");
+  boolArray = results.second;
+  resultStr = results.first + "\t" + (boolArray[0] ? QString("true") : QString("false")) + "\t" + (boolArray[1] ? QString("true") : QString("false"));
+  assertEquals("patch_apply: Big delete, large change 2.", "xabcy\ttrue\ttrue", resultStr);
+  dmp.Patch_DeleteThreshold = 0.5f;
 
   patches = dmp.patch_make("", "test");
   QString patchStr = dmp.patch_toText(patches);
