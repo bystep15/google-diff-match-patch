@@ -111,7 +111,7 @@ void diff_match_patch_test::testDiffHalfmatch() {
 }
 
 void diff_match_patch_test::testDiffLinesToChars() {
-  // Convert lines down to characters
+  // Convert lines down to characters.
   QStringList tmpVector;
   QList<QVariant> tmpVarList;
   tmpVector.append("");
@@ -143,7 +143,7 @@ void diff_match_patch_test::testDiffLinesToChars() {
   tmpVarList << QVariant::fromValue(tmpVector);
   assertEquals("diff_linesToChars:", tmpVarList, dmp.diff_linesToChars("a", "b"));
 
-  // More than 256
+  // More than 256.
   int n = 300;
   tmpVector.clear();
   tmpVarList.clear();
@@ -164,12 +164,12 @@ void diff_match_patch_test::testDiffLinesToChars() {
 }
 
 void diff_match_patch_test::testDiffCharsToLines() {
-  // First check that Diff equality works
+  // First check that Diff equality works.
   assertTrue("diff_charsToLines:", Diff(EQUAL, "a") == Diff(EQUAL, "a"));
 
   assertEquals("diff_charsToLines:", Diff(EQUAL, "a"), Diff(EQUAL, "a"));
 
-  // Convert chars up to lines
+  // Convert chars up to lines.
   QList<Diff> diffs;
   diffs << Diff(EQUAL, QString() + QChar((ushort)1) + QChar((ushort)2) + QChar((ushort)1));  // ("\u0001\u0002\u0001");
   diffs << Diff(INSERT, QString() + QChar((ushort)2) + QChar((ushort)1) + QChar((ushort)2));  // ("\u0002\u0001\u0002");
@@ -180,7 +180,7 @@ void diff_match_patch_test::testDiffCharsToLines() {
   dmp.diff_charsToLines(diffs, tmpVector);
   assertEquals("diff_charsToLines:", diffList(Diff(EQUAL, "alpha\nbeta\nalpha\n"), Diff(INSERT, "beta\nalpha\nbeta\n")), diffs);
 
-  // More than 256
+  // More than 256.
   int n = 300;
   tmpVector.clear();
   QList<QVariant> tmpVarList;
@@ -200,7 +200,7 @@ void diff_match_patch_test::testDiffCharsToLines() {
 }
 
 void diff_match_patch_test::testDiffCleanupMerge() {
-  // Cleanup a messy diff
+  // Cleanup a messy diff.
   QList<Diff> diffs;
   dmp.diff_cleanupMerge(diffs);
   assertEquals("diff_cleanupMerge: Null case.", diffList(), diffs);
@@ -247,7 +247,7 @@ void diff_match_patch_test::testDiffCleanupMerge() {
 }
 
 void diff_match_patch_test::testDiffCleanupSemanticLossless() {
-  // Slide diffs to match logical boundaries
+  // Slide diffs to match logical boundaries.
   QList<Diff> diffs = diffList();
   dmp.diff_cleanupSemanticLossless(diffs);
   assertEquals("diff_cleanupSemantic: Null case.", diffList(), diffs);
@@ -278,7 +278,7 @@ void diff_match_patch_test::testDiffCleanupSemanticLossless() {
 }
 
 void diff_match_patch_test::testDiffCleanupSemantic() {
-  // Cleanup semantically trivial equalities
+  // Cleanup semantically trivial equalities.
   QList<Diff> diffs = diffList();
   dmp.diff_cleanupSemantic(diffs);
   assertEquals("diff_cleanupSemantic: Null case.", diffList(), diffs);
@@ -305,7 +305,7 @@ void diff_match_patch_test::testDiffCleanupSemantic() {
 }
 
 void diff_match_patch_test::testDiffCleanupEfficiency() {
-  // Cleanup operationally trivial equalities
+  // Cleanup operationally trivial equalities.
   dmp.Diff_EditCost = 4;
   QList<Diff> diffs = diffList();
   dmp.diff_cleanupEfficiency(diffs);
@@ -335,20 +335,20 @@ void diff_match_patch_test::testDiffCleanupEfficiency() {
 }
 
 void diff_match_patch_test::testDiffPrettyHtml() {
-  // Pretty print
+  // Pretty print.
   QList<Diff> diffs = diffList(Diff(EQUAL, "a\n"), Diff(DELETE, "<B>b</B>"), Diff(INSERT, "c&d"));
   assertEquals("diff_prettyHtml:", "<SPAN TITLE=\"i=0\">a&para;<BR></SPAN><DEL STYLE=\"background:#FFE6E6;\" TITLE=\"i=2\">&lt;B&gt;b&lt;/B&gt;</DEL><INS STYLE=\"background:#E6FFE6;\" TITLE=\"i=2\">c&amp;d</INS>", dmp.diff_prettyHtml(diffs));
 }
 
 void diff_match_patch_test::testDiffText() {
-  // Compute the source and destination texts
+  // Compute the source and destination texts.
   QList<Diff> diffs = diffList(Diff(EQUAL, "jump"), Diff(DELETE, "s"), Diff(INSERT, "ed"), Diff(EQUAL, " over "), Diff(DELETE, "the"), Diff(INSERT, "a"), Diff(EQUAL, " lazy"));
   assertEquals("diff_text1:", "jumps over the lazy", dmp.diff_text1(diffs));
   assertEquals("diff_text2:", "jumped over a lazy", dmp.diff_text2(diffs));
 }
 
 void diff_match_patch_test::testDiffDelta() {
-  // Convert a diff into delta string
+  // Convert a diff into delta string.
   QList<Diff> diffs = diffList(Diff(EQUAL, "jump"), Diff(DELETE, "s"), Diff(INSERT, "ed"), Diff(EQUAL, " over "), Diff(DELETE, "the"), Diff(INSERT, "a"), Diff(EQUAL, " lazy"), Diff(INSERT, "old dog"));
   QString text1 = dmp.diff_text1(diffs);
   assertEquals("diff_text1: Base text.", "jumps over the lazy", text1);
@@ -356,7 +356,7 @@ void diff_match_patch_test::testDiffDelta() {
   QString delta = dmp.diff_toDelta(diffs);
   assertEquals("diff_toDelta:", "=4\t-1\t+ed\t=6\t-3\t+a\t=5\t+old dog", delta);
 
-  // Convert delta string into a diff
+  // Convert delta string into a diff.
   assertEquals("diff_fromDelta: Normal.", diffs, dmp.diff_fromDelta(text1, delta));
 
   // Generates error (19 < 20).
@@ -383,7 +383,7 @@ void diff_match_patch_test::testDiffDelta() {
     // Exception expected.
   }
 
-  // Test deltas with special characters
+  // Test deltas with special characters.
   diffs = diffList(Diff(EQUAL, QString::fromWCharArray((const wchar_t*) L"\u0680 \000 \t %", 7)), Diff(DELETE, QString::fromWCharArray((const wchar_t*) L"\u0681 \001 \n ^", 7)), Diff(INSERT, QString::fromWCharArray((const wchar_t*) L"\u0682 \002 \\ |", 7)));
   text1 = dmp.diff_text1(diffs);
   assertEquals("diff_text1: Unicode text.", QString::fromWCharArray((const wchar_t*) L"\u0680 \000 \t %\u0681 \001 \n ^", 14), text1);
@@ -393,7 +393,7 @@ void diff_match_patch_test::testDiffDelta() {
 
   assertEquals("diff_fromDelta: Unicode.", diffs, dmp.diff_fromDelta(text1, delta));
 
-  // Verify pool of unchanged characters
+  // Verify pool of unchanged characters.
   diffs = diffList(Diff(INSERT, "A-Z a-z 0-9 - _ . ! ~ * ' ( ) ; / ? : @ & = + $ , # "));
   QString text2 = dmp.diff_text2(diffs);
   assertEquals("diff_text2: Unchanged characters.", "A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ", text2);
@@ -401,12 +401,12 @@ void diff_match_patch_test::testDiffDelta() {
   delta = dmp.diff_toDelta(diffs);
   assertEquals("diff_toDelta: Unchanged characters.", "+A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ", delta);
 
-  // Convert delta string into a diff
+  // Convert delta string into a diff.
   assertEquals("diff_fromDelta: Unchanged characters.", diffs, dmp.diff_fromDelta("", delta));
 }
 
 void diff_match_patch_test::testDiffXIndex() {
-  // Translate a location in text1 to text2
+  // Translate a location in text1 to text2.
   QList<Diff> diffs = diffList(Diff(DELETE, "a"), Diff(INSERT, "1234"), Diff(EQUAL, "xyz"));
   assertEquals("diff_xIndex: Translation on equality.", 5, dmp.diff_xIndex(diffs, 2));
 
@@ -426,7 +426,7 @@ void diff_match_patch_test::testDiffLevenshtein() {
 }
 
 void diff_match_patch_test::testDiffPath() {
-  // Single letters
+  // Single letters.
   // Trace a path from back to front.
   QList<QSet<QPair<int, int> > > v_map;
   QSet<QPair<int, int> > row_set;
@@ -480,7 +480,7 @@ void diff_match_patch_test::testDiffPath() {
   diffs = diffList(Diff(EQUAL, "4"), Diff(DELETE, "E"), Diff(INSERT, "Y"), Diff(EQUAL, "5"), Diff(DELETE, "F"), Diff(EQUAL, "6"), Diff(DELETE, "G"), Diff(INSERT, "Z"));
   assertEquals("diff_path2: Single letters.", diffs, dmp.diff_path2(v_map, "4E5F6G", "4Y56Z"));
 
-  // Double letters
+  // Double letters.
   // Trace a path from back to front.
   v_map = QList<QSet<QPair<int, int> > >();
   {
@@ -545,7 +545,7 @@ void diff_match_patch_test::testDiffPath() {
 }
 
 void diff_match_patch_test::testDiffMain() {
-  // Perform a trivial diff
+  // Perform a trivial diff.
   QList<Diff> diffs = diffList(Diff(EQUAL, "abc"));
   assertEquals("diff_main: Null case.", diffs, dmp.diff_main("abc", "abc", false));
 
@@ -561,7 +561,7 @@ void diff_match_patch_test::testDiffMain() {
   diffs = diffList(Diff(EQUAL, "a"), Diff(DELETE, "123"), Diff(EQUAL, "b"), Diff(DELETE, "456"), Diff(EQUAL, "c"));
   assertEquals("diff_main: Two deletions.", diffs, dmp.diff_main("a123b456c", "abc", false));
 
-  // Perform a real diff
+  // Perform a real diff.
   // Switch off the timeout.
   dmp.Diff_Timeout = 0;
   dmp.Diff_DualThreshold = 32;
@@ -598,7 +598,7 @@ void diff_match_patch_test::testDiffMain() {
   assertNull("diff_main: Timeout.", dmp.diff_map(a, b));
   dmp.Diff_Timeout = 0;
 
-  // Test the linemode speedup
+  // Test the linemode speedup.
   // Must be long to pass the 200 char cutoff.
   a = "1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n";
   b = "abcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\n";
@@ -616,7 +616,7 @@ void diff_match_patch_test::testDiffMain() {
 
 
 void diff_match_patch_test::testMatchAlphabet() {
-  // Initialise the bitmasks for Bitap
+  // Initialise the bitmasks for Bitap.
   QMap<QChar, int> bitmask;
   bitmask.insert('a', 4);
   bitmask.insert('b', 2);
@@ -631,7 +631,7 @@ void diff_match_patch_test::testMatchAlphabet() {
 }
 
 void diff_match_patch_test::testMatchBitap() {
-  // Bitap algorithm
+  // Bitap algorithm.
   dmp.Match_Distance = 100;
   dmp.Match_Threshold = 0.5f;
   assertEquals("match_bitap: Exact match #1.", 5, dmp.match_bitap("abcdefghijk", "fgh", 5));
@@ -676,7 +676,7 @@ void diff_match_patch_test::testMatchBitap() {
 }
 
 void diff_match_patch_test::testMatchMain() {
-  // Full match
+  // Full match.
   assertEquals("match_main: Equality.", 0, dmp.match_main("abcdef", "abcdef", 1000));
 
   assertEquals("match_main: Null text.", -1, dmp.match_main("", "abcdef", 1));
@@ -695,7 +695,7 @@ void diff_match_patch_test::testMatchMain() {
 
 
 void diff_match_patch_test::testPatchObj() {
-  // Patch Object
+  // Patch Object.
   Patch p;
   p.start1 = 20;
   p.start2 = 21;
@@ -876,6 +876,16 @@ void diff_match_patch_test::testPatchApply() {
   resultStr = results.first + "\t" + (boolArray[0] ? QString("true") : QString("false")) + "\t" + (boolArray[1] ? QString("true") : QString("false"));
   assertEquals("patch_apply: Big delete, large change 2.", "xabcy\ttrue\ttrue", resultStr);
   dmp.Patch_DeleteThreshold = 0.5f;
+
+  dmp.Match_Threshold = 0.0f;
+  dmp.Match_Distance = 0;
+  patches = dmp.patch_make("abcdefghijklmnopqrstuvwxyz--------------------1234567890", "abcXXXXXXXXXXdefghijklmnopqrstuvwxyz--------------------1234567YYYYYYYYYY890");
+  results = dmp.patch_apply(patches, "ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567890");
+  boolArray = results.second;
+  resultStr = results.first + "\t" + (boolArray[0] ? QString("true") : QString("false")) + "\t" + (boolArray[1] ? QString("true") : QString("false"));
+  assertEquals("Compensate for failed patch.", "ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567YYYYYYYYYY890\tfalse\ttrue", resultStr);
+  dmp.Match_Threshold = 0.5f;
+  dmp.Match_Distance = 1000;
 
   patches = dmp.patch_make("", "test");
   QString patchStr = dmp.patch_toText(patches);

@@ -1491,7 +1491,7 @@ double diff_match_patch::match_bitapScore(int e, int x, int loc,
   const int proximity = qAbs(loc - x);
   if (Match_Distance == 0) {
     // Dodge divide by zero error.
-    return proximity == 0 ? 1.0 : accuracy;
+    return proximity == 0 ? accuracy : 1.0;
   }
   return accuracy + (proximity / static_cast<float> (Match_Distance));
 }
@@ -1727,6 +1727,8 @@ QPair<QString, QVector<bool> > diff_match_patch::patch_apply(
     if (start_loc == -1) {
       // No match found.  :(
       results[x] = false;
+      // Subtract the delta for this failed patch from subsequent patches.
+      delta -= aPatch.length2 - aPatch.length1;
     } else {
       // Found a match.  :)
       results[x] = true;
@@ -1784,8 +1786,9 @@ QPair<QString, QVector<bool> > diff_match_patch::patch_apply(
 
 
 QString diff_match_patch::patch_addPadding(QList<Patch> &patches) {
+  int paddingLength = Patch_Margin;
   QString nullPadding = "";
-  for (int x = 1; x <= Patch_Margin; x++) {
+  for (int x = 1; x <= paddingLength; x++) {
     nullPadding += QChar((ushort)x);
   }
 
@@ -1793,8 +1796,8 @@ QString diff_match_patch::patch_addPadding(QList<Patch> &patches) {
   QMutableListIterator<Patch> pointer(patches);
   while (pointer.hasNext()) {
     Patch &aPatch = pointer.next();
-    aPatch.start1 += nullPadding.length();
-    aPatch.start2 += nullPadding.length();
+    aPatch.start1 += paddingLength;
+    aPatch.start2 += paddingLength;
   }
 
   // Add some padding on start of first diff.
@@ -1803,16 +1806,16 @@ QString diff_match_patch::patch_addPadding(QList<Patch> &patches) {
   if (firstPatchDiffs.empty() || firstPatchDiffs.first().operation != EQUAL) {
     // Add nullPadding equality.
     firstPatchDiffs.prepend(Diff(EQUAL, nullPadding));
-    firstPatch.start1 -= nullPadding.length();  // Should be 0.
-    firstPatch.start2 -= nullPadding.length();  // Should be 0.
-    firstPatch.length1 += nullPadding.length();
-    firstPatch.length2 += nullPadding.length();
-  } else if (nullPadding.length() > firstPatchDiffs.first().text.length()) {
+    firstPatch.start1 -= paddingLength;  // Should be 0.
+    firstPatch.start2 -= paddingLength;  // Should be 0.
+    firstPatch.length1 += paddingLength;
+    firstPatch.length2 += paddingLength;
+  } else if (paddingLength > firstPatchDiffs.first().text.length()) {
     // Grow first equality.
     Diff &firstDiff = firstPatchDiffs.first();
-    int extraLength = nullPadding.length() - firstDiff.text.length();
+    int extraLength = paddingLength - firstDiff.text.length();
     firstDiff.text = nullPadding.mid(firstDiff.text.length(),
-        nullPadding.length() - firstDiff.text.length()) + firstDiff.text;
+        paddingLength - firstDiff.text.length()) + firstDiff.text;
     firstPatch.start1 -= extraLength;
     firstPatch.start2 -= extraLength;
     firstPatch.length1 += extraLength;
@@ -1825,12 +1828,12 @@ QString diff_match_patch::patch_addPadding(QList<Patch> &patches) {
   if (lastPatchDiffs.empty() || lastPatchDiffs.last().operation != EQUAL) {
     // Add nullPadding equality.
     lastPatchDiffs.append(Diff(EQUAL, nullPadding));
-    lastPatch.length1 += nullPadding.length();
-    lastPatch.length2 += nullPadding.length();
-  } else if (nullPadding.length() > lastPatchDiffs.last().text.length()) {
+    lastPatch.length1 += paddingLength;
+    lastPatch.length2 += paddingLength;
+  } else if (paddingLength > lastPatchDiffs.last().text.length()) {
     // Grow last equality.
     Diff &lastDiff = lastPatchDiffs.last();
-    int extraLength = nullPadding.length() - lastDiff.text.length();
+    int extraLength = paddingLength - lastDiff.text.length();
     lastDiff.text += nullPadding.left(extraLength);
     lastPatch.length1 += extraLength;
     lastPatch.length2 += extraLength;

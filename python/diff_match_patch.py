@@ -1519,6 +1519,8 @@ class diff_match_patch:
       if start_loc == -1:
         # No match found.  :(
         results.append(False)
+        # Subtract the delta for this failed patch from subsequent patches.
+        delta -= patch.length2 - patch.length1
       else:
         # Found a match.  :)
         results.append(True)
@@ -1568,14 +1570,15 @@ class diff_match_patch:
     Returns:
       The padding string added to each side.
     """
+    paddingLength = self.Patch_Margin
     nullPadding = ""
-    for x in xrange(1, self.Patch_Margin + 1):
+    for x in xrange(1, paddingLength + 1):
       nullPadding += chr(x)
 
     # Bump all the patches forward.
     for patch in patches:
-      patch.start1 += len(nullPadding)
-      patch.start2 += len(nullPadding)
+      patch.start1 += paddingLength
+      patch.start2 += paddingLength
 
     # Add some padding on start of first diff.
     patch = patches[0]
@@ -1583,13 +1586,13 @@ class diff_match_patch:
     if not diffs or diffs[0][0] != self.DIFF_EQUAL:
       # Add nullPadding equality.
       diffs.insert(0, (self.DIFF_EQUAL, nullPadding))
-      patch.start1 -= len(nullPadding)  # Should be 0.
-      patch.start2 -= len(nullPadding)  # Should be 0.
-      patch.length1 += len(nullPadding)
-      patch.length2 += len(nullPadding)
-    elif len(nullPadding) > len(diffs[0][1]):
+      patch.start1 -= paddingLength  # Should be 0.
+      patch.start2 -= paddingLength  # Should be 0.
+      patch.length1 += paddingLength
+      patch.length2 += paddingLength
+    elif paddingLength > len(diffs[0][1]):
       # Grow first equality.
-      extraLength = len(nullPadding) - len(diffs[0][1])
+      extraLength = paddingLength - len(diffs[0][1])
       newText = nullPadding[len(diffs[0][1]):] + diffs[0][1]
       diffs[0] = (diffs[0][0], newText)
       patch.start1 -= extraLength
@@ -1603,11 +1606,11 @@ class diff_match_patch:
     if not diffs or diffs[-1][0] != self.DIFF_EQUAL:
       # Add nullPadding equality.
       diffs.append((self.DIFF_EQUAL, nullPadding))
-      patch.length1 += len(nullPadding)
-      patch.length2 += len(nullPadding)
-    elif len(nullPadding) > len(diffs[-1][1]):
+      patch.length1 += paddingLength
+      patch.length2 += paddingLength
+    elif paddingLength > len(diffs[-1][1]):
       # Grow last equality.
-      extraLength = len(nullPadding) - len(diffs[-1][1])
+      extraLength = paddingLength - len(diffs[-1][1])
       newText = diffs[-1][1] + nullPadding[:extraLength]
       diffs[-1] = (diffs[-1][0], newText)
       patch.length1 += extraLength

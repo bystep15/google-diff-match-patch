@@ -1908,7 +1908,7 @@ namespace DiffMatchPatch
             if (Match_Distance == 0)
             {
                 // Dodge divide by zero error.
-                return proximity == 0 ? 1.0 : accuracy;
+                return proximity == 0 ? accuracy : 1.0;
             }
             return accuracy + (proximity / (float) Match_Distance);
         }
@@ -2214,6 +2214,8 @@ namespace DiffMatchPatch
                 {
                     // No match found.  :(
                     results[x] = false;
+                    // Subtract the delta for this failed patch from subsequent patches.
+                    delta -= aPatch.length2 - aPatch.length1;
                 }
                 else
                 {
@@ -2295,9 +2297,9 @@ namespace DiffMatchPatch
          */
         public string patch_addPadding(List<Patch> patches)
         {
-            List<Diff> diffs;
+            int paddingLength = this.Patch_Margin;
             string nullPadding = string.Empty;
-            for (int x = 1; x <= this.Patch_Margin; x++)
+            for (int x = 1; x <= paddingLength; x++)
             {
                 nullPadding += (char)x;
             }
@@ -2305,27 +2307,27 @@ namespace DiffMatchPatch
             // Bump all the patches forward.
             foreach (Patch aPatch in patches)
             {
-                aPatch.start1 += nullPadding.Length;
-                aPatch.start2 += nullPadding.Length;
+                aPatch.start1 += paddingLength;
+                aPatch.start2 += paddingLength;
             }
 
             // Add some padding on start of first diff.
             Patch patch = patches.First();
-            diffs = patch.diffs;
+            List<Diff> diffs = patch.diffs;
             if (diffs.Count == 0 || diffs.First().operation != Operation.EQUAL)
             {
                 // Add nullPadding equality.
                 diffs.Insert(0, new Diff(Operation.EQUAL, nullPadding));
-                patch.start1 -= nullPadding.Length;  // Should be 0.
-                patch.start2 -= nullPadding.Length;  // Should be 0.
-                patch.length1 += nullPadding.Length;
-                patch.length2 += nullPadding.Length;
+                patch.start1 -= paddingLength;  // Should be 0.
+                patch.start2 -= paddingLength;  // Should be 0.
+                patch.length1 += paddingLength;
+                patch.length2 += paddingLength;
             }
-            else if (nullPadding.Length > diffs.First().text.Length)
+            else if (paddingLength > diffs.First().text.Length)
             {
                 // Grow first equality.
                 Diff firstDiff = diffs.First();
-                int extraLength = nullPadding.Length - firstDiff.text.Length;
+                int extraLength = paddingLength - firstDiff.text.Length;
                 firstDiff.text = nullPadding.Substring(firstDiff.text.Length)
                     + firstDiff.text;
                 patch.start1 -= extraLength;
@@ -2341,14 +2343,14 @@ namespace DiffMatchPatch
             {
                 // Add nullPadding equality.
                 diffs.Add(new Diff(Operation.EQUAL, nullPadding));
-                patch.length1 += nullPadding.Length;
-                patch.length2 += nullPadding.Length;
+                patch.length1 += paddingLength;
+                patch.length2 += paddingLength;
             }
-            else if (nullPadding.Length > diffs.Last().text.Length)
+            else if (paddingLength > diffs.Last().text.Length)
             {
                 // Grow last equality.
                 Diff lastDiff = diffs.Last();
-                int extraLength = nullPadding.Length - lastDiff.text.Length;
+                int extraLength = paddingLength - lastDiff.text.Length;
                 lastDiff.text += nullPadding.Substring(0, extraLength);
                 patch.length1 += extraLength;
                 patch.length2 += extraLength;

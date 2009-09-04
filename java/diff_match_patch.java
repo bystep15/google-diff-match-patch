@@ -53,28 +53,44 @@ public class diff_match_patch {
   // Defaults.
   // Set these on your diff_match_patch instance to override the defaults.
 
-  // Number of seconds to map a diff before giving up (0 for infinity).
+  /**
+   * Number of seconds to map a diff before giving up (0 for infinity).
+   */
   public float Diff_Timeout = 1.0f;
-  // Cost of an empty edit operation in terms of edit characters.
+  /**
+   * Cost of an empty edit operation in terms of edit characters.
+   */
   public short Diff_EditCost = 4;
-  // The size beyond which the double-ended diff activates.
-  // Double-ending is twice as fast, but less accurate.
+  /**
+   * The size beyond which the double-ended diff activates.
+   * Double-ending is twice as fast, but less accurate.
+   */
   public short Diff_DualThreshold = 32;
-  // At what point is no match declared (0.0 = perfection, 1.0 = very loose).
+  /**
+   * At what point is no match declared (0.0 = perfection, 1.0 = very loose).
+   */
   public float Match_Threshold = 0.5f;
-  // How far to search for a match (0 = exact location, 1000+ = broad match).
-  // A match this many characters away from the expected location will add
-  // 1.0 to the score (0.0 is a perfect match).
+  /**
+   * How far to search for a match (0 = exact location, 1000+ = broad match).
+   * A match this many characters away from the expected location will add
+   * 1.0 to the score (0.0 is a perfect match).
+   */
   public int Match_Distance = 1000;
-  // When deleting a large block of text (over ~64 characters), how close does
-  // the contents have to match the expected contents. (0.0 = perfection,
-  // 1.0 = very loose).  Note that Match_Threshold controls how closely the
-  // end points of a delete need to match.
+  /**
+   * When deleting a large block of text (over ~64 characters), how close does
+   * the contents have to match the expected contents. (0.0 = perfection,
+   * 1.0 = very loose).  Note that Match_Threshold controls how closely the
+   * end points of a delete need to match.
+   */
   public float Patch_DeleteThreshold = 0.5f;
-  // Chunk size for context length.
+  /**
+   * Chunk size for context length.
+   */
   public short Patch_Margin = 4;
 
-  // The number of bits in an int.
+  /**
+   * The number of bits in an int.
+   */
   private int Match_MaxBits = 32;
 
   /**
@@ -94,10 +110,11 @@ public class diff_match_patch {
     }
   }
 
+
   //  DIFF FUNCTIONS
 
 
-  /**-
+  /**
    * The data structure representing a diff is a Linked list of Diff objects:
    * {Diff(Operation.DELETE, "Hello"), Diff(Operation.INSERT, "Goodbye"),
    *  Diff(Operation.EQUAL, " world.")}
@@ -1302,6 +1319,7 @@ public class diff_match_patch {
     return html.toString();
   }
 
+  
   /**
    * Compute and return the source text (all equalities and deletions).
    * @param diffs LinkedList of Diff objects.
@@ -1317,6 +1335,7 @@ public class diff_match_patch {
     return text.toString();
   }
 
+  
   /**
    * Compute and return the destination text (all equalities and insertions).
    * @param diffs LinkedList of Diff objects.
@@ -1332,6 +1351,7 @@ public class diff_match_patch {
     return text.toString();
   }
 
+  
   /**
    * Compute the Levenshtein distance; the number of inserted, deleted or
    * substituted characters.
@@ -1362,6 +1382,7 @@ public class diff_match_patch {
     return levenshtein;
   }
 
+  
   /**
    * Crush the diff into an encoded string which describes the operations
    * required to transform text1 into text2.
@@ -1627,7 +1648,7 @@ public class diff_match_patch {
     int proximity = Math.abs(loc - x);
     if (Match_Distance == 0) {
       // Dodge divide by zero error.
-      return proximity == 0 ? 1.0 : accuracy;
+      return proximity == 0 ? accuracy : 1.0;
     }
     return accuracy + (proximity / (float) Match_Distance);
   }
@@ -1742,6 +1763,7 @@ public class diff_match_patch {
     return patch_make(text1, diffs);
   }
 
+  
   /**
    * Compute a list of patches to turn text1 into text2.
    * text2 is not provided, diffs are the delta between text1 and text2.
@@ -1901,6 +1923,8 @@ public class diff_match_patch {
       if (start_loc == -1) {
         // No match found.  :(
         results[x] = false;
+        // Subtract the delta for this failed patch from subsequent patches.
+        delta -= aPatch.length2 - aPatch.length1;
       } else {
         // Found a match.  :)
         results[x] = true;
@@ -1958,6 +1982,7 @@ public class diff_match_patch {
     return new Object[]{text, results};
   }
 
+  
   /**
    * Add some padding on text start and end so that edges can match something.
    * Intended to be called only from within patch_apply.
@@ -1965,32 +1990,32 @@ public class diff_match_patch {
    * @return The padding string added to each side.
    */
   public String patch_addPadding(LinkedList<Patch> patches) {
-    LinkedList<Diff> diffs;
+    int paddingLength = this.Patch_Margin;
     String nullPadding = "";
-    for (int x = 1; x <= this.Patch_Margin; x++) {
+    for (int x = 1; x <= paddingLength; x++) {
       nullPadding += String.valueOf((char) x);
     }
 
     // Bump all the patches forward.
     for (Patch aPatch : patches) {
-      aPatch.start1 += nullPadding.length();
-      aPatch.start2 += nullPadding.length();
+      aPatch.start1 += paddingLength;
+      aPatch.start2 += paddingLength;
     }
 
     // Add some padding on start of first diff.
     Patch patch = patches.getFirst();
-    diffs = patch.diffs;
+    LinkedList<Diff> diffs = patch.diffs;
     if (diffs.isEmpty() || diffs.getFirst().operation != Operation.EQUAL) {
       // Add nullPadding equality.
       diffs.addFirst(new Diff(Operation.EQUAL, nullPadding));
-      patch.start1 -= nullPadding.length();  // Should be 0.
-      patch.start2 -= nullPadding.length();  // Should be 0.
-      patch.length1 += nullPadding.length();
-      patch.length2 += nullPadding.length();
-    } else if (nullPadding.length() > diffs.getFirst().text.length()) {
+      patch.start1 -= paddingLength;  // Should be 0.
+      patch.start2 -= paddingLength;  // Should be 0.
+      patch.length1 += paddingLength;
+      patch.length2 += paddingLength;
+    } else if (paddingLength > diffs.getFirst().text.length()) {
       // Grow first equality.
       Diff firstDiff = diffs.getFirst();
-      int extraLength = nullPadding.length() - firstDiff.text.length();
+      int extraLength = paddingLength - firstDiff.text.length();
       firstDiff.text = nullPadding.substring(firstDiff.text.length())
           + firstDiff.text;
       patch.start1 -= extraLength;
@@ -2005,12 +2030,12 @@ public class diff_match_patch {
     if (diffs.isEmpty() || diffs.getLast().operation != Operation.EQUAL) {
       // Add nullPadding equality.
       diffs.addLast(new Diff(Operation.EQUAL, nullPadding));
-      patch.length1 += nullPadding.length();
-      patch.length2 += nullPadding.length();
-    } else if (nullPadding.length() > diffs.getLast().text.length()) {
+      patch.length1 += paddingLength;
+      patch.length2 += paddingLength;
+    } else if (paddingLength > diffs.getLast().text.length()) {
       // Grow last equality.
       Diff lastDiff = diffs.getLast();
-      int extraLength = nullPadding.length() - lastDiff.text.length();
+      int extraLength = paddingLength - lastDiff.text.length();
       lastDiff.text += nullPadding.substring(0, extraLength);
       patch.length1 += extraLength;
       patch.length2 += extraLength;
@@ -2019,6 +2044,7 @@ public class diff_match_patch {
     return nullPadding;
   }
 
+  
   /**
    * Look through the patches and break up any which are longer than the
    * maximum limit of the match algorithm.
@@ -2238,10 +2264,14 @@ public class diff_match_patch {
    * Class representing one diff operation.
    */
   public static class Diff {
+    /**
+     * One of: INSERT, DELETE or EQUAL.
+     */
     public Operation operation;
-    // One of: INSERT, DELETE or EQUAL.
+    /**
+     * The text associated with this diff operation.
+     */
     public String text;
-    // The text associated with this diff operation.
 
     /**
      * Constructor.  Initializes the diff with the provided values.
@@ -2254,6 +2284,7 @@ public class diff_match_patch {
       this.text = text;
     }
 
+    
     /**
      * Display a human-readable version of this Diff.
      * @return text version.
@@ -2263,6 +2294,7 @@ public class diff_match_patch {
       return "Diff(" + this.operation + ",\"" + prettyText + "\")";
     }
 
+    
     /**
      * Is this Diff equivalent to another Diff?
      * @param d Another Diff to compare against.
@@ -2289,12 +2321,14 @@ public class diff_match_patch {
     public int length1;
     public int length2;
 
+
     /**
      * Constructor.  Initializes with an empty list of diffs.
      */
     public Patch() {
       this.diffs = new LinkedList<Diff>();
     }
+
 
     /**
      * Emmulate GNU diff's format.
@@ -2346,6 +2380,7 @@ public class diff_match_patch {
     }
   }
 
+  
   /**
    * Unescape selected chars for compatability with JavaScript's encodeURI.
    * In speed critical applications this could be dropped since the

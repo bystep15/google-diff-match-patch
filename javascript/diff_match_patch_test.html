@@ -121,39 +121,39 @@
 
       function testDiffCommonPrefix() {
         // Detect and remove any common prefix.
-        // Null case
+        // Null case.
         assertEquals(0, dmp.diff_commonPrefix('abc', 'xyz'));
 
-        // Non-null case
+        // Non-null case.
         assertEquals(4, dmp.diff_commonPrefix('1234abcdef', '1234xyz'));
 
-        // Whole case
+        // Whole case.
         assertEquals(4, dmp.diff_commonPrefix('1234', '1234xyz'));
       }
 
       function testDiffCommonSuffix() {
         // Detect and remove any common suffix.
-        // Null case
+        // Null case.
         assertEquals(0, dmp.diff_commonSuffix('abc', 'xyz'));
 
-        // Non-null case
+        // Non-null case.
         assertEquals(4, dmp.diff_commonSuffix('abcdef1234', 'xyz1234'));
 
-        // Whole case
+        // Whole case.
         assertEquals(4, dmp.diff_commonSuffix('1234', 'xyz1234'));
       }
 
       function testDiffHalfMatch() {
         // Detect a halfmatch.
-        // No match
+        // No match.
         assertEquals(null, dmp.diff_halfMatch('1234567890', 'abcdef'));
 
-        // Single Match
+        // Single Match.
         assertEquivalent(['12', '90', 'a', 'z', '345678'], dmp.diff_halfMatch('1234567890', 'a345678z'));
 
         assertEquivalent(['a', 'z', '12', '90', '345678'], dmp.diff_halfMatch('a345678z', '1234567890'));
 
-        // Multiple Matches
+        // Multiple Matches.
         assertEquivalent(['12123', '123121', 'a', 'z', '1234123451234'], dmp.diff_halfMatch('121231234123451234123121', 'a1234123451234z'));
 
         assertEquivalent(['', '-=-=-=-=-=', 'x', '', 'x-=-=-=-=-=-=-='], dmp.diff_halfMatch('x-=-=-=-=-=-=-=-=-=-=-=-=', 'xx-=-=-=-=-=-=-='));
@@ -162,14 +162,14 @@
       }
 
       function testDiffLinesToChars() {
-        // Convert lines down to characters
+        // Convert lines down to characters.
         assertEquivalent(['\x01\x02\x01', '\x02\x01\x02', ['', 'alpha\n', 'beta\n']], dmp.diff_linesToChars('alpha\nbeta\nalpha\n', 'beta\nalpha\nbeta\n'));
 
         assertEquivalent(['', '\x01\x02\x03\x03', ['', 'alpha\r\n', 'beta\r\n', '\r\n']], dmp.diff_linesToChars('', 'alpha\r\nbeta\r\n\r\n\r\n'));
 
         assertEquivalent(['\x01', '\x02', ['', 'a', 'b']], dmp.diff_linesToChars('a', 'b'));
 
-        // More than 256
+        // More than 256.
         var n = 300;
         var lineList = [];
         var charList = [];
@@ -186,12 +186,12 @@
       }
 
       function testDiffCharsToLines() {
-        // Convert chars up to lines
+        // Convert chars up to lines.
         var diffs = [[DIFF_EQUAL, '\x01\x02\x01'], [DIFF_INSERT, '\x02\x01\x02']];
         dmp.diff_charsToLines(diffs, ['', 'alpha\n', 'beta\n']);
         assertEquivalent([[DIFF_EQUAL, 'alpha\nbeta\nalpha\n'], [DIFF_INSERT, 'beta\nalpha\nbeta\n']], diffs);
 
-        // More than 256
+        // More than 256.
         var n = 300;
         var lineList = [];
         var charList = [];
@@ -210,163 +210,163 @@
       }
 
       function testDiffCleanupMerge() {
-        // Cleanup a messy diff
-        // Null case
+        // Cleanup a messy diff.
+        // Null case.
         var diffs = [];
         dmp.diff_cleanupMerge(diffs);
         assertEquivalent([], diffs);
 
-        // No change case
+        // No change case.
         diffs = [[DIFF_EQUAL, 'a'], [DIFF_DELETE, 'b'], [DIFF_INSERT, 'c']];
         dmp.diff_cleanupMerge(diffs);
         assertEquivalent([[DIFF_EQUAL, 'a'], [DIFF_DELETE, 'b'], [DIFF_INSERT, 'c']], diffs);
 
-        // Merge equalities
+        // Merge equalities.
         diffs = [[DIFF_EQUAL, 'a'], [DIFF_EQUAL, 'b'], [DIFF_EQUAL, 'c']];
         dmp.diff_cleanupMerge(diffs);
         assertEquivalent([[DIFF_EQUAL, 'abc']], diffs);
 
-        // Merge deletions
+        // Merge deletions.
         diffs = [[DIFF_DELETE, 'a'], [DIFF_DELETE, 'b'], [DIFF_DELETE, 'c']];
         dmp.diff_cleanupMerge(diffs);
         assertEquivalent([[DIFF_DELETE, 'abc']], diffs);
 
-        // Merge insertions
+        // Merge insertions.
         diffs = [[DIFF_INSERT, 'a'], [DIFF_INSERT, 'b'], [DIFF_INSERT, 'c']];
         dmp.diff_cleanupMerge(diffs);
         assertEquivalent([[DIFF_INSERT, 'abc']], diffs);
 
-        // Merge interweave
+        // Merge interweave.
         diffs = [[DIFF_DELETE, 'a'], [DIFF_INSERT, 'b'], [DIFF_DELETE, 'c'], [DIFF_INSERT, 'd'], [DIFF_EQUAL, 'e'], [DIFF_EQUAL, 'f']];
         dmp.diff_cleanupMerge(diffs);
         assertEquivalent([[DIFF_DELETE, 'ac'], [DIFF_INSERT, 'bd'], [DIFF_EQUAL, 'ef']], diffs);
 
-        // Prefix and suffix detection
+        // Prefix and suffix detection.
         diffs = [[DIFF_DELETE, 'a'], [DIFF_INSERT, 'abc'], [DIFF_DELETE, 'dc']];
         dmp.diff_cleanupMerge(diffs);
         assertEquivalent([[DIFF_EQUAL, 'a'], [DIFF_DELETE, 'd'], [DIFF_INSERT, 'b'], [DIFF_EQUAL, 'c']], diffs);
 
-        // Slide edit left
+        // Slide edit left.
         diffs = [[DIFF_EQUAL, 'a'], [DIFF_INSERT, 'ba'], [DIFF_EQUAL, 'c']];
         dmp.diff_cleanupMerge(diffs);
         assertEquivalent([[DIFF_INSERT, 'ab'], [DIFF_EQUAL, 'ac']], diffs);
 
-        // Slide edit right
+        // Slide edit right.
         diffs = [[DIFF_EQUAL, 'c'], [DIFF_INSERT, 'ab'], [DIFF_EQUAL, 'a']];
         dmp.diff_cleanupMerge(diffs);
         assertEquivalent([[DIFF_EQUAL, 'ca'], [DIFF_INSERT, 'ba']], diffs);
 
-        // Slide edit left recursive
+        // Slide edit left recursive.
         diffs = [[DIFF_EQUAL, 'a'], [DIFF_DELETE, 'b'], [DIFF_EQUAL, 'c'], [DIFF_DELETE, 'ac'], [DIFF_EQUAL, 'x']];
         dmp.diff_cleanupMerge(diffs);
         assertEquivalent([[DIFF_DELETE, 'abc'], [DIFF_EQUAL, 'acx']], diffs);
 
-        // Slide edit right recursive
+        // Slide edit right recursive.
         diffs = [[DIFF_EQUAL, 'x'], [DIFF_DELETE, 'ca'], [DIFF_EQUAL, 'c'], [DIFF_DELETE, 'b'], [DIFF_EQUAL, 'a']];
         dmp.diff_cleanupMerge(diffs);
         assertEquivalent([[DIFF_EQUAL, 'xca'], [DIFF_DELETE, 'cba']], diffs);
       }
 
       function testDiffCleanupSemanticLossless() {
-        // Slide diffs to match logical boundaries
-        // Null case
+        // Slide diffs to match logical boundaries.
+        // Null case.
         var diffs = [];
         dmp.diff_cleanupSemanticLossless(diffs);
         assertEquivalent([], diffs);
 
-        // Blank lines
+        // Blank lines.
         diffs = [[DIFF_EQUAL, 'AAA\r\n\r\nBBB'], [DIFF_INSERT, '\r\nDDD\r\n\r\nBBB'], [DIFF_EQUAL, '\r\nEEE']];
         dmp.diff_cleanupSemanticLossless(diffs);
         assertEquivalent([[DIFF_EQUAL, 'AAA\r\n\r\n'], [DIFF_INSERT, 'BBB\r\nDDD\r\n\r\n'], [DIFF_EQUAL, 'BBB\r\nEEE']], diffs);
 
-        // Line boundaries
+        // Line boundaries.
         diffs = [[DIFF_EQUAL, 'AAA\r\nBBB'], [DIFF_INSERT, ' DDD\r\nBBB'], [DIFF_EQUAL, ' EEE']];
         dmp.diff_cleanupSemanticLossless(diffs);
         assertEquivalent([[DIFF_EQUAL, 'AAA\r\n'], [DIFF_INSERT, 'BBB DDD\r\n'], [DIFF_EQUAL, 'BBB EEE']], diffs);
 
-        // Word boundaries
+        // Word boundaries.
         diffs = [[DIFF_EQUAL, 'The c'], [DIFF_INSERT, 'ow and the c'], [DIFF_EQUAL, 'at.']];
         dmp.diff_cleanupSemanticLossless(diffs);
         assertEquivalent([[DIFF_EQUAL, 'The '], [DIFF_INSERT, 'cow and the '], [DIFF_EQUAL, 'cat.']], diffs);
 
-        // Alphanumeric boundaries
+        // Alphanumeric boundaries.
         diffs = [[DIFF_EQUAL, 'The-c'], [DIFF_INSERT, 'ow-and-the-c'], [DIFF_EQUAL, 'at.']];
         dmp.diff_cleanupSemanticLossless(diffs);
         assertEquivalent([[DIFF_EQUAL, 'The-'], [DIFF_INSERT, 'cow-and-the-'], [DIFF_EQUAL, 'cat.']], diffs);
 
-        // Hitting the start
+        // Hitting the start.
         diffs = [[DIFF_EQUAL, 'a'], [DIFF_DELETE, 'a'], [DIFF_EQUAL, 'ax']];
         dmp.diff_cleanupSemanticLossless(diffs);
         assertEquivalent([[DIFF_DELETE, 'a'], [DIFF_EQUAL, 'aax']], diffs);
 
-        // Hitting the end
+        // Hitting the end.
         diffs = [[DIFF_EQUAL, 'xa'], [DIFF_DELETE, 'a'], [DIFF_EQUAL, 'a']];
         dmp.diff_cleanupSemanticLossless(diffs);
         assertEquivalent([[DIFF_EQUAL, 'xaa'], [DIFF_DELETE, 'a']], diffs);
       }
 
       function testDiffCleanupSemantic() {
-        // Cleanup semantically trivial equalities
-        // Null case
+        // Cleanup semantically trivial equalities.
+        // Null case.
         var diffs = [];
         dmp.diff_cleanupSemantic(diffs);
         assertEquivalent([], diffs);
 
-        // No elimination
+        // No elimination.
         diffs = [[DIFF_DELETE, 'a'], [DIFF_INSERT, 'b'], [DIFF_EQUAL, 'cd'], [DIFF_DELETE, 'e']];
         dmp.diff_cleanupSemantic(diffs);
         assertEquivalent([[DIFF_DELETE, 'a'], [DIFF_INSERT, 'b'], [DIFF_EQUAL, 'cd'], [DIFF_DELETE, 'e']], diffs);
 
-        // Simple elimination
+        // Simple elimination.
         diffs = [[DIFF_DELETE, 'a'], [DIFF_EQUAL, 'b'], [DIFF_DELETE, 'c']];
         dmp.diff_cleanupSemantic(diffs);
         assertEquivalent([[DIFF_DELETE, 'abc'], [DIFF_INSERT, 'b']], diffs);
 
-        // Backpass elimination
+        // Backpass elimination.
         diffs = [[DIFF_DELETE, 'ab'], [DIFF_EQUAL, 'cd'], [DIFF_DELETE, 'e'], [DIFF_EQUAL, 'f'], [DIFF_INSERT, 'g']];
         dmp.diff_cleanupSemantic(diffs);
         assertEquivalent([[DIFF_DELETE, 'abcdef'], [DIFF_INSERT, 'cdfg']], diffs);
 
-        // Multiple eliminations
+        // Multiple eliminations.
         diffs = [[DIFF_INSERT, '1'], [DIFF_EQUAL, 'A'], [DIFF_DELETE, 'B'], [DIFF_INSERT, '2'], [DIFF_EQUAL, '_'], [DIFF_INSERT, '1'], [DIFF_EQUAL, 'A'], [DIFF_DELETE, 'B'], [DIFF_INSERT, '2']];
         dmp.diff_cleanupSemantic(diffs);
         assertEquivalent([[DIFF_DELETE, 'AB_AB'], [DIFF_INSERT, '1A2_1A2']], diffs);
 
-        // Word boundaries
+        // Word boundaries.
         diffs = [[DIFF_EQUAL, 'The c'], [DIFF_DELETE, 'ow and the c'], [DIFF_EQUAL, 'at.']];
         dmp.diff_cleanupSemantic(diffs);
         assertEquivalent([[DIFF_EQUAL, 'The '], [DIFF_DELETE, 'cow and the '], [DIFF_EQUAL, 'cat.']], diffs);
       }
 
       function testDiffCleanupEfficiency() {
-        // Cleanup operationally trivial equalities
+        // Cleanup operationally trivial equalities.
         dmp.Diff_EditCost = 4;
-        // Null case
+        // Null case.
         var diffs = [];
         dmp.diff_cleanupEfficiency(diffs);
         assertEquivalent([], diffs);
 
-        // No elimination
+        // No elimination.
         diffs = [[DIFF_DELETE, 'ab'], [DIFF_INSERT, '12'], [DIFF_EQUAL, 'wxyz'], [DIFF_DELETE, 'cd'], [DIFF_INSERT, '34']];
         dmp.diff_cleanupEfficiency(diffs);
         assertEquivalent([[DIFF_DELETE, 'ab'], [DIFF_INSERT, '12'], [DIFF_EQUAL, 'wxyz'], [DIFF_DELETE, 'cd'], [DIFF_INSERT, '34']], diffs);
 
-        // Four-edit elimination
+        // Four-edit elimination.
         diffs = [[DIFF_DELETE, 'ab'], [DIFF_INSERT, '12'], [DIFF_EQUAL, 'xyz'], [DIFF_DELETE, 'cd'], [DIFF_INSERT, '34']];
         dmp.diff_cleanupEfficiency(diffs);
         assertEquivalent([[DIFF_DELETE, 'abxyzcd'], [DIFF_INSERT, '12xyz34']], diffs);
 
-        // Three-edit elimination
+        // Three-edit elimination.
         diffs = [[DIFF_INSERT, '12'], [DIFF_EQUAL, 'x'], [DIFF_DELETE, 'cd'], [DIFF_INSERT, '34']];
         dmp.diff_cleanupEfficiency(diffs);
         assertEquivalent([[DIFF_DELETE, 'xcd'], [DIFF_INSERT, '12x34']], diffs);
 
-        // Backpass elimination
+        // Backpass elimination.
         diffs = [[DIFF_DELETE, 'ab'], [DIFF_INSERT, '12'], [DIFF_EQUAL, 'xy'], [DIFF_INSERT, '34'], [DIFF_EQUAL, 'z'], [DIFF_DELETE, 'cd'], [DIFF_INSERT, '56']];
         dmp.diff_cleanupEfficiency(diffs);
         assertEquivalent([[DIFF_DELETE, 'abxyzcd'], [DIFF_INSERT, '12xy34z56']], diffs);
 
-        // High cost elimination
+        // High cost elimination.
         dmp.Diff_EditCost = 5;
         diffs = [[DIFF_DELETE, 'ab'], [DIFF_INSERT, '12'], [DIFF_EQUAL, 'wxyz'], [DIFF_DELETE, 'cd'], [DIFF_INSERT, '34']];
         dmp.diff_cleanupEfficiency(diffs);
@@ -375,13 +375,13 @@
       }
 
       function testDiffPrettyHtml() {
-        // Pretty print
+        // Pretty print.
         var diffs = [[DIFF_EQUAL, 'a\n'], [DIFF_DELETE, '<B>b</B>'], [DIFF_INSERT, 'c&d']];
         assertEquals('<SPAN TITLE="i=0">a&para;<BR></SPAN><DEL STYLE="background:#FFE6E6;" TITLE="i=2">&lt;B&gt;b&lt;/B&gt;</DEL><INS STYLE="background:#E6FFE6;" TITLE="i=2">c&amp;d</INS>', dmp.diff_prettyHtml(diffs));
       }
 
       function testDiffText() {
-        // Compute the source and destination texts
+        // Compute the source and destination texts.
         var diffs = [[DIFF_EQUAL, 'jump'], [DIFF_DELETE, 's'], [DIFF_INSERT, 'ed'], [DIFF_EQUAL, ' over '], [DIFF_DELETE, 'the'], [DIFF_INSERT, 'a'], [DIFF_EQUAL, ' lazy']];
         assertEquals('jumps over the lazy', dmp.diff_text1(diffs));
 
@@ -389,7 +389,7 @@
       }
 
       function testDiffDelta() {
-        // Convert a diff into delta string
+        // Convert a diff into delta string.
         var diffs = [[DIFF_EQUAL, 'jump'], [DIFF_DELETE, 's'], [DIFF_INSERT, 'ed'], [DIFF_EQUAL, ' over '], [DIFF_DELETE, 'the'], [DIFF_INSERT, 'a'], [DIFF_EQUAL, ' lazy'], [DIFF_INSERT, 'old dog']];
         var text1 = dmp.diff_text1(diffs);
         assertEquals('jumps over the lazy', text1);
@@ -397,7 +397,7 @@
         var delta = dmp.diff_toDelta(diffs);
         assertEquals('=4\t-1\t+ed\t=6\t-3\t+a\t=5\t+old dog', delta);
 
-        // Convert delta string into a diff
+        // Convert delta string into a diff.
         assertEquivalent(diffs, dmp.diff_fromDelta(text1, delta));
 
         // Generates error (19 != 20).
@@ -421,7 +421,7 @@
           assertEquivalent(null, null);
         }
 
-        // Test deltas with special characters
+        // Test deltas with special characters.
         diffs = [[DIFF_EQUAL, '\u0680 \x00 \t %'], [DIFF_DELETE, '\u0681 \x01 \n ^'], [DIFF_INSERT, '\u0682 \x02 \\ |']];
         text1 = dmp.diff_text1(diffs);
         assertEquals('\u0680 \x00 \t %\u0681 \x01 \n ^', text1);
@@ -429,10 +429,10 @@
         delta = dmp.diff_toDelta(diffs);
         assertEquals('=7\t-7\t+%DA%82 %02 %5C %7C', delta);
 
-        // Convert delta string into a diff
+        // Convert delta string into a diff.
         assertEquivalent(diffs, dmp.diff_fromDelta(text1, delta));
 
-        // Verify pool of unchanged characters
+        // Verify pool of unchanged characters.
         diffs = [[DIFF_INSERT, 'A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ']];
         var text2 = dmp.diff_text2(diffs);
         assertEquals('A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ', text2);
@@ -440,16 +440,16 @@
         delta = dmp.diff_toDelta(diffs);
         assertEquals('+A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ', delta);
 
-        // Convert delta string into a diff
+        // Convert delta string into a diff.
         assertEquivalent(diffs, dmp.diff_fromDelta('', delta));
       }
 
       function testDiffXIndex() {
-        // Translate a location in text1 to text2
-        // Translation on equality
+        // Translate a location in text1 to text2.
+        // Translation on equality.
         assertEquals(5, dmp.diff_xIndex([[DIFF_DELETE, 'a'], [DIFF_INSERT, '1234'], [DIFF_EQUAL, 'xyz']], 2));
 
-        // Translation on deletion
+        // Translation on deletion.
         assertEquals(1, dmp.diff_xIndex([[DIFF_EQUAL, 'a'], [DIFF_DELETE, '1234'], [DIFF_EQUAL, 'xyz']], 3));
       }
 
@@ -463,7 +463,7 @@
       }
 
       function testDiffPath() {
-        // Single letters
+        // Single letters.
         // Trace a path from back to front.
         var v_map = [];
         v_map.push({'0,0':true});
@@ -500,34 +500,34 @@
       }
 
       function testDiffMain() {
-        // Perform a trivial diff
-        // Null case
+        // Perform a trivial diff.
+        // Null case.
         assertEquivalent([[DIFF_EQUAL, 'abc']], dmp.diff_main('abc', 'abc', false));
 
-        // Simple insertion
+        // Simple insertion.
         assertEquivalent([[DIFF_EQUAL, 'ab'], [DIFF_INSERT, '123'], [DIFF_EQUAL, 'c']], dmp.diff_main('abc', 'ab123c', false));
 
-        // Simple deletion
+        // Simple deletion.
         assertEquivalent([[DIFF_EQUAL, 'a'], [DIFF_DELETE, '123'], [DIFF_EQUAL, 'bc']], dmp.diff_main('a123bc', 'abc', false));
 
-        // Two insertions
+        // Two insertions.
         assertEquivalent([[DIFF_EQUAL, 'a'], [DIFF_INSERT, '123'], [DIFF_EQUAL, 'b'], [DIFF_INSERT, '456'], [DIFF_EQUAL, 'c']], dmp.diff_main('abc', 'a123b456c', false));
 
-        // Two deletions
+        // Two deletions.
         assertEquivalent([[DIFF_EQUAL, 'a'], [DIFF_DELETE, '123'], [DIFF_EQUAL, 'b'], [DIFF_DELETE, '456'], [DIFF_EQUAL, 'c']], dmp.diff_main('a123b456c', 'abc', false));
 
-        // Perform a real diff
+        // Perform a real diff.
         // Switch off the timeout.
         dmp.Diff_Timeout = 0;
         dmp.Diff_DualThreshold = 32;
-        // Simple cases
+        // Simple cases.
         assertEquivalent([[DIFF_DELETE, 'a'], [DIFF_INSERT, 'b']], dmp.diff_main('a', 'b', false));
 
         assertEquivalent([[DIFF_DELETE, 'Apple'], [DIFF_INSERT, 'Banana'], [DIFF_EQUAL, 's are a'], [DIFF_INSERT, 'lso'], [DIFF_EQUAL, ' fruit.']], dmp.diff_main('Apples are a fruit.', 'Bananas are also fruit.', false));
 
         assertEquivalent([[DIFF_DELETE, 'a'], [DIFF_INSERT, '\u0680'], [DIFF_EQUAL, 'x'], [DIFF_DELETE, '\t'], [DIFF_INSERT, '\0']], dmp.diff_main('ax\t', '\u0680x\0', false));
 
-        // Overlaps
+        // Overlaps.
         assertEquivalent([[DIFF_DELETE, '1'], [DIFF_EQUAL, 'a'], [DIFF_DELETE, 'y'], [DIFF_EQUAL, 'b'], [DIFF_DELETE, '2'], [DIFF_INSERT, 'xab']], dmp.diff_main('1ayb2', 'abxab', false));
 
         assertEquivalent([[DIFF_INSERT, 'xaxcx'], [DIFF_EQUAL, 'abc'], [DIFF_DELETE, 'y']], dmp.diff_main('abcy', 'xaxcxabc', false));
@@ -537,7 +537,7 @@
         assertEquivalent([[DIFF_INSERT, 'x'], [DIFF_EQUAL, 'a'], [DIFF_DELETE, 'b'], [DIFF_INSERT, 'x'], [DIFF_EQUAL, 'c'], [DIFF_DELETE, 'y'], [DIFF_INSERT, 'xabc']], dmp.diff_main('abcy', 'xaxcxabc', false));
         dmp.Diff_DualThreshold = 32;
 
-        // Timeout
+        // Timeout.
         dmp.Diff_Timeout = 0.001;  // 1ms
         var a = '`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n';
         var b = 'I am the very model of a modern major general,\nI\'ve information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical.\n';
@@ -549,7 +549,7 @@
         assertEquals(null, dmp.diff_map(a, b));
         dmp.Diff_Timeout = 0;
 
-        // Test the linemode speedup
+        // Test the linemode speedup.
         // Must be long to pass the 200 char cutoff.
         a = '1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n';
         b = 'abcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\n';
@@ -567,34 +567,34 @@
 
 
       function testMatchAlphabet() {
-        // Initialise the bitmasks for Bitap
-        // Unique
+        // Initialise the bitmasks for Bitap.
+        // Unique.
         assertEquivalent({'a':4, 'b':2, 'c':1}, dmp.match_alphabet('abc'));
 
-        // Duplicates
+        // Duplicates.
         assertEquivalent({'a':37, 'b':18, 'c':8}, dmp.match_alphabet('abcaba'));
       }
 
       function testMatchBitap() {
-        // Bitap algorithm
+        // Bitap algorithm.
         dmp.Match_Distance = 100;
         dmp.Match_Threshold = 0.5;
-        // Exact matches
+        // Exact matches.
         assertEquals(5, dmp.match_bitap('abcdefghijk', 'fgh', 5));
 
         assertEquals(5, dmp.match_bitap('abcdefghijk', 'fgh', 0));
 
-        // Fuzzy matches
+        // Fuzzy matches.
         assertEquals(4, dmp.match_bitap('abcdefghijk', 'efxhi', 0));
 
         assertEquals(2, dmp.match_bitap('abcdefghijk', 'cdefxyhijk', 5));
 
         assertEquals(-1, dmp.match_bitap('abcdefghijk', 'bxy', 1));
 
-        // Overflow
+        // Overflow.
         assertEquals(2, dmp.match_bitap('123456789xx0', '3456789x0', 2));
 
-        // Threshold test
+        // Threshold test.
         dmp.Match_Threshold = 0.4;
         assertEquals(4, dmp.match_bitap('abcdefghijk', 'efxyhi', 1));
 
@@ -605,12 +605,12 @@
         assertEquals(1, dmp.match_bitap('abcdefghijk', 'bcdef', 1));
         dmp.Match_Threshold = 0.5;
 
-        // Multiple select
+        // Multiple select.
         assertEquals(0, dmp.match_bitap('abcdexyzabcde', 'abccde', 3));
 
         assertEquals(8, dmp.match_bitap('abcdexyzabcde', 'abccde', 5));
 
-        // Distance test
+        // Distance test.
         dmp.Match_Distance = 10;  // Strict location.
         assertEquals(-1, dmp.match_bitap('abcdefghijklmnopqrstuvwxyz', 'abcdefg', 24));
 
@@ -621,8 +621,8 @@
       }
 
       function testMatchMain() {
-        // Full match
-        // Shortcut matches
+        // Full match.
+        // Shortcut matches.
         assertEquals(0, dmp.match_main('abcdef', 'abcdef', 1000));
 
         assertEquals(-1, dmp.match_main('', 'abcdef', 1));
@@ -631,13 +631,13 @@
 
         assertEquals(3, dmp.match_main('abcdef', 'de', 3));
 
-        // Beyond end match
+        // Beyond end match.
         assertEquals(3, dmp.match_main("abcdef", "defy", 4));
 
-        // Oversized pattern
+        // Oversized pattern.
         assertEquals(0, dmp.match_main("abcdef", "abcdefy", 0));
 
-        // Complex match
+        // Complex match.
         assertEquals(4, dmp.match_main('I am the very model of a modern major general.', ' that berry ', 5));
       }
 
@@ -646,7 +646,7 @@
 
 
       function testPatchObj() {
-        // Patch Object
+        // Patch Object.
         var p = new patch_obj();
         p.start1 = 20;
         p.start2 = 21;
@@ -669,7 +669,7 @@
 
         assertEquals('@@ -0,0 +1,3 @@\n+abc\n', dmp.patch_fromText('@@ -0,0 +1,3 @@\n+abc\n')[0].toString());
 
-        // Generates error
+        // Generates error.
         try {
           assertEquivalent(Error, dmp.patch_fromText('Bad\nPatch\n'));
         } catch (e) {
@@ -829,6 +829,15 @@
         results = dmp.patch_apply(patches, 'x12345678901234567890---------------++++++++++---------------12345678901234567890y');
         assertEquivalent(['xabcy', [true, true]], results);
         dmp.Patch_DeleteThreshold = 0.5;
+
+        // Compensate for failed patch.
+        dmp.Match_Threshold = 0.0;
+        dmp.Match_Distance = 0;
+        patches = dmp.patch_make('abcdefghijklmnopqrstuvwxyz--------------------1234567890', 'abcXXXXXXXXXXdefghijklmnopqrstuvwxyz--------------------1234567YYYYYYYYYY890');
+        results = dmp.patch_apply(patches, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567890');
+        assertEquivalent(['ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567YYYYYYYYYY890', [false, true]], results);
+        dmp.Match_Threshold = 0.5;
+        dmp.Match_Distance = 1000;
 
         // No side effects.
         patches = dmp.patch_make('', 'test');

@@ -71,7 +71,7 @@ namespace nicTest
         public void diff_linesToCharsTest()
         {
             diff_match_patchTest dmp = new diff_match_patchTest();
-            // Convert lines down to characters
+            // Convert lines down to characters.
             List<string> tmpVector = new List<string>();
             tmpVector.Add("");
             tmpVector.Add("alpha\n");
@@ -100,7 +100,7 @@ namespace nicTest
             Assert.AreEqual("\u0002", result[1]);
             CollectionAssert.AreEqual(tmpVector, (List<string>)result[2]);
 
-            // More than 256
+            // More than 256.
             int n = 300;
             tmpVector.Clear();
             StringBuilder lineList = new StringBuilder();
@@ -130,7 +130,7 @@ namespace nicTest
             Assert.AreEqual(new Diff(Operation.EQUAL, "a"),
                 new Diff(Operation.EQUAL, "a"));
 
-            // Convert chars up to lines
+            // Convert chars up to lines.
             List<Diff> diffs = new List<Diff>{
                 new Diff(Operation.EQUAL, "\u0001\u0002\u0001"),
                 new Diff(Operation.INSERT, "\u0002\u0001\u0002")};
@@ -143,7 +143,7 @@ namespace nicTest
                 new Diff(Operation.EQUAL, "alpha\nbeta\nalpha\n"),
                 new Diff(Operation.INSERT, "beta\nalpha\nbeta\n")}, diffs);
 
-            // More than 256
+            // More than 256.
             int n = 300;
             tmpVector.Clear();
             StringBuilder lineList = new StringBuilder();
@@ -169,7 +169,7 @@ namespace nicTest
         public void diff_cleanupMergeTest()
         {
             diff_match_patchTest dmp = new diff_match_patchTest();
-            // Cleanup a messy diff
+            // Cleanup a messy diff.
             List<Diff> diffs = new List<Diff>();
             dmp.diff_cleanupMerge(diffs);
             CollectionAssert.AreEqual(new List<Diff>(), diffs);
@@ -219,7 +219,7 @@ namespace nicTest
         public void diff_cleanupSemanticLosslessTest()
         {
             diff_match_patchTest dmp = new diff_match_patchTest();
-            // Slide diffs to match logical boundaries
+            // Slide diffs to match logical boundaries.
             List<Diff> diffs = new List<Diff>();
             dmp.diff_cleanupSemanticLossless(diffs);
             CollectionAssert.AreEqual(new List<Diff>(), diffs);
@@ -291,7 +291,7 @@ namespace nicTest
         public void diff_cleanupSemanticTest()
         {
             diff_match_patchTest dmp = new diff_match_patchTest();
-            // Cleanup semantically trivial equalities
+            // Cleanup semantically trivial equalities.
             List<Diff> diffs = new List<Diff>();
             dmp.diff_cleanupSemantic(diffs);
             CollectionAssert.AreEqual(new List<Diff>(), diffs);
@@ -431,7 +431,7 @@ namespace nicTest
         public void diff_prettyHtmlTest()
         {
             diff_match_patchTest dmp = new diff_match_patchTest();
-            // Pretty print
+            // Pretty print.
             List<Diff> diffs = new List<Diff>{
                 new Diff(Operation.EQUAL, "a\n"),
                 new Diff(Operation.DELETE, "<B>b</B>"),
@@ -464,7 +464,7 @@ namespace nicTest
         public void diff_deltaTest()
         {
             diff_match_patchTest dmp = new diff_match_patchTest();
-            // Convert a diff into delta string
+            // Convert a diff into delta string.
             List<Diff> diffs = new List<Diff> {
                 new Diff(Operation.EQUAL, "jump"),
                 new Diff(Operation.DELETE, "s"),
@@ -480,7 +480,7 @@ namespace nicTest
             string delta = dmp.diff_toDelta(diffs);
             Assert.AreEqual("=4\t-1\t+ed\t=6\t-3\t+a\t=5\t+old dog", delta);
 
-            // Convert delta string into a diff
+            // Convert delta string into a diff.
             CollectionAssert.AreEqual(diffs, dmp.diff_fromDelta(text1, delta));
 
             // Generates error (19 < 20).
@@ -516,7 +516,7 @@ namespace nicTest
                 // Exception expected.
             }
 
-            // Test deltas with special characters
+            // Test deltas with special characters.
             char zero = (char)0;
             char one = (char)1;
             char two = (char)2;
@@ -528,12 +528,12 @@ namespace nicTest
             Assert.AreEqual("\u0680 " + zero + " \t %\u0681 " + one + " \n ^", text1);
 
             delta = dmp.diff_toDelta(diffs);
-            // Lowercase, due to UrlEncode uses lower
+            // Lowercase, due to UrlEncode uses lower.
             Assert.AreEqual("=7\t-7\t+%da%82 %02 %5c %7c", delta, "diff_toDelta: Unicode.");
 
             CollectionAssert.AreEqual(diffs, dmp.diff_fromDelta(text1, delta), "diff_fromDelta: Unicode.");
 
-            // Verify pool of unchanged characters
+            // Verify pool of unchanged characters.
             diffs = new List<Diff> {
                 new Diff(Operation.INSERT, "A-Z a-z 0-9 - _ . ! ~ * ' ( ) ; / ? : @ & = + $ , # ")};
             string text2 = dmp.diff_text2(diffs);
@@ -542,7 +542,7 @@ namespace nicTest
             delta = dmp.diff_toDelta(diffs);
             Assert.AreEqual("+A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ", delta, "diff_toDelta: Unchanged characters.");
 
-            // Convert delta string into a diff
+            // Convert delta string into a diff.
             CollectionAssert.AreEqual(diffs, dmp.diff_fromDelta("", delta), "diff_fromDelta: Unchanged characters.");
         }
 
@@ -550,7 +550,7 @@ namespace nicTest
         public void diff_xIndexTest()
         {
             diff_match_patchTest dmp = new diff_match_patchTest();
-            // Translate a location in text1 to text2
+            // Translate a location in text1 to text2.
             List<Diff> diffs = new List<Diff> {
                 new Diff(Operation.DELETE, "a"),
                 new Diff(Operation.INSERT, "1234"),
@@ -594,7 +594,7 @@ namespace nicTest
             // First, check footprints are different.
             Assert.IsTrue(dmp.diff_footprint(1, 10) != dmp.diff_footprint(10, 1), "diff_footprint:");
 
-            // Single letters
+            // Single letters.
             // Trace a path from back to front.
             List<HashSet<long>> v_map;
             HashSet<long> row_set;
@@ -667,7 +667,7 @@ namespace nicTest
                 new Diff(Operation.INSERT, "Z")};
             CollectionAssert.AreEqual(diffs, dmp.diff_path2(v_map, "4E5F6G", "4Y56Z"), "diff_path2: Single letters.");
 
-            // Double letters
+            // Double letters.
             // Trace a path from back to front.
             v_map = new List<HashSet<long>>();
             {
@@ -741,7 +741,7 @@ namespace nicTest
         public void diff_mainTest()
         {
             diff_match_patchTest dmp = new diff_match_patchTest();
-            // Perform a trivial diff
+            // Perform a trivial diff.
             List<Diff> diffs = new List<Diff>{new Diff(Operation.EQUAL, "abc")};
             CollectionAssert.AreEqual(diffs, dmp.diff_main("abc", "abc", false), "diff_main: Null case.");
 
@@ -757,7 +757,7 @@ namespace nicTest
             diffs = new List<Diff>{new Diff(Operation.EQUAL, "a"), new Diff(Operation.DELETE, "123"), new Diff(Operation.EQUAL, "b"), new Diff(Operation.DELETE, "456"), new Diff(Operation.EQUAL, "c")};
             CollectionAssert.AreEqual(diffs, dmp.diff_main("a123b456c", "abc", false), "diff_main: Two deletions.");
 
-            // Perform a real diff
+            // Perform a real diff.
             // Switch off the timeout.
             dmp.Diff_Timeout = 0;
             dmp.Diff_DualThreshold = 32;
@@ -793,7 +793,7 @@ namespace nicTest
             Assert.IsNull(dmp.diff_map(a, b), "diff_main: Timeout.");
             dmp.Diff_Timeout = 0;
 
-            // Test the linemode speedup
+            // Test the linemode speedup.
             // Must be long to pass the 200 char cutoff.
             a = "1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n";
             b = "abcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\n";
@@ -810,7 +810,7 @@ namespace nicTest
         public void match_alphabetTest()
         {
             diff_match_patchTest dmp = new diff_match_patchTest();
-            // Initialise the bitmasks for Bitap
+            // Initialise the bitmasks for Bitap.
             Dictionary<char, int> bitmask = new Dictionary<char, int>();
             bitmask.Add('a', 4); bitmask.Add('b', 2); bitmask.Add('c', 1);
             CollectionAssert.AreEqual(bitmask, dmp.match_alphabet("abc"), "match_alphabet: Unique.");
@@ -825,7 +825,7 @@ namespace nicTest
         {
             diff_match_patchTest dmp = new diff_match_patchTest();
 
-            // Bitap algorithm
+            // Bitap algorithm.
             dmp.Match_Distance = 100;
             dmp.Match_Threshold = 0.5f;
             Assert.AreEqual(5, dmp.match_bitap("abcdefghijk", "fgh", 5), "match_bitap: Exact match #1.");
@@ -873,7 +873,7 @@ namespace nicTest
         public void match_mainTest()
         {
             diff_match_patchTest dmp = new diff_match_patchTest();
-            // Full match
+            // Full match.
             Assert.AreEqual(0, dmp.match_main("abcdef", "abcdef", 1000), "match_main: Equality.");
 
             Assert.AreEqual(-1, dmp.match_main("", "abcdef", 1), "match_main: Null text.");
@@ -894,7 +894,7 @@ namespace nicTest
         [Test()]
         public void patch_patchObjTest()
         {
-            // Patch Object
+            // Patch Object.
             Patch p = new Patch();
             p.start1 = 20;
             p.start2 = 21;
@@ -935,7 +935,6 @@ namespace nicTest
             }
             catch (ArgumentException)
             {
-
                 // Exception expected.
             }
         }
@@ -1125,6 +1124,16 @@ namespace nicTest
             resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
             Assert.AreEqual("xabcy\tTrue\tTrue", resultStr, "patch_apply: Big delete, big change 2.");
             dmp.Patch_DeleteThreshold = 0.5f;
+
+            dmp.Match_Threshold = 0.0f;
+            dmp.Match_Distance = 0;
+            patches = dmp.patch_make("abcdefghijklmnopqrstuvwxyz--------------------1234567890", "abcXXXXXXXXXXdefghijklmnopqrstuvwxyz--------------------1234567YYYYYYYYYY890");
+            results = dmp.patch_apply(patches, "ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567890");
+            boolArray = (bool[])results[1];
+            resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
+            Assert.AreEqual("ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567YYYYYYYYYY890\tFalse\tTrue", resultStr, "Compensate for failed patch.");
+            dmp.Match_Threshold = 0.5f;
+            dmp.Match_Distance = 1000;
 
             patches = dmp.patch_make("", "test");
             string patchStr = dmp.patch_toText(patches);
