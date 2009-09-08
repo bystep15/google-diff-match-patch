@@ -54,7 +54,7 @@ QString Diff::strOperation(Operation op) {
     case EQUAL:
       return "EQUAL";
   }
-  throw("Invalid operation.");
+  throw "Invalid operation.";
 }
 
 /**
@@ -565,7 +565,7 @@ QList<Diff> diff_match_patch::diff_path1(
         x--;
         y--;
         if (text1[x] != text2[y]) {
-          throw(QString("No diagonal.  Can't happen. (diff_path1)"));
+          throw "No diagonal.  Can't happen. (diff_path1)";
         }
         if (last_op == EQUAL && !first) {
           path.front().text = text1[x] + path.front().text;
@@ -614,7 +614,7 @@ QList<Diff> diff_match_patch::diff_path2(
         y--;
 
         if (text1[text1.length() - x - 1] != text2[text2.length() - y - 1]) {
-          throw(QString("No diagonal.  Can't happen. (diff_path2)"));
+          throw "No diagonal.  Can't happen. (diff_path2)";
         }
         if (last_op == EQUAL && !first) {
           path.back().text += text1[text1.length() - x - 1];
@@ -1067,8 +1067,9 @@ void diff_match_patch::diff_cleanupMerge(QList<Diff> &diffs) {
             if (commonlength != 0) {
               if (pointer.hasPrevious()) {
                 thisDiff = &pointer.previous();
-                if (thisDiff->operation != EQUAL)
-                  throw(QString("Previous diff should have been an equality."));
+                if (thisDiff->operation != EQUAL) {
+                  throw "Previous diff should have been an equality.";
+                }
                 thisDiff->text += text_insert.left(commonlength);
                 pointer.next();
               } else {
@@ -1335,7 +1336,7 @@ QList<Diff> diff_match_patch::diff_fromDelta(const QString &text1,
         int n;
         n = param.toInt();
         if (n < 0) {
-          throw(QString("Negative number in diff_fromDelta: %1").arg(param));
+          throw QString("Negative number in diff_fromDelta: %1").arg(param);
         }
         QString text;
         text = text1.mid(pointer, n);
@@ -1348,13 +1349,13 @@ QList<Diff> diff_match_patch::diff_fromDelta(const QString &text1,
         break;
       }
       default:
-        throw(QString("Invalid diff operation in diff_fromDelta: %1")
-            .arg(token[0]));
+        throw QString("Invalid diff operation in diff_fromDelta: %1")
+            .arg(token[0]);
     }
   }
   if (pointer != text1.length()) {
-    throw(QString("Delta length (%1) smaller than source text length (%2)")
-        .arg(pointer).arg(text1.length()));
+    throw QString("Delta length (%1) smaller than source text length (%2)")
+        .arg(pointer).arg(text1.length());
   }
   return diffs;
 }
@@ -1386,7 +1387,7 @@ int diff_match_patch::match_main(const QString &text, const QString &pattern,
 int diff_match_patch::match_bitap(const QString &text, const QString &pattern,
                                   int loc) {
   if (!(Match_MaxBits == 0 || pattern.length() <= Match_MaxBits)) {
-    throw(QString("Pattern too long for this application."));
+    throw "Pattern too long for this application.";
   }
 
   // Initialise the alphabet.
@@ -1969,7 +1970,7 @@ QList<Patch> diff_match_patch::patch_fromText(const QString &textline) {
   QString line;
   while (!text.isEmpty()) {
     if (!patchHeader.exactMatch(text.front())) {
-      throw(QString("Invalid patch string: %1").arg(text.front()));
+      throw QString("Invalid patch string: %1").arg(text.front());
     }
 
     patch = Patch();
@@ -2019,7 +2020,7 @@ QList<Patch> diff_match_patch::patch_fromText(const QString &textline) {
         break;
       } else {
         // WTF?
-        throw(QString("Invalid patch mode '%1' in: %2").arg(sign).arg(line));
+        throw QString("Invalid patch mode '%1' in: %2").arg(sign).arg(line);
         return QList<Patch>();
       }
       text.removeFirst();

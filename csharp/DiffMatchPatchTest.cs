@@ -100,7 +100,7 @@ namespace nicTest
             Assert.AreEqual("\u0002", result[1]);
             CollectionAssert.AreEqual(tmpVector, (List<string>)result[2]);
 
-            // More than 256.
+            // More than 256 to reveal any 8-bit limitations.
             int n = 300;
             tmpVector.Clear();
             StringBuilder lineList = new StringBuilder();
@@ -143,7 +143,7 @@ namespace nicTest
                 new Diff(Operation.EQUAL, "alpha\nbeta\nalpha\n"),
                 new Diff(Operation.INSERT, "beta\nalpha\nbeta\n")}, diffs);
 
-            // More than 256.
+            // More than 256 to reveal any 8-bit limitations.
             int n = 300;
             tmpVector.Clear();
             StringBuilder lineList = new StringBuilder();

@@ -401,7 +401,7 @@ class diff_match_patch {
    * @param text1 Source string for the diff.
    * @param delta Delta text.
    * @return Array of diff tuples or null if invalid.
-   * @throw IllegalArgumentException If invalid input.
+   * @throws QString If invalid input.
    */
  public:
   QList<Diff> diff_fromDelta(const QString &text1, const QString &delta);
@@ -554,7 +554,7 @@ class diff_match_patch {
    * objects.
    * @param textline Text representation of patches.
    * @return List of Patch objects.
-   * @throws IllegalArgumentException If invalid input.
+   * @throws QString If invalid input.
    */
  public:
   QList<Patch> patch_fromText(const QString &textline);

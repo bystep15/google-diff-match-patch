@@ -104,7 +104,7 @@ public class diff_match_patch_test extends TestCase {
     tmpVector.add("b");
     assertLinesToCharsResultEquals("diff_linesToChars:", new LinesToCharsResult("\u0001", "\u0002", tmpVector), dmp.diff_linesToChars("a", "b"));
 
-    // More than 256.
+    // More than 256 to reveal any 8-bit limitations.
     int n = 300;
     tmpVector.clear();
     StringBuilder lineList = new StringBuilder();
@@ -137,7 +137,7 @@ public class diff_match_patch_test extends TestCase {
     dmp.diff_charsToLines(diffs, tmpVector);
     assertEquals("diff_charsToLines:", diffList(new Diff(EQUAL, "alpha\nbeta\nalpha\n"), new Diff(INSERT, "beta\nalpha\nbeta\n")), diffs);
 
-    // More than 256.
+    // More than 256 to reveal any 8-bit limitations.
     int n = 300;
     tmpVector.clear();
     StringBuilder lineList = new StringBuilder();

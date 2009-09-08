@@ -169,7 +169,7 @@
 
         assertEquivalent(['\x01', '\x02', ['', 'a', 'b']], dmp.diff_linesToChars('a', 'b'));
 
-        // More than 256.
+        // More than 256 to reveal any 8-bit limitations.
         var n = 300;
         var lineList = [];
         var charList = [];
@@ -191,7 +191,7 @@
         dmp.diff_charsToLines(diffs, ['', 'alpha\n', 'beta\n']);
         assertEquivalent([[DIFF_EQUAL, 'alpha\nbeta\nalpha\n'], [DIFF_INSERT, 'beta\nalpha\nbeta\n']], diffs);
 
-        // More than 256.
+        // More than 256 to reveal any 8-bit limitations.
         var n = 300;
         var lineList = [];
         var charList = [];

@@ -143,15 +143,15 @@ void diff_match_patch_test::testDiffLinesToChars() {
   tmpVarList << QVariant::fromValue(tmpVector);
   assertEquals("diff_linesToChars:", tmpVarList, dmp.diff_linesToChars("a", "b"));
 
-  // More than 256.
+  // More than 256 to reveal any 8-bit limitations.
   int n = 300;
   tmpVector.clear();
   tmpVarList.clear();
   QString lines;
   QString chars;
   for (int x = 1; x < n + 1; x++) {
-    tmpVector.append(QString::number(x) + QString("\n"));
-    lines += QString::number(x) + QString("\n");
+    tmpVector.append(QString::number(x) + "\n");
+    lines += QString::number(x) + "\n";
     chars += QChar(static_cast<ushort>(x));
   }
   assertEquals("diff_linesToChars: More than 256 (setup).", n, tmpVector.size());
@@ -180,15 +180,15 @@ void diff_match_patch_test::testDiffCharsToLines() {
   dmp.diff_charsToLines(diffs, tmpVector);
   assertEquals("diff_charsToLines:", diffList(Diff(EQUAL, "alpha\nbeta\nalpha\n"), Diff(INSERT, "beta\nalpha\nbeta\n")), diffs);
 
-  // More than 256.
+  // More than 256 to reveal any 8-bit limitations.
   int n = 300;
   tmpVector.clear();
   QList<QVariant> tmpVarList;
   QString lines;
   QString chars;
   for (int x = 1; x < n + 1; x++) {
-    tmpVector.append(QString::number(x) + QString("\n"));
-    lines += QString::number(x) + QString("\n");
+    tmpVector.append(QString::number(x) + "\n");
+    lines += QString::number(x) + "\n";
     chars += QChar(static_cast<ushort>(x));
   }
   assertEquals("diff_linesToChars: More than 256 (setup).", n, tmpVector.size());
@@ -362,7 +362,7 @@ void diff_match_patch_test::testDiffDelta() {
   // Generates error (19 < 20).
   try {
     dmp.diff_fromDelta(text1 + "x", delta);
-    throw(QString("diff_fromDelta: Too long."));
+    throw "diff_fromDelta: Too long.";
   } catch (QString ex) {
     // Exception expected.
   }
@@ -370,18 +370,20 @@ void diff_match_patch_test::testDiffDelta() {
   // Generates error (19 > 18).
   try {
     dmp.diff_fromDelta(text1.mid(1), delta);
-    throw(QString("diff_fromDelta: Too short."));
+    throw "diff_fromDelta: Too short.";
   } catch (QString ex) {
     // Exception expected.
   }
 
   // Generates error (%c3%xy invalid Unicode).
+  /* This test does not work because QUrl::fromPercentEncoding("%xy") -> "?"
   try {
     dmp.diff_fromDelta("", "+%c3%xy");
-    throw(QString("diff_fromDelta: Invalid character."));
+    throw "diff_fromDelta: Invalid character.";
   } catch (QString ex) {
     // Exception expected.
   }
+  */
 
   // Test deltas with special characters.
   diffs = diffList(Diff(EQUAL, QString::fromWCharArray((const wchar_t*) L"\u0680 \000 \t %", 7)), Diff(DELETE, QString::fromWCharArray((const wchar_t*) L"\u0681 \001 \n ^", 7)), Diff(INSERT, QString::fromWCharArray((const wchar_t*) L"\u0682 \002 \\ |", 7)));
@@ -721,7 +723,7 @@ void diff_match_patch_test::testPatchFromText() {
   // Generates error.
   try {
     dmp.patch_fromText("Bad\nPatch\n");
-    throw(QString("patch_fromText: #5"));
+    throw "patch_fromText: #5";
   } catch (QString ex) {
     // Exception expected.
   }
@@ -844,36 +846,36 @@ void diff_match_patch_test::testPatchApply() {
   patches = dmp.patch_make("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.");
   QPair<QString, QVector<bool> > results = dmp.patch_apply(patches, "The quick brown fox jumps over the lazy dog.");
   QVector<bool> boolArray = results.second;
-  QString resultStr = results.first + QString("\t") + (boolArray[0] ? QString("true") : QString("false")) + "\t" + (boolArray[1] ? QString("true") : QString("false"));
+  QString resultStr = results.first + "\t" + (boolArray[0] ? "true" : "false") + "\t" + (boolArray[1] ? "true" : "false");
   assertEquals("patch_apply: Exact match.", "That quick brown fox jumped over a lazy dog.\ttrue\ttrue", resultStr);
 
   results = dmp.patch_apply(patches, "The quick red rabbit jumps over the tired tiger.");
   boolArray = results.second;
-  resultStr = results.first + "\t" + (boolArray[0] ? QString("true") : QString("false")) + "\t" + (boolArray[1] ? QString("true") : QString("false"));
+  resultStr = results.first + "\t" + (boolArray[0] ? "true" : "false") + "\t" + (boolArray[1] ? "true" : "false");
   assertEquals("patch_apply: Partial match.", "That quick red rabbit jumped over a tired tiger.\ttrue\ttrue", resultStr);
 
   results = dmp.patch_apply(patches, "I am the very model of a modern major general.");
   boolArray = results.second;
-  resultStr = results.first + "\t" + (boolArray[0] ? QString("true") : QString("false")) + "\t" + (boolArray[1] ? QString("true") : QString("false"));
+  resultStr = results.first + "\t" + (boolArray[0] ? "true" : "false") + "\t" + (boolArray[1] ? "true" : "false");
   assertEquals("patch_apply: Failed match.", "I am the very model of a modern major general.\tfalse\tfalse", resultStr);
 
   patches = dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
   results = dmp.patch_apply(patches, "x123456789012345678901234567890-----++++++++++-----123456789012345678901234567890y");
   boolArray = results.second;
-  resultStr = results.first + "\t" + (boolArray[0] ? QString("true") : QString("false")) + "\t" + (boolArray[1] ? QString("true") : QString("false"));
+  resultStr = results.first + "\t" + (boolArray[0] ? "true" : "false") + "\t" + (boolArray[1] ? "true" : "false");
   assertEquals("patch_apply: Big delete, small change.", "xabcy\ttrue\ttrue", resultStr);
 
   patches = dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
   results = dmp.patch_apply(patches, "x12345678901234567890---------------++++++++++---------------12345678901234567890y");
   boolArray = results.second;
-  resultStr = results.first + "\t" + (boolArray[0] ? QString("true") : QString("false")) + "\t" + (boolArray[1] ? QString("true") : QString("false"));
+  resultStr = results.first + "\t" + (boolArray[0] ? "true" : "false") + "\t" + (boolArray[1] ? "true" : "false");
   assertEquals("patch_apply: Big delete, large change 1.", "xabc12345678901234567890---------------++++++++++---------------12345678901234567890y\tfalse\ttrue", resultStr);
 
   dmp.Patch_DeleteThreshold = 0.6f;
   patches = dmp.patch_make("x1234567890123456789012345678901234567890123456789012345678901234567890y", "xabcy");
   results = dmp.patch_apply(patches, "x12345678901234567890---------------++++++++++---------------12345678901234567890y");
   boolArray = results.second;
-  resultStr = results.first + "\t" + (boolArray[0] ? QString("true") : QString("false")) + "\t" + (boolArray[1] ? QString("true") : QString("false"));
+  resultStr = results.first + "\t" + (boolArray[0] ? "true" : "false") + "\t" + (boolArray[1] ? "true" : "false");
   assertEquals("patch_apply: Big delete, large change 2.", "xabcy\ttrue\ttrue", resultStr);
   dmp.Patch_DeleteThreshold = 0.5f;
 
@@ -882,7 +884,7 @@ void diff_match_patch_test::testPatchApply() {
   patches = dmp.patch_make("abcdefghijklmnopqrstuvwxyz--------------------1234567890", "abcXXXXXXXXXXdefghijklmnopqrstuvwxyz--------------------1234567YYYYYYYYYY890");
   results = dmp.patch_apply(patches, "ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567890");
   boolArray = results.second;
-  resultStr = results.first + "\t" + (boolArray[0] ? QString("true") : QString("false")) + "\t" + (boolArray[1] ? QString("true") : QString("false"));
+  resultStr = results.first + "\t" + (boolArray[0] ? "true" : "false") + "\t" + (boolArray[1] ? "true" : "false");
   assertEquals("Compensate for failed patch.", "ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567YYYYYYYYYY890\tfalse\ttrue", resultStr);
   dmp.Match_Threshold = 0.5f;
   dmp.Match_Distance = 1000;
@@ -900,19 +902,19 @@ void diff_match_patch_test::testPatchApply() {
   patches = dmp.patch_make("", "test");
   results = dmp.patch_apply(patches, "");
   boolArray = results.second;
-  resultStr = results.first + QString("\t") + (boolArray[0] ? QString("true") : QString("false"));
+  resultStr = results.first + "\t" + (boolArray[0] ? "true" : "false");
   assertEquals("patch_apply: Edge exact match.", "test\ttrue", resultStr);
 
   patches = dmp.patch_make("XY", "XtestY");
   results = dmp.patch_apply(patches, "XY");
   boolArray = results.second;
-  resultStr = results.first + QString("\t") + (boolArray[0] ? QString("true") : QString("false"));
+  resultStr = results.first + "\t" + (boolArray[0] ? "true" : "false");
   assertEquals("patch_apply: Near edge exact match.", "XtestY\ttrue", resultStr);
 
   patches = dmp.patch_make("y", "y123");
   results = dmp.patch_apply(patches, "x");
   boolArray = results.second;
-  resultStr = results.first + QString("\t") + (boolArray[0] ? QString("true") : QString("false"));
+  resultStr = results.first + "\t" + (boolArray[0] ? "true" : "false");
   assertEquals("patch_apply: Edge partial match.", "x123\ttrue", resultStr);
 }
 
@@ -921,7 +923,7 @@ void diff_match_patch_test::assertEquals(const QString &strCase, int n1, int n2)
   if (n1 != n2) {
     qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
         .arg(strCase, QString::number(n1), QString::number(n2))));
-    throw(strCase);
+    throw strCase;
   }
   qDebug(qPrintable(QString("%1 OK").arg(strCase)));
 }
@@ -930,7 +932,7 @@ void diff_match_patch_test::assertEquals(const QString &strCase, const QString &
   if (s1 != s2) {
     qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
         .arg(strCase, s1, s2)));
-    throw(strCase);
+    throw strCase;
   }
   qDebug(qPrintable(QString("%1 OK").arg(strCase)));
 }
@@ -939,7 +941,7 @@ void diff_match_patch_test::assertEquals(const QString &strCase, const Diff &d1,
   if (d1 != d2) {
     qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
         .arg(strCase, d1.toString(), d2.toString())));
-    throw(strCase);
+    throw strCase;
   }
   qDebug(qPrintable(QString("%1 OK").arg(strCase)));
 }
@@ -984,7 +986,7 @@ void diff_match_patch_test::assertEquals(const QString &strCase, const QList<Dif
     listString2 += ")";
     qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
         .arg(strCase, listString1, listString2)));
-    throw(strCase);
+    throw strCase;
   }
   qDebug(qPrintable(QString("%1 OK").arg(strCase)));
 }
@@ -1029,7 +1031,7 @@ void diff_match_patch_test::assertEquals(const QString &strCase, const QList<QVa
     listString2 += ")";
     qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
         .arg(strCase, listString1, listString2)));
-    throw(strCase);
+    throw strCase;
   }
   qDebug(qPrintable(QString("%1 OK").arg(strCase)));
 }
@@ -1038,7 +1040,7 @@ void diff_match_patch_test::assertEquals(const QString &strCase, const QVariant 
   if (var1 != var2) {
     qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
         .arg(strCase, var1.toString(), var2.toString())));
-    throw(strCase);
+    throw strCase;
   }
   qDebug(qPrintable(QString("%1 OK").arg(strCase)));
 }
@@ -1052,7 +1054,7 @@ void diff_match_patch_test::assertEquals(const QString &strCase, const QMap<QCha
     if (i1.key() != i2.key() || i1.value() != i2.value()) {
       qDebug(qPrintable(QString("%1 FAIL\nExpected: (%2, %3)\nActual: (%4, %5)")
           .arg(strCase, QString(i1.key()), QString::number(i1.value()), QString(i2.key()), QString::number(i2.value()))));
-      throw(strCase);
+      throw strCase;
     }
   }
 
@@ -1060,13 +1062,13 @@ void diff_match_patch_test::assertEquals(const QString &strCase, const QMap<QCha
     i1.next();
     qDebug(qPrintable(QString("%1 FAIL\nExpected: (%2, %3)\nActual: none")
         .arg(strCase, QString(i1.key()), QString::number(i1.value()))));
-    throw(strCase);
+    throw strCase;
   }
   if (i2.hasNext()) {
     i2.next();
     qDebug(qPrintable(QString("%1 FAIL\nExpected: none\nActual: (%2, %3)")
         .arg(strCase, QString(i2.key()), QString::number(i2.value()))));
-    throw(strCase);
+    throw strCase;
   }
   qDebug(qPrintable(QString("%1 OK").arg(strCase)));
 }
@@ -1075,7 +1077,7 @@ void diff_match_patch_test::assertEquals(const QString &strCase, const QStringLi
   if (list1 != list2) {
     qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
         .arg(strCase, list1.join(","), list2.join(","))));
-    throw(strCase);
+    throw strCase;
   }
   qDebug(qPrintable(QString("%1 OK").arg(strCase)));
 }
@@ -1084,7 +1086,7 @@ void diff_match_patch_test::assertTrue(const QString &strCase, bool value) {
   if (!value) {
     qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
         .arg(strCase, "true", "false")));
-    throw(strCase);
+    throw strCase;
   }
   qDebug(qPrintable(QString("%1 OK").arg(strCase)));
 }
@@ -1093,7 +1095,7 @@ void diff_match_patch_test::assertFalse(const QString &strCase, bool value) {
   if (value) {
     qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
         .arg(strCase, "false", "true")));
-    throw(strCase);
+    throw strCase;
   }
   qDebug(qPrintable(QString("%1 OK").arg(strCase)));
 }
@@ -1116,13 +1118,13 @@ QStringList diff_match_patch_test::diff_rebuildtexts(QList<Diff> diffs) {
 
 void diff_match_patch_test::assertNull(const QString &strCase, const QStringList &list) {
   if (!list.isEmpty()) {
-    throw(strCase);
+    throw strCase;
   }
 }
 
 void diff_match_patch_test::assertNull(const QString &strCase, const QList<Diff> &list) {
   if (!list.isEmpty()) {
-    throw(strCase);
+    throw strCase;
   }
 }
 

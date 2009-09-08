@@ -91,7 +91,7 @@ class DiffTest(DiffMatchPatchTest):
 
     self.assertEquals(("\x01", "\x02", ["", "a", "b"]), self.dmp.diff_linesToChars("a", "b"))
 
-    # More than 256.
+    # More than 256 to reveal any 8-bit limitations.
     n = 300
     lineList = []
     charList = []
@@ -111,7 +111,7 @@ class DiffTest(DiffMatchPatchTest):
     self.dmp.diff_charsToLines(diffs, ["", "alpha\n", "beta\n"])
     self.assertEquals([(self.dmp.DIFF_EQUAL, "alpha\nbeta\nalpha\n"), (self.dmp.DIFF_INSERT, "beta\nalpha\nbeta\n")], diffs)
 
-    # More than 256.
+    # More than 256 to reveal any 8-bit limitations.
     n = 300
     lineList = []
     charList = []
