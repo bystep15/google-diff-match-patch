@@ -487,7 +487,7 @@ namespace nicTest
             try
             {
                 dmp.diff_fromDelta(text1 + "x", delta);
-                Assert.Fail ("diff_fromDelta: Too long.");
+                Assert.Fail("diff_fromDelta: Too long.");
             }
             catch (ArgumentException)
             {
@@ -498,7 +498,7 @@ namespace nicTest
             try
             {
                 dmp.diff_fromDelta(text1.Substring(1), delta);
-                Assert.Fail ("diff_fromDelta: Too short.");
+                Assert.Fail("diff_fromDelta: Too short.");
             }
             catch (ArgumentException)
             {

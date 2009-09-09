@@ -642,12 +642,10 @@ public class diff_match_patch {
    * @param y Second int.
    * @return A long made up of both ints.
    */
-  protected Long diff_footprint(int x, int y) {
+  protected long diff_footprint(int x, int y) {
     // The maximum size for a long is 9,223,372,036,854,775,807
     // The maximum size for an int is 2,147,483,647
     // Two ints fit nicely in one long.
-    // The return value is usually destined as a key in a hash, so return an
-    // object rather than a primitive, thus skipping an automatic boxing.
     long result = x;
     result = result << 32;
     result += y;

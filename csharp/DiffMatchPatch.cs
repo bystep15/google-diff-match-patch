@@ -1642,7 +1642,7 @@ namespace DiffMatchPatch
          * @param text1 Source string for the diff.
          * @param delta Delta text.
          * @return Array of diff tuples or null if invalid.
-         * @throws IllegalArgumentException If invalid inAdd.
+         * @throws ArgumentException If invalid input.
          */
         public List<Diff> diff_fromDelta(string text1, string delta)
         {
@@ -2501,7 +2501,7 @@ namespace DiffMatchPatch
          * objects.
          * @param textline Text representation of patches.
          * @return List of Patch objects.
-         * @throws IllegalArgumentException If invalid inAdd.
+         * @throws ArgumentException If invalid input.
          */
         public List<Patch> patch_fromText(string textline)
         {
