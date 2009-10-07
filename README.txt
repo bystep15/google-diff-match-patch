@@ -8,7 +8,8 @@ Java:
 
 JavaScript:
 * diff_match_patch.js
-  This file has been compressed using http://dean.edwards.name/packer/
+  This file has been compressed using Google's internal JavaScript compressor.
+  External hackers are recommended to use http://dean.edwards.name/packer/
 * diff_match_patch_uncompressed.js
 * diff_match_patch_test.html
 
