@@ -720,6 +720,7 @@ public class diff_match_patch_test extends TestCase {
     assertEquals("patch_addContext: Ambiguity.", "@@ -1,27 +1,28 @@\n Th\n-e\n+at\n  quick brown fox jumps. \n", p.toString());
   }
 
+  @SuppressWarnings("deprecation")
   public void testPatchMake() {
     LinkedList<Patch> patches;
     String text1 = "The quick brown fox jumps over the lazy dog.";
