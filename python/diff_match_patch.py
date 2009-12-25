@@ -159,7 +159,7 @@ class diff_match_patch:
         diffs[0] = (self.DIFF_DELETE, diffs[0][1])
         diffs[2] = (self.DIFF_DELETE, diffs[2][1])
       return diffs
-    longtext = shorttext = None  # Garbage collect
+    longtext = shorttext = None  # Garbage collect.
 
     # Check to see if the problem can be split in two.
     hm = self.diff_halfMatch(text1, text2)
@@ -1220,10 +1220,10 @@ class diff_match_patch:
     best_loc = text.find(pattern, loc)
     if best_loc != -1:
       score_threshold = min(match_bitapScore(0, best_loc), score_threshold)
-    # What about in the other direction? (speedup)
-    best_loc = text.rfind(pattern, loc + len(pattern))
-    if best_loc != -1:
-      score_threshold = min(match_bitapScore(0, best_loc), score_threshold)
+      # What about in the other direction? (speedup)
+      best_loc = text.rfind(pattern, loc + len(pattern))
+      if best_loc != -1:
+        score_threshold = min(match_bitapScore(0, best_loc), score_threshold)
 
     # Initialise the bit arrays.
     matchmask = 1 << (len(pattern) - 1)
@@ -1309,17 +1309,22 @@ class diff_match_patch:
       patch: The patch to grow.
       text: Source text.
     """
+    if len(text) == 0:
+      return
     pattern = text[patch.start2 : patch.start2 + patch.length1]
     padding = 0
+
+    # Look for the first and last matches of pattern in text.  If two different
+    # matches are found, increase the pattern length.
     while (text.find(pattern) != text.rfind(pattern) and (self.Match_MaxBits ==
         0 or len(pattern) < self.Match_MaxBits - self.Patch_Margin -
         self.Patch_Margin)):
       padding += self.Patch_Margin
       pattern = text[max(0, patch.start2 - padding) :
                      patch.start2 + patch.length1 + padding]
-
     # Add one chunk for good luck.
     padding += self.Patch_Margin
+
     # Add the prefix.
     prefix = text[max(0, patch.start2 - padding) : patch.start2]
     if prefix:

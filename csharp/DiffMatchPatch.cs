@@ -352,7 +352,7 @@ namespace DiffMatchPatch
                 diffs.Add(new Diff(op, longtext.Substring(i + shorttext.Length)));
                 return diffs;
             }
-            longtext = shorttext = null;  // Garbage collect
+            longtext = shorttext = null;  // Garbage collect.
 
             // Check to see if the problem can be split in two.
             string[] hm = diff_halfMatch(text1, text2);
@@ -1791,14 +1791,14 @@ namespace DiffMatchPatch
             {
                 score_threshold = Math.Min(match_bitapScore(0, best_loc, loc,
                     pattern), score_threshold);
-            }
-            // What about in the other direction? (speedup)
-            best_loc = text.LastIndexOf(pattern,
-                Math.Min(loc + pattern.Length, text.Length));
-            if (best_loc != -1)
-            {
-                score_threshold = Math.Min(match_bitapScore(0, best_loc, loc,
-                    pattern), score_threshold);
+                // What about in the other direction? (speedup)
+                best_loc = text.LastIndexOf(pattern,
+                    Math.Min(loc + pattern.Length, text.Length));
+                if (best_loc != -1)
+                {
+                    score_threshold = Math.Min(match_bitapScore(0, best_loc, loc,
+                        pattern), score_threshold);
+                }
             }
 
             // Initialise the bit arrays.
@@ -1951,10 +1951,15 @@ namespace DiffMatchPatch
          */
         protected void patch_addContext(Patch patch, string text)
         {
+            if (text.Length == 0)
+            {
+                return;
+            }
             string pattern = text.Substring(patch.start2, patch.length1);
             int padding = 0;
-            // Increase the context until we're unique (but don't let the pattern
-            // expand beyond Match_MaxBits).
+
+            // Look for the first and last matches of pattern in text.  If two
+            // different matches are found, increase the pattern length.
             while (text.IndexOf(pattern) != text.LastIndexOf(pattern)
                 && pattern.Length < Match_MaxBits - Patch_Margin - Patch_Margin)
             {
@@ -1964,6 +1969,7 @@ namespace DiffMatchPatch
             }
             // Add one chunk for good luck.
             padding += Patch_Margin;
+
             // Add the prefix.
             string prefix = text.JavaSubstring(Math.Max(0, patch.start2 - padding),
                 patch.start2);
@@ -2632,4 +2638,3 @@ namespace DiffMatchPatch
         }
     }
 }
-

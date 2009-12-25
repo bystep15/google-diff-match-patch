@@ -173,7 +173,7 @@ diff_match_patch.prototype.diff_compute = function(text1, text2, checklines) {
     }
     return diffs;
   }
-  longtext = shorttext = null;  // Garbage collect
+  longtext = shorttext = null;  // Garbage collect.
 
   // Check to see if the problem can be split in two.
   var hm = this.diff_halfMatch(text1, text2);
@@ -282,8 +282,8 @@ diff_match_patch.prototype.diff_linesToChars = function(text1, text2) {
    * Split a text into an array of strings.  Reduce the texts to a string of
    * hashes where each Unicode character represents one line.
    * Modifies linearray and linehash through being a closure.
-   * @param {string} text String to encode
-   * @return {string} Encoded string
+   * @param {string} text String to encode.
+   * @return {string} Encoded string.
    * @private
    */
   function diff_linesToCharsMunge(text) {
@@ -819,8 +819,8 @@ diff_match_patch.prototype.diff_cleanupSemanticLossless = function(diffs) {
    * boundary falls on logical boundaries.
    * Scores range from 5 (best) to 0 (worst).
    * Closure, makes reference to regex patterns defined above.
-   * @param {string} one First string
-   * @param {string} two Second string
+   * @param {string} one First string.
+   * @param {string} two Second string.
    * @return {number} The score.
    */
   function diff_cleanupSemanticScore(one, two) {
@@ -1418,11 +1418,12 @@ diff_match_patch.prototype.match_bitap = function(text, pattern, loc) {
   var best_loc = text.indexOf(pattern, loc);
   if (best_loc != -1) {
     score_threshold = Math.min(match_bitapScore(0, best_loc), score_threshold);
-  }
-  // What about in the other direction? (speedup)
-  best_loc = text.lastIndexOf(pattern, loc + pattern.length);
-  if (best_loc != -1) {
-    score_threshold = Math.min(match_bitapScore(0, best_loc), score_threshold);
+    // What about in the other direction? (speedup)
+    best_loc = text.lastIndexOf(pattern, loc + pattern.length);
+    if (best_loc != -1) {
+      score_threshold =
+          Math.min(match_bitapScore(0, best_loc), score_threshold);
+    }
   }
 
   // Initialise the bit arrays.
@@ -1521,8 +1522,14 @@ diff_match_patch.prototype.match_alphabet = function(pattern) {
  * @private
  */
 diff_match_patch.prototype.patch_addContext = function(patch, text) {
+  if (text.length == 0) {
+    return;
+  }
   var pattern = text.substring(patch.start2, patch.start2 + patch.length1);
   var padding = 0;
+
+  // Look for the first and last matches of pattern in text.  If two different
+  // matches are found, increase the pattern length.
   while (text.indexOf(pattern) != text.lastIndexOf(pattern) &&
          pattern.length < this.Match_MaxBits - this.Patch_Margin -
          this.Patch_Margin) {
@@ -1532,6 +1539,7 @@ diff_match_patch.prototype.patch_addContext = function(patch, text) {
   }
   // Add one chunk for good luck.
   padding += this.Patch_Margin;
+
   // Add the prefix.
   var prefix = text.substring(patch.start2 - padding, patch.start2);
   if (prefix) {
@@ -2131,4 +2139,3 @@ window['patch_obj'] = patch_obj;
 window['DIFF_DELETE'] = DIFF_DELETE;
 window['DIFF_INSERT'] = DIFF_INSERT;
 window['DIFF_EQUAL'] = DIFF_EQUAL;
-

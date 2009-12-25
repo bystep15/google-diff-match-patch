@@ -17,6 +17,10 @@ Python:
 * diff_match_patch.py
 * diff_match_patch_test.py
 
+Lua: (ported by Duncan Cross)
+* diff_match_patch.lua
+* diff_match_patch_test.lua
+
 C++: (ported by Mike Slemmer)
 * diff_match_patch.pro
 * diff_match_patch.h

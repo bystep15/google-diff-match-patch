@@ -1400,12 +1400,12 @@ int diff_match_patch::match_bitap(const QString &text, const QString &pattern,
   if (best_loc != -1) {
     score_threshold = qMin(match_bitapScore(0, best_loc, loc, pattern),
         score_threshold);
-  }
-  // What about in the other direction? (speedup)
-  best_loc = text.lastIndexOf(pattern, loc + pattern.length());
-  if (best_loc != -1) {
-    score_threshold = qMin(match_bitapScore(0, best_loc, loc, pattern),
-        score_threshold);
+    // What about in the other direction? (speedup)
+    best_loc = text.lastIndexOf(pattern, loc + pattern.length());
+    if (best_loc != -1) {
+      score_threshold = qMin(match_bitapScore(0, best_loc, loc, pattern),
+          score_threshold);
+    }
   }
 
   // Initialise the bit arrays.
@@ -1517,24 +1517,24 @@ QMap<QChar, int> diff_match_patch::match_alphabet(const QString &pattern) {
 
 
 void diff_match_patch::patch_addContext(Patch &patch, const QString &text) {
+  if (text.isEmpty()) {
+    return;
+  }
   QString pattern = text.mid(patch.start2, patch.length1);
   int padding = 0;
-  // Increase the context until we're unique (but don't let the pattern
-  // expand beyond Match_MaxBits).
-  if (!text.isEmpty()) {
-    // Bug in QString:
-    // QString("").indexOf(QString("")) == 0
-    // QString("").lastIndexOf(QString("")) == -1
-    while (text.indexOf(pattern) != text.lastIndexOf(pattern)
-        && pattern.length() < Match_MaxBits - Patch_Margin - Patch_Margin) {
-      padding += Patch_Margin;
-      pattern = text.mid(qMax(0, patch.start2 - padding),
-          qMin(text.length(), patch.start2 + patch.length1 + padding)
-          - qMax(0, patch.start2 - padding));
-    }
+
+  // Look for the first and last matches of pattern in text.  If two different
+  // matches are found, increase the pattern length.
+  while (text.indexOf(pattern) != text.lastIndexOf(pattern)
+      && pattern.length() < Match_MaxBits - Patch_Margin - Patch_Margin) {
+    padding += Patch_Margin;
+    pattern = text.mid(qMax(0, patch.start2 - padding),
+        qMin(text.length(), patch.start2 + patch.length1 + padding)
+        - qMax(0, patch.start2 - padding));
   }
   // Add one chunk for good luck.
   padding += Patch_Margin;
+
   // Add the prefix.
   QString prefix = text.mid(qMax(0, patch.start2 - padding),
       patch.start2 - qMax(0, patch.start2 - padding));

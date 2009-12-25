@@ -20,7 +20,7 @@ limitations under the License.
 
 import unittest
 import diff_match_patch as dmp_module
-# Force a module reload so to make debugging easier (at least in PythonWin).
+# Force a module reload to make debugging easier (at least in PythonWin).
 reload(dmp_module)
 
 class DiffMatchPatchTest(unittest.TestCase):
