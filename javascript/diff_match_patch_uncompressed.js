@@ -517,9 +517,9 @@ diff_match_patch.prototype.diff_path1 = function(v_map, text1, text2) {
       } else {
         x--;
         y--;
-        //if (text1.charAt(x) != text2.charAt(y)) {
-        //  throw new Error('No diagonal.  Can\'t happen. (diff_path1)');
-        //}
+        if (text1.charAt(x) != text2.charAt(y)) {
+          throw new Error('No diagonal.  Can\'t happen. (diff_path1)');
+        }
         if (last_op === DIFF_EQUAL) {
           path[0][1] = text1.charAt(x) + path[0][1];
         } else {
@@ -576,10 +576,10 @@ diff_match_patch.prototype.diff_path2 = function(v_map, text1, text2) {
       } else {
         x--;
         y--;
-        //if (text1.charAt(text1.length - x - 1) !=
-        //    text2.charAt(text2.length - y - 1)) {
-        //  throw new Error('No diagonal.  Can\'t happen. (diff_path2)');
-        //}
+        if (text1.charAt(text1.length - x - 1) !=
+            text2.charAt(text2.length - y - 1)) {
+          throw new Error('No diagonal.  Can\'t happen. (diff_path2)');
+        }
         if (last_op === DIFF_EQUAL) {
           path[pathLength - 1][1] += text1.charAt(text1.length - x - 1);
         } else {

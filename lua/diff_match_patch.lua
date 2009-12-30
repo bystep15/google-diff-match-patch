@@ -883,9 +883,9 @@ function _diff_path1(v_map, text1, text2)
       else
         x = x - 1
         y = y - 1
-        --if (_element(text1, x) ~= _element(text2, y)) then
-        --   error('No diagonal.  Can\'t happen. (_diff_path1)')
-        --end
+        if (_element(text1, x) ~= _element(text2, y)) then
+           error('No diagonal.  Can\'t happen. (_diff_path1)')
+        end
         if (last_op == DIFF_EQUAL) then
           path[1][2] = _prepend(path[1][2], _element(text1, x))
         else
@@ -949,9 +949,9 @@ function _diff_path2(v_map, text1, text2)
       else
         x = x - 1
         y = y - 1
-        --if (strsub(text1, -x, -x) ~= strsub(text2, -y, -y)) then
-        --  error('No diagonal.  Can\'t happen. (_diff_path2)')
-        --end
+        if (strsub(text1, -x, -x) ~= strsub(text2, -y, -y)) then
+          error('No diagonal.  Can\'t happen. (_diff_path2)')
+        end
         if (last_op == DIFF_EQUAL) then
           path[pathLength][2]
               = _append(path[pathLength][2], _element(text1, -x))
