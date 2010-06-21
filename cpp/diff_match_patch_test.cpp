@@ -362,7 +362,7 @@ void diff_match_patch_test::testDiffDelta() {
   // Generates error (19 < 20).
   try {
     dmp.diff_fromDelta(text1 + "x", delta);
-    throw "diff_fromDelta: Too long.";
+    assertFalse("diff_fromDelta: Too long.", true);
   } catch (QString ex) {
     // Exception expected.
   }
@@ -370,7 +370,7 @@ void diff_match_patch_test::testDiffDelta() {
   // Generates error (19 > 18).
   try {
     dmp.diff_fromDelta(text1.mid(1), delta);
-    throw "diff_fromDelta: Too short.";
+    assertFalse("diff_fromDelta: Too short.", true);
   } catch (QString ex) {
     // Exception expected.
   }
@@ -379,7 +379,7 @@ void diff_match_patch_test::testDiffDelta() {
   /* This test does not work because QUrl::fromPercentEncoding("%xy") -> "?"
   try {
     dmp.diff_fromDelta("", "+%c3%xy");
-    throw "diff_fromDelta: Invalid character.";
+    assertFalse("diff_fromDelta: Invalid character.", true);
   } catch (QString ex) {
     // Exception expected.
   }
@@ -611,6 +611,14 @@ void diff_match_patch_test::testDiffMain() {
   QStringList texts_linemode = diff_rebuildtexts(dmp.diff_main(a, b, true));
   QStringList texts_textmode = diff_rebuildtexts(dmp.diff_main(a, b, false));
   assertEquals("diff_main: Overlap.", texts_textmode, texts_linemode);
+
+  // Test null inputs.
+  try {
+    dmp.diff_main(NULL, NULL);
+    assertFalse("diff_main: Null inputs.", true);
+  } catch (const char* ex) {
+    // Exception expected.
+  }
 }
 
 
@@ -690,6 +698,14 @@ void diff_match_patch_test::testMatchMain() {
   dmp.Match_Threshold = 0.7f;
   assertEquals("match_main: Complex match.", 4, dmp.match_main("I am the very model of a modern major general.", " that berry ", 5));
   dmp.Match_Threshold = 0.5f;
+
+  // Test null inputs.
+  try {
+    dmp.match_main(NULL, NULL, 0);
+    assertFalse("match_main: Null inputs.", true);
+  } catch (const char* ex) {
+    // Exception expected.
+  }
 }
 
 
@@ -723,7 +739,7 @@ void diff_match_patch_test::testPatchFromText() {
   // Generates error.
   try {
     dmp.patch_fromText("Bad\nPatch\n");
-    throw "patch_fromText: #5";
+    assertFalse("patch_fromText: #5.", true);
   } catch (QString ex) {
     // Exception expected.
   }
@@ -797,6 +813,14 @@ void diff_match_patch_test::testPatchMake() {
   expectedPatch = "@@ -573,28 +573,31 @@\n cdefabcdefabcdefabcdefabcdef\n+123\n";
   patches = dmp.patch_make(text1, text2);
   assertEquals("patch_make: Long string with repeats.", expectedPatch, dmp.patch_toText(patches));
+
+  // Test null inputs.
+  try {
+    dmp.patch_make(NULL, NULL);
+    assertFalse("patch_make: Null inputs.", true);
+  } catch (const char* ex) {
+    // Exception expected.
+  }
 }
 
 void diff_match_patch_test::testPatchSplitMax() {
@@ -1132,53 +1156,54 @@ void diff_match_patch_test::assertNull(const QString &strCase, const QList<Diff>
 // Private function for quickly building lists of diffs.
 QList<Diff> diff_match_patch_test::diffList(Diff d1, Diff d2, Diff d3, Diff d4, Diff d5,
   Diff d6, Diff d7, Diff d8, Diff d9, Diff d10) {
+  // Diff(INSERT, NULL) is invalid and thus is used as the default argument.
   QList<Diff> listRet;
-  if (d1.operation == EQUAL && d1.text == NULL) {
+  if (d1.operation == INSERT && d1.text == NULL) {
     return listRet;
   }
   listRet << d1;
 
-  if (d2.operation == EQUAL && d2.text == NULL) {
+  if (d2.operation == INSERT && d2.text == NULL) {
     return listRet;
   }
   listRet << d2;
 
-  if (d3.operation == EQUAL && d3.text == NULL) {
+  if (d3.operation == INSERT && d3.text == NULL) {
     return listRet;
   }
   listRet << d3;
 
-  if (d4.operation == EQUAL && d4.text == NULL) {
+  if (d4.operation == INSERT && d4.text == NULL) {
     return listRet;
   }
   listRet << d4;
 
-  if (d5.operation == EQUAL && d5.text == NULL) {
+  if (d5.operation == INSERT && d5.text == NULL) {
     return listRet;
   }
   listRet << d5;
 
-  if (d6.operation == EQUAL && d6.text == NULL) {
+  if (d6.operation == INSERT && d6.text == NULL) {
     return listRet;
   }
   listRet << d6;
 
-  if (d7.operation == EQUAL && d7.text == NULL) {
+  if (d7.operation == INSERT && d7.text == NULL) {
     return listRet;
   }
   listRet << d7;
 
-  if (d8.operation == EQUAL && d8.text == NULL) {
+  if (d8.operation == INSERT && d8.text == NULL) {
     return listRet;
   }
   listRet << d8;
 
-  if (d9.operation == EQUAL && d9.text == NULL) {
+  if (d9.operation == INSERT && d9.text == NULL) {
     return listRet;
   }
   listRet << d9;
 
-  if (d10.operation == EQUAL && d10.text == NULL) {
+  if (d10.operation == INSERT && d10.text == NULL) {
     return listRet;
   }
   listRet << d10;

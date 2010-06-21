@@ -314,21 +314,27 @@ class DiffTest(DiffMatchPatchTest):
 
     # Generates error (19 != 20).
     try:
-      self.assertEquals(ValueError, self.dmp.diff_fromDelta(text1 + "x", delta))
+      self.dmp.diff_fromDelta(text1 + "x", delta)
+      self.assertFalse(True)
     except ValueError:
-      self.assertTrue(True)
+      # Exception expected.
+      pass
 
     # Generates error (19 != 18).
     try:
-      self.assertEquals(None, self.dmp.diff_fromDelta(text1[1:], delta))
+      self.dmp.diff_fromDelta(text1[1:], delta)
+      self.assertFalse(True)
     except ValueError:
-      self.assertTrue(True)
+      # Exception expected.
+      pass
 
     # Generates error (%c3%xy invalid Unicode).
     try:
-      self.assertEquals(None, self.dmp.diff_fromDelta("", "+%c3xy"))
+      self.dmp.diff_fromDelta("", "+%c3xy")
+      self.assertFalse(True)
     except ValueError:
-      self.assertTrue(True)
+      # Exception expected.
+      pass
 
     # Test deltas with special characters.
     diffs = [(self.dmp.DIFF_EQUAL, u"\u0680 \x00 \t %"), (self.dmp.DIFF_DELETE, u"\u0681 \x01 \n ^"), (self.dmp.DIFF_INSERT, u"\u0682 \x02 \\ |")]
@@ -460,6 +466,14 @@ class DiffTest(DiffMatchPatchTest):
     texts_textmode = self.diff_rebuildtexts(self.dmp.diff_main(a, b, False))
     self.assertEquals(texts_textmode, texts_linemode)
 
+    # Test null inputs.
+    try:
+      self.dmp.diff_main(None, None)
+      self.assertFalse(True)
+    except ValueError:
+      # Exception expected.
+      pass
+
 
 class MatchTest(DiffMatchPatchTest):
   """MATCH TEST FUNCTIONS"""
@@ -540,6 +554,14 @@ class MatchTest(DiffMatchPatchTest):
     self.assertEquals(4, self.dmp.match_main("I am the very model of a modern major general.", " that berry ", 5))
     self.dmp.Match_Threshold = 0.5
 
+    # Test null inputs.
+    try:
+      self.dmp.match_main(None, None, 0)
+      self.assertFalse(True)
+    except ValueError:
+      # Exception expected.
+      pass
+
 
 class PatchTest(DiffMatchPatchTest):
   """PATCH TEST FUNCTIONS"""
@@ -569,9 +591,11 @@ class PatchTest(DiffMatchPatchTest):
 
     # Generates error.
     try:
-      self.assertEquals(ValueError, self.dmp.patch_fromText("Bad\nPatch\n"))
+      self.dmp.patch_fromText("Bad\nPatch\n")
+      self.assertFalse(True)
     except ValueError:
-      self.assertTrue(True)
+      # Exception expected.
+      pass
 
   def testPatchToText(self):
     strp = "@@ -21,18 +22,17 @@\n jump\n-s\n+ed\n  over \n-the\n+a\n  laz\n"
@@ -646,6 +670,14 @@ class PatchTest(DiffMatchPatchTest):
     expectedPatch = "@@ -573,28 +573,31 @@\n cdefabcdefabcdefabcdefabcdef\n+123\n"
     patches = self.dmp.patch_make(text1, text2)
     self.assertEquals(expectedPatch, self.dmp.patch_toText(patches))
+
+    # Test null inputs.
+    try:
+      self.dmp.patch_make(None, None)
+      self.assertFalse(True)
+    except ValueError:
+      # Exception expected.
+      pass
 
   def testPatchSplitMax(self):
     # Assumes that Match_MaxBits is 32.

@@ -183,29 +183,34 @@ QList<Diff> diff_match_patch::diff_main(const QString &text1,
 
 QList<Diff> diff_match_patch::diff_main(const QString &text1, const QString &text2,
                                         bool checklines) {
-  // Check for equality (speedup)
+  // Check for null inputs.
+  if (text1.isNull() || text2.isNull()) {
+    throw "Null inputs. (diff_main)";
+  }
+
+  // Check for equality (speedup).
   QList<Diff> diffs;
   if (text1 == text2) {
     diffs.append(Diff(EQUAL, text1));
     return diffs;
   }
 
-  // Trim off common prefix (speedup)
+  // Trim off common prefix (speedup).
   int commonlength = diff_commonPrefix(text1, text2);
   const QString &commonprefix = text1.left(commonlength);
   QString textChopped1 = text1.mid(commonlength);
   QString textChopped2 = text2.mid(commonlength);
 
-  // Trim off common suffix (speedup)
+  // Trim off common suffix (speedup).
   commonlength = diff_commonSuffix(textChopped1, textChopped2);
   const QString &commonsuffix = textChopped1.right(commonlength);
   textChopped1 = textChopped1.left(textChopped1.length() - commonlength);
   textChopped2 = textChopped2.left(textChopped2.length() - commonlength);
 
-  // Compute the diff on the middle block
+  // Compute the diff on the middle block.
   diffs = diff_compute(textChopped1, textChopped2, checklines);
 
-  // Restore the prefix and suffix
+  // Restore the prefix and suffix.
   if (!commonprefix.isEmpty()) {
     diffs.prepend(Diff(EQUAL, commonprefix));
   }
@@ -223,13 +228,13 @@ QList<Diff> diff_match_patch::diff_compute(QString text1, QString text2, bool ch
   QList<Diff> diffs;
 
   if (text1.isEmpty()) {
-    // Just add some text (speedup)
+    // Just add some text (speedup).
     diffs.append(Diff(INSERT, text2));
     return diffs;
   }
 
   if (text2.isEmpty()) {
-    // Just delete some text (speedup)
+    // Just delete some text (speedup).
     diffs.append(Diff(DELETE, text1));
     return diffs;
   }
@@ -239,7 +244,7 @@ QList<Diff> diff_match_patch::diff_compute(QString text1, QString text2, bool ch
     const QString shorttext = text1.length() > text2.length() ? text2 : text1;
     const int i = longtext.indexOf(shorttext);
     if (i != -1) {
-      // Shorter text is inside the longer text (speedup)
+      // Shorter text is inside the longer text (speedup).
       const Operation op = (text1.length() > text2.length()) ? DELETE : INSERT;
       diffs.append(Diff(op, longtext.left(i)));
       diffs.append(Diff(EQUAL, shorttext));
@@ -1366,6 +1371,11 @@ QList<Diff> diff_match_patch::diff_fromDelta(const QString &text1,
 
 int diff_match_patch::match_main(const QString &text, const QString &pattern,
                                  int loc) {
+  // Check for null inputs.
+  if (text.isNull() || pattern.isNull()) {
+    throw "Null inputs. (match_main)";
+  }
+
   loc = qMax(0, qMin(loc, text.length()));
   if (text == pattern) {
     // Shortcut (potentially not guaranteed by the algorithm)
@@ -1560,6 +1570,11 @@ void diff_match_patch::patch_addContext(Patch &patch, const QString &text) {
 
 QList<Patch> diff_match_patch::patch_make(const QString &text1,
                                           const QString &text2) {
+  // Check for null inputs.
+  if (text1.isNull() || text2.isNull()) {
+    throw "Null inputs. (patch_make)";
+  }
+
   // No diffs provided, compute our own.
   QList<Diff> diffs = diff_main(text1, text2, true);
   if (diffs.size() > 2) {
@@ -1590,6 +1605,11 @@ QList<Patch> diff_match_patch::patch_make(const QString &text1,
 
 QList<Patch> diff_match_patch::patch_make(const QString &text1,
                                           const QList<Diff> &diffs) {
+  // Check for null inputs.
+  if (text1.isNull()) {
+    throw "Null inputs. (patch_make)";
+  }
+
   QList<Patch> patches;
   if (diffs.isEmpty()) {
     return patches;  // Get rid of the null case.
@@ -2031,3 +2051,6 @@ QList<Patch> diff_match_patch::patch_fromText(const QString &textline) {
   }
   return patches;
 }
+
+
+

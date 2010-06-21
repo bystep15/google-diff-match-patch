@@ -570,6 +570,14 @@ public class diff_match_patch_test extends TestCase {
     String[] texts_linemode = diff_rebuildtexts(dmp.diff_main(a, b, true));
     String[] texts_textmode = diff_rebuildtexts(dmp.diff_main(a, b, false));
     assertArrayEquals("diff_main: Overlap.", texts_textmode, texts_linemode);
+
+    // Test null inputs.
+    try {
+      dmp.diff_main(null, null);
+      fail("diff_main: Null inputs.");
+    } catch (IllegalArgumentException ex) {
+      // Error expected.
+    }
   }
 
 
@@ -650,6 +658,14 @@ public class diff_match_patch_test extends TestCase {
     dmp.Match_Threshold = 0.7f;
     assertEquals("match_main: Complex match.", 4, dmp.match_main("I am the very model of a modern major general.", " that berry ", 5));
     dmp.Match_Threshold = 0.5f;
+
+    // Test null inputs.
+    try {
+      dmp.match_main(null, null, 0);
+      fail("match_main: Null inputs.");
+    } catch (IllegalArgumentException ex) {
+      // Error expected.
+    }
   }
 
 
@@ -758,6 +774,14 @@ public class diff_match_patch_test extends TestCase {
     expectedPatch = "@@ -573,28 +573,31 @@\n cdefabcdefabcdefabcdefabcdef\n+123\n";
     patches = dmp.patch_make(text1, text2);
     assertEquals("patch_make: Long string with repeats.", expectedPatch, dmp.patch_toText(patches));
+
+    // Test null inputs.
+    try {
+      dmp.patch_make(null);
+      fail("patch_make: Null inputs.");
+    } catch (IllegalArgumentException ex) {
+      // Error expected.
+    }
   }
 
   public void testPatchSplitMax() {

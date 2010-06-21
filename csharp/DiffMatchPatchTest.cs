@@ -804,6 +804,8 @@ namespace nicTest
             string[] texts_linemode = diff_rebuildtexts(dmp.diff_main(a, b, true));
             string[] texts_textmode = diff_rebuildtexts(dmp.diff_main(a, b, false));
             CollectionAssert.AreEqual(texts_textmode, texts_linemode, "diff_main: Overlap.");
+
+            // Test null inputs -- not needed because nulls can't be passed in C#.
         }
 
         [Test()]
@@ -889,6 +891,8 @@ namespace nicTest
             dmp.Match_Threshold = 0.7f;
             Assert.AreEqual(4, dmp.match_main("I am the very model of a modern major general.", " that berry ", 5), "match_main: Complex match.");
             dmp.Match_Threshold = 0.5f;
+
+            // Test null inputs -- not needed because nulls can't be passed in C#.
         }
 
         [Test()]
@@ -1025,6 +1029,8 @@ namespace nicTest
             expectedPatch = "@@ -573,28 +573,31 @@\n cdefabcdefabcdefabcdefabcdef\n+123\n";
             patches = dmp.patch_make(text1, text2);
             Assert.AreEqual(expectedPatch, dmp.patch_toText(patches), "patch_make: Long string with repeats.");
+
+            // Test null inputs -- not needed because nulls can't be passed in C#.
         }
 
         [Test()]

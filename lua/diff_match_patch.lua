@@ -232,38 +232,43 @@ local _diff_compute,
 * @return {Array.<Array.<number|string>>} Array of diff tuples.
 --]]
 function diff_main(text1, text2, opt_checklines)
-  -- Check for equality (speedup)
-  if (text1 == text2) then
+  -- Check for null inputs.
+  if text1 == nil or text1 == nil then
+    error('Null inputs. (diff_main)')
+  end
+
+  -- Check for equality (speedup).
+  if text1 == text2 then
     return {{DIFF_EQUAL, text1}}
   end
 
-  if (opt_checklines == nil) then
+  if opt_checklines == nil then
     opt_checklines = true
   end
   local checklines = opt_checklines
 
-  -- Trim off common prefix (speedup)
+  -- Trim off common prefix (speedup).
   local commonlength = _diff_commonPrefix(text1, text2)
   local commonprefix
-  if (commonlength > 0) then
+  if commonlength > 0 then
     commonprefix = strsub(text1, 1, commonlength)
     text1 = strsub(text1, commonlength + 1)
     text2 = strsub(text2, commonlength + 1)
   end
 
-  -- Trim off common suffix (speedup)
+  -- Trim off common suffix (speedup).
   commonlength = _diff_commonSuffix(text1, text2)
   local commonsuffix
-  if (commonlength > 0) then
+  if commonlength > 0 then
     commonsuffix = strsub(text1, -commonlength)
     text1 = strsub(text1, 1, -commonlength - 1)
     text2 = strsub(text2, 1, -commonlength - 1)
   end
 
-  -- Compute the diff on the middle block
+  -- Compute the diff on the middle block.
   local diffs = _diff_compute(text1, text2, checklines)
 
-  -- Restore the prefix and suffix
+  -- Restore the prefix and suffix.
   if commonprefix then
     tinsert(diffs, 1, {DIFF_EQUAL, commonprefix})
   end
@@ -393,7 +398,7 @@ function diff_cleanupEfficiency(diffs)
             and
             (pre_ins+pre_del+post_ins+post_del == 3)
           )) then
-        -- Duplicate record
+        -- Duplicate record.
         tinsert(diffs, equalities[equalitiesLength],
             {DIFF_DELETE, lastequality})
         -- Change second copy to insert.
@@ -406,7 +411,7 @@ function diff_cleanupEfficiency(diffs)
           post_ins, post_del = 1, 1
           equalitiesLength = 0
         else
-          -- Throw away the previous equality;
+          -- Throw away the previous equality.
           equalitiesLength = equalitiesLength - 1
           pointer = (equalitiesLength > 0) and equalities[equalitiesLength] or 0
           post_ins, post_del = 0, 0
@@ -493,12 +498,12 @@ end
 --]]
 function _diff_compute(text1, text2, checklines)
   if (#text1 == 0) then
-    -- Just add some text (speedup)
+    -- Just add some text (speedup).
     return {{DIFF_INSERT, text2}}
   end
 
   if (#text2 == 0) then
-    -- Just delete some text (speedup)
+    -- Just delete some text (speedup).
     return {{DIFF_DELETE, text1}}
   end
 
@@ -509,7 +514,7 @@ function _diff_compute(text1, text2, checklines)
   local i = indexOf(longtext, shorttext)
 
   if (i ~= nil) then
-    -- Shorter text is inside the longer text (speedup)
+    -- Shorter text is inside the longer text (speedup).
     diffs = {
       {DIFF_INSERT, strsub(longtext, 1, i - 1)},
       {DIFF_EQUAL, shorttext},
@@ -683,7 +688,7 @@ end
 * Explore the intersection points between the two texts.
 * @param {string} text1 Old string to be diffed.
 * @param {string} text2 New string to be diffed.
-* @return {Array.<Array.<number|string>>?} Array of diff tuples or nil if no
+* @return {?Array.<Array.<number|string>>} Array of diff tuples or nil if no
 *    diff available.
 * @private
 --]]
@@ -858,7 +863,7 @@ function _diff_path1(v_map, text1, text2)
   end
   local x = #text1 + 1
   local y = #text2 + 1
-  --[[ @type {number?} ]]
+  --[[ @type {?number} ]]
   local last_op = nil
   for d = #v_map - 1, 1, -1 do
     while true do
@@ -920,7 +925,7 @@ function _diff_path2(v_map, text1, text2)
   end
   local x = #text1 + 1
   local y = #text2 + 1
-  --[[ @type {number?} ]]
+  --[[ @type {?number} ]]
   local last_op = nil
   for d = #v_map - 1, 1, -1 do
     while true do
@@ -1037,7 +1042,7 @@ end
 * @param {string} longtext Longer string.
 * @param {string} shorttext Shorter string.
 * @param {number} i Start index of quarter length substring within longtext
-* @return {Array.<string>?} Five element Array, containing the prefix of
+* @return {?Array.<string>} Five element Array, containing the prefix of
 *    longtext, the suffix of longtext, the prefix of shorttext, the suffix
 *    of shorttext and the common middle.  Or nil if there was no match.
 * @private
@@ -1079,7 +1084,7 @@ end
 * longer text?
 * @param {string} text1 First string.
 * @param {string} text2 Second string.
-* @return {Array.<string>?} Five element Array, containing the prefix of
+* @return {?Array.<string>} Five element Array, containing the prefix of
 *    text1, the suffix of text1, the prefix of text2, the suffix of
 *    text2 and the common middle.  Or nil if there was no match.
 * @private
@@ -1514,9 +1519,14 @@ local _match_bitap, _match_alphabet
 * @param {string} text The text to search.
 * @param {string} pattern The pattern to search for.
 * @param {number} loc The location to search around.
-* @return {number?} Best match index or -1.
+* @return {number} Best match index or -1.
 --]]
 function match_main(text, pattern, loc)
+  -- Check for null inputs.
+  if text == nil or pattern == nil or loc == nil then
+    error('Null inputs. (match_main)')
+  end
+
   if (text == pattern) then
     -- Shortcut (potentially not guaranteed by the algorithm)
     return 1
@@ -1560,7 +1570,7 @@ end
 * @param {string} text The text to search.
 * @param {string} pattern The pattern to search for.
 * @param {number} loc The location to search around.
-* @return {number?} Best match index or -1.
+* @return {number} Best match index or -1.
 * @private
 --]]
 function _match_bitap(text, pattern, loc)
@@ -2048,9 +2058,9 @@ function _new_patch_obj()
   return setmetatable({
     --[[ @type {Array.<Array.<number|string>>} ]]
     diffs = {};
-    --[[ @type {number?} ]]
+    --[[ @type {?number} ]]
     start1 = 1; -- nil;
-    --[[ @type {number?} ]]
+    --[[ @type {?number} ]]
     start2 = 1; -- nil;
     --[[ @type {number} ]]
     length1 = 0;

@@ -98,7 +98,12 @@ var DIFF_EQUAL = 0;
  * @return {Array.<Array.<number|string>>} Array of diff tuples.
  */
 diff_match_patch.prototype.diff_main = function(text1, text2, opt_checklines) {
-  // Check for equality (speedup)
+  // Check for null inputs.
+  if (text1 == null || text2 == null) {
+    throw new Error('Null input. (diff_main)');
+  }
+
+  // Check for equality (speedup).
   if (text1 == text2) {
     return [[DIFF_EQUAL, text1]];
   }
@@ -108,22 +113,22 @@ diff_match_patch.prototype.diff_main = function(text1, text2, opt_checklines) {
   }
   var checklines = opt_checklines;
 
-  // Trim off common prefix (speedup)
+  // Trim off common prefix (speedup).
   var commonlength = this.diff_commonPrefix(text1, text2);
   var commonprefix = text1.substring(0, commonlength);
   text1 = text1.substring(commonlength);
   text2 = text2.substring(commonlength);
 
-  // Trim off common suffix (speedup)
+  // Trim off common suffix (speedup).
   commonlength = this.diff_commonSuffix(text1, text2);
   var commonsuffix = text1.substring(text1.length - commonlength);
   text1 = text1.substring(0, text1.length - commonlength);
   text2 = text2.substring(0, text2.length - commonlength);
 
-  // Compute the diff on the middle block
+  // Compute the diff on the middle block.
   var diffs = this.diff_compute(text1, text2, checklines);
 
-  // Restore the prefix and suffix
+  // Restore the prefix and suffix.
   if (commonprefix) {
     diffs.unshift([DIFF_EQUAL, commonprefix]);
   }
@@ -150,12 +155,12 @@ diff_match_patch.prototype.diff_compute = function(text1, text2, checklines) {
   var diffs;
 
   if (!text1) {
-    // Just add some text (speedup)
+    // Just add some text (speedup).
     return [[DIFF_INSERT, text2]];
   }
 
   if (!text2) {
-    // Just delete some text (speedup)
+    // Just delete some text (speedup).
     return [[DIFF_DELETE, text1]];
   }
 
@@ -163,7 +168,7 @@ diff_match_patch.prototype.diff_compute = function(text1, text2, checklines) {
   var shorttext = text1.length > text2.length ? text2 : text1;
   var i = longtext.indexOf(shorttext);
   if (i != -1) {
-    // Shorter text is inside the longer text (speedup)
+    // Shorter text is inside the longer text (speedup).
     diffs = [[DIFF_INSERT, longtext.substring(0, i)],
              [DIFF_EQUAL, shorttext],
              [DIFF_INSERT, longtext.substring(i + shorttext.length)]];
@@ -344,7 +349,7 @@ diff_match_patch.prototype.diff_charsToLines = function(diffs, lineArray) {
  * Explore the intersection points between the two texts.
  * @param {string} text1 Old string to be diffed.
  * @param {string} text2 New string to be diffed.
- * @return {Array.<Array.<number|string>>?} Array of diff tuples or null if no
+ * @return {?Array.<Array.<number|string>>} Array of diff tuples or null if no
  *     diff available.
  * @private
  */
@@ -489,7 +494,7 @@ diff_match_patch.prototype.diff_path1 = function(v_map, text1, text2) {
   var path = [];
   var x = text1.length;
   var y = text2.length;
-  /** @type {number?} */
+  /** @type {?number} */
   var last_op = null;
   for (var d = v_map.length - 2; d >= 0; d--) {
     while (1) {
@@ -517,7 +522,7 @@ diff_match_patch.prototype.diff_path1 = function(v_map, text1, text2) {
       } else {
         x--;
         y--;
-        if (text1.charAt(x) != text2.charAt(y)) {
+        if (text1.charCodeAt(x) != text2.charCodeAt(y)) {
           throw new Error('No diagonal.  Can\'t happen. (diff_path1)');
         }
         if (last_op === DIFF_EQUAL) {
@@ -546,7 +551,7 @@ diff_match_patch.prototype.diff_path2 = function(v_map, text1, text2) {
   var pathLength = 0;
   var x = text1.length;
   var y = text2.length;
-  /** @type {number?} */
+  /** @type {?number} */
   var last_op = null;
   for (var d = v_map.length - 2; d >= 0; d--) {
     while (1) {
@@ -576,8 +581,8 @@ diff_match_patch.prototype.diff_path2 = function(v_map, text1, text2) {
       } else {
         x--;
         y--;
-        if (text1.charAt(text1.length - x - 1) !=
-            text2.charAt(text2.length - y - 1)) {
+        if (text1.charCodeAt(text1.length - x - 1) !=
+            text2.charCodeAt(text2.length - y - 1)) {
           throw new Error('No diagonal.  Can\'t happen. (diff_path2)');
         }
         if (last_op === DIFF_EQUAL) {
@@ -663,7 +668,7 @@ diff_match_patch.prototype.diff_commonSuffix = function(text1, text2) {
  * longer text?
  * @param {string} text1 First string.
  * @param {string} text2 Second string.
- * @return {Array.<string>?} Five element Array, containing the prefix of
+ * @return {?Array.<string>} Five element Array, containing the prefix of
  *     text1, the suffix of text1, the prefix of text2, the suffix of
  *     text2 and the common middle.  Or null if there was no match.
  */
@@ -682,7 +687,7 @@ diff_match_patch.prototype.diff_halfMatch = function(text1, text2) {
    * @param {string} longtext Longer string.
    * @param {string} shorttext Shorter string.
    * @param {number} i Start index of quarter length substring within longtext
-   * @return {Array.<string>?} Five element Array, containing the prefix of
+   * @return {?Array.<string>} Five element Array, containing the prefix of
    *     longtext, the suffix of longtext, the prefix of shorttext, the suffix
    *     of shorttext and the common middle.  Or null if there was no match.
    * @private
@@ -1358,6 +1363,11 @@ diff_match_patch.prototype.diff_fromDelta = function(text1, delta) {
  * @return {number} Best match index or -1.
  */
 diff_match_patch.prototype.match_main = function(text, pattern, loc) {
+  // Check for null inputs.
+  if (text == null || pattern == null || loc == null) {
+    throw new Error('Null input. (match_main)');
+  }
+
   loc = Math.max(0, Math.min(loc, text.length));
   if (text == pattern) {
     // Shortcut (potentially not guaranteed by the algorithm)
@@ -1595,19 +1605,19 @@ diff_match_patch.prototype.patch_make = function(a, opt_b, opt_c) {
       this.diff_cleanupSemantic(diffs);
       this.diff_cleanupEfficiency(diffs);
     }
-  } else if (typeof a == 'object' && typeof opt_b == 'undefined' &&
+  } else if (a && typeof a == 'object' && typeof opt_b == 'undefined' &&
       typeof opt_c == 'undefined') {
     // Method 2: diffs
     // Compute text1 from diffs.
     diffs = a;
     text1 = this.diff_text1(diffs);
-  } else if (typeof a == 'string' && typeof opt_b == 'object' &&
+  } else if (typeof a == 'string' && opt_b && typeof opt_b == 'object' &&
       typeof opt_c == 'undefined') {
     // Method 3: text1, diffs
     text1 = a;
     diffs = opt_b;
   } else if (typeof a == 'string' && typeof opt_b == 'string' &&
-      typeof opt_c == 'object') {
+      opt_c && typeof opt_c == 'object') {
     // Method 4: text1, text2, diffs
     // text2 is not used.
     text1 = a;
@@ -2078,9 +2088,9 @@ diff_match_patch.prototype.patch_fromText = function(textline) {
 function patch_obj() {
   /** @type {Array.<Array.<number|string>>} */
   this.diffs = [];
-  /** @type {number?} */
+  /** @type {?number} */
   this.start1 = null;
-  /** @type {number?} */
+  /** @type {?number} */
   this.start2 = null;
   /** @type {number} */
   this.length1 = 0;

@@ -150,7 +150,12 @@ public class diff_match_patch {
    */
   public LinkedList<Diff> diff_main(String text1, String text2,
                                     boolean checklines) {
-    // Check for equality (speedup)
+    // Check for null inputs.
+    if (text1 == null || text2 == null) {
+      throw new IllegalArgumentException("Null inputs. (diff_main)");
+    }
+
+    // Check for equality (speedup).
     LinkedList<Diff> diffs;
     if (text1.equals(text2)) {
       diffs = new LinkedList<Diff>();
@@ -158,22 +163,22 @@ public class diff_match_patch {
       return diffs;
     }
 
-    // Trim off common prefix (speedup)
+    // Trim off common prefix (speedup).
     int commonlength = diff_commonPrefix(text1, text2);
     String commonprefix = text1.substring(0, commonlength);
     text1 = text1.substring(commonlength);
     text2 = text2.substring(commonlength);
 
-    // Trim off common suffix (speedup)
+    // Trim off common suffix (speedup).
     commonlength = diff_commonSuffix(text1, text2);
     String commonsuffix = text1.substring(text1.length() - commonlength);
     text1 = text1.substring(0, text1.length() - commonlength);
     text2 = text2.substring(0, text2.length() - commonlength);
 
-    // Compute the diff on the middle block
+    // Compute the diff on the middle block.
     diffs = diff_compute(text1, text2, checklines);
 
-    // Restore the prefix and suffix
+    // Restore the prefix and suffix.
     if (commonprefix.length() != 0) {
       diffs.addFirst(new Diff(Operation.EQUAL, commonprefix));
     }
@@ -201,13 +206,13 @@ public class diff_match_patch {
     LinkedList<Diff> diffs = new LinkedList<Diff>();
 
     if (text1.length() == 0) {
-      // Just add some text (speedup)
+      // Just add some text (speedup).
       diffs.add(new Diff(Operation.INSERT, text2));
       return diffs;
     }
 
     if (text2.length() == 0) {
-      // Just delete some text (speedup)
+      // Just delete some text (speedup).
       diffs.add(new Diff(Operation.DELETE, text1));
       return diffs;
     }
@@ -216,7 +221,7 @@ public class diff_match_patch {
     String shorttext = text1.length() > text2.length() ? text2 : text1;
     int i = longtext.indexOf(shorttext);
     if (i != -1) {
-      // Shorter text is inside the longer text (speedup)
+      // Shorter text is inside the longer text (speedup).
       Operation op = (text1.length() > text2.length()) ?
                      Operation.DELETE : Operation.INSERT;
       diffs.add(new Diff(op, longtext.substring(0, i)));
@@ -1511,6 +1516,11 @@ public class diff_match_patch {
    * @return Best match index or -1.
    */
   public int match_main(String text, String pattern, int loc) {
+    // Check for null inputs.
+    if (text == null || pattern == null) {
+      throw new IllegalArgumentException("Null inputs. (match_main)");
+    }
+
     loc = Math.max(0, Math.min(loc, text.length()));
     if (text.equals(pattern)) {
       // Shortcut (potentially not guaranteed by the algorithm)
@@ -1729,6 +1739,9 @@ public class diff_match_patch {
    * @return LinkedList of Patch objects.
    */
   public LinkedList<Patch> patch_make(String text1, String text2) {
+    if (text1 == null || text2 == null) {
+      throw new IllegalArgumentException("Null inputs. (patch_make)");
+    }
     // No diffs provided, compute our own.
     LinkedList<Diff> diffs = diff_main(text1, text2, true);
     if (diffs.size() > 2) {
@@ -1746,6 +1759,9 @@ public class diff_match_patch {
    * @return LinkedList of Patch objects.
    */
   public LinkedList<Patch> patch_make(LinkedList<Diff> diffs) {
+    if (diffs == null) {
+      throw new IllegalArgumentException("Null inputs. (patch_make)");
+    }
     // No origin string provided, compute our own.
     String text1 = diff_text1(diffs);
     return patch_make(text1, diffs);
@@ -1775,6 +1791,10 @@ public class diff_match_patch {
    * @return LinkedList of Patch objects.
    */
   public LinkedList<Patch> patch_make(String text1, LinkedList<Diff> diffs) {
+    if (text1 == null || diffs == null) {
+      throw new IllegalArgumentException("Null inputs. (patch_make)");
+    }
+
     LinkedList<Patch> patches = new LinkedList<Patch>();
     if (diffs.isEmpty()) {
       return patches;  // Get rid of the null case.

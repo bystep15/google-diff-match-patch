@@ -363,23 +363,26 @@ function testDiffDelta() {
 
   // Generates error (19 != 20).
   try {
-    assertEquivalent(Error, dmp.diff_fromDelta(text1 + 'x', delta));
+    dmp.diff_fromDelta(text1 + 'x', delta);
+    assertEquals(Error, null);
   } catch (e) {
-    assertEquivalent(null, null);
+    // Exception expected.
   }
 
   // Generates error (19 != 18).
   try {
-    assertEquivalent(Error, dmp.diff_fromDelta(text1.substring(1), delta));
+    dmp.diff_fromDelta(text1.substring(1), delta);
+    assertEquals(Error, null);
   } catch (e) {
-    assertEquivalent(null, null);
+    // Exception expected.
   }
 
   // Generates error (%c3%xy invalid Unicode).
   try {
-    assertEquivalent(Error, dmp.diff_fromDelta('', '+%c3%xy'));
+    dmp.diff_fromDelta('', '+%c3%xy');
+    assertEquals(Error, null);
   } catch (e) {
-    assertEquivalent(null, null);
+    // Exception expected.
   }
 
   // Test deltas with special characters.
@@ -521,6 +524,14 @@ function testDiffMain() {
   var texts_linemode = diff_rebuildtexts(dmp.diff_main(a, b, true));
   var texts_textmode = diff_rebuildtexts(dmp.diff_main(a, b, false));
   assertEquivalent(texts_textmode, texts_linemode);
+
+  // Test null inputs.
+  try {
+    dmp.diff_main(null, null);
+    assertEquals(Error, null);
+  } catch (e) {
+    // Exception expected.
+  }
 }
 
 
@@ -600,6 +611,14 @@ function testMatchMain() {
 
   // Complex match.
   assertEquals(4, dmp.match_main('I am the very model of a modern major general.', ' that berry ', 5));
+
+  // Test null inputs.
+  try {
+    dmp.match_main(null, null, 0);
+    assertEquals(Error, null);
+  } catch (e) {
+    // Exception expected.
+  }
 }
 
 
@@ -632,9 +651,10 @@ function testPatchFromText() {
 
   // Generates error.
   try {
-    assertEquivalent(Error, dmp.patch_fromText('Bad\nPatch\n'));
+    dmp.patch_fromText('Bad\nPatch\n');
+    assertEquals(Error, null);
   } catch (e) {
-    assertEquivalent(null, null);
+    // Exception expected.
   }
 }
 
@@ -714,6 +734,14 @@ function testPatchMake() {
   expectedPatch = '@@ -573,28 +573,31 @@\n cdefabcdefabcdefabcdefabcdef\n+123\n';
   patches = dmp.patch_make(text1, text2);
   assertEquals(expectedPatch, dmp.patch_toText(patches));
+
+  // Test null inputs.
+  try {
+    dmp.patch_make(null);
+    assertEquals(Error, null);
+  } catch (e) {
+    // Exception expected.
+  }
 }
 
 function testPatchSplitMax() {

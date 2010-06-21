@@ -272,7 +272,9 @@ namespace DiffMatchPatch
         public List<Diff> diff_main(string text1, string text2,
                                     bool checklines)
         {
-            // Check for equality (speedup)
+            // Check for null inputs not needed since null can't be passed in C#.
+
+            // Check for equality (speedup).
             List<Diff> diffs;
             if (text1 == text2)
             {
@@ -281,22 +283,22 @@ namespace DiffMatchPatch
                 return diffs;
             }
 
-            // Trim off common prefix (speedup)
+            // Trim off common prefix (speedup).
             int commonlength = diff_commonPrefix(text1, text2);
             string commonprefix = text1.Substring(0, commonlength);
             text1 = text1.Substring(commonlength);
             text2 = text2.Substring(commonlength);
 
-            // Trim off common suffix (speedup)
+            // Trim off common suffix (speedup).
             commonlength = diff_commonSuffix(text1, text2);
             string commonsuffix = text1.Substring(text1.Length - commonlength);
             text1 = text1.Substring(0, text1.Length - commonlength);
             text2 = text2.Substring(0, text2.Length - commonlength);
 
-            // Compute the diff on the middle block
+            // Compute the diff on the middle block.
             diffs = diff_compute(text1, text2, checklines);
 
-            // Restore the prefix and suffix
+            // Restore the prefix and suffix.
             if (commonprefix.Length != 0)
             {
                 diffs.Insert(0, (new Diff(Operation.EQUAL, commonprefix)));
@@ -327,14 +329,14 @@ namespace DiffMatchPatch
 
             if (text1.Length == 0)
             {
-                // Just add some text (speedup)
+                // Just add some text (speedup).
                 diffs.Add(new Diff(Operation.INSERT, text2));
                 return diffs;
             }
 
             if (text2.Length == 0)
             {
-                // Just delete some text (speedup)
+                // Just delete some text (speedup).
                 diffs.Add(new Diff(Operation.DELETE, text1));
                 return diffs;
             }
@@ -344,7 +346,7 @@ namespace DiffMatchPatch
             int i = longtext.IndexOf(shorttext);
             if (i != -1)
             {
-                // Shorter text is inside the longer text (speedup)
+                // Shorter text is inside the longer text (speedup).
                 Operation op = (text1.Length > text2.Length) ?
                                Operation.DELETE : Operation.INSERT;
                 diffs.Add(new Diff(op, longtext.Substring(0, i)));
@@ -1743,6 +1745,8 @@ namespace DiffMatchPatch
          */
         public int match_main(string text, string pattern, int loc)
         {
+            // Check for null inputs not needed since null can't be passed in C#.
+
             loc = Math.Max(0, Math.Min(loc, text.Length));
             if (text == pattern)
             {
@@ -2002,6 +2006,7 @@ namespace DiffMatchPatch
          */
         public List<Patch> patch_make(string text1, string text2)
         {
+            // Check for null inputs not needed since null can't be passed in C#.
             // No diffs provided, comAdde our own.
             List<Diff> diffs = diff_main(text1, text2, true);
             if (diffs.Count > 2)
@@ -2020,6 +2025,7 @@ namespace DiffMatchPatch
          */
         public List<Patch> patch_make(List<Diff> diffs)
         {
+            // Check for null inputs not needed since null can't be passed in C#.
             // No origin string provided, comAdde our own.
             string text1 = diff_text1(diffs);
             return patch_make(text1, diffs);
@@ -2049,6 +2055,7 @@ namespace DiffMatchPatch
          */
         public List<Patch> patch_make(string text1, List<Diff> diffs)
         {
+            // Check for null inputs not needed since null can't be passed in C#.
             List<Patch> patches = new List<Patch>();
             if (diffs.Count == 0)
             {
@@ -2638,3 +2645,4 @@ namespace DiffMatchPatch
         }
     }
 }
+

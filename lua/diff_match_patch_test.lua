@@ -454,29 +454,21 @@ function testDiffDelta()
   -- Convert delta string into a diff.
   assertEquivalent(diffs, dmp.diff_fromDelta(text1, delta))
 
-  --[[
   -- Generates error (19 ~= 20).
-  try {
-    assertEquivalent(Error, dmp.diff_fromDelta(text1 + 'x', delta))
-  end catch (e) {
-    assertEquivalent(nil, nil)
-  end
+  success, result = pcall(dmp.diff_fromDelta, text1 .. 'x', delta)
+  assertEquals(false, success)
 
   -- Generates error (19 ~= 18).
-  try {
-    assertEquivalent(Error, dmp.diff_fromDelta(text1.substring(1), delta))
-  end catch (e) {
-    assertEquivalent(nil, nil)
-  end
+  success, result = pcall(dmp.diff_fromDelta, string.sub(text1, 2), delta)
+  assertEquals(false, success)
 
   -- Generates error (%c3%xy invalid Unicode).
-  try {
-    assertEquivalent(Error, dmp.diff_fromDelta('', '+%c3%xy'))
-  end catch (e) {
-    assertEquivalent(nil, nil)
-  end
+  success, result = pcall(dmp.patch_fromDelta, '', '+%c3%xy')
+  assertEquals(false, success)
 
+  --[[
   -- Test deltas with special characters.
+  -- TODO: Make this test pass.
   diffs = {{DIFF_EQUAL, '\u0680 \000 \t %'}, {DIFF_DELETE, '\u0681 \x01 \n ^'}, {DIFF_INSERT, '\u0682 \x02 \\ |'}}
   text1 = dmp.diff_text1(diffs)
   assertEquals('\u0680 \x00 \t %\u0681 \x01 \n ^', text1)
@@ -754,6 +746,10 @@ abcdefghij
   local texts_linemode = diff_rebuildtexts(dmp.diff_main(a, b, true))
   local texts_textmode = diff_rebuildtexts(dmp.diff_main(a, b, false))
   assertEquivalent(texts_textmode, texts_linemode)
+
+  -- Test null inputs.
+  success, result = pcall(dmp.diff_main, nil, nil)
+  assertEquals(false, success)
 end
 
 
@@ -843,6 +839,10 @@ function testMatchMain()
         ' that berry ',
         6
       ))
+
+  -- Test null inputs.
+  success, result = pcall(dmp.match_main, nil, nil, 0)
+  assertEquals(false, success)
 end
 
 
@@ -896,14 +896,9 @@ function testPatchFromText()
         tostring(dmp.patch_fromText('@@ -0,0 +1,3 @@\n+abc\n')[1])
       )
 
-  --[[
   -- Generates error.
-  try {
-    assertEquivalent(Error, dmp.patch_fromText('Bad\nPatch\n'))
-  end catch (e) {
-    assertEquivalent(nil, nil)
-  end
-  --]]
+  success, result = pcall(dmp.patch_fromText, 'Bad\nPatch\n')
+  assertEquals(false, success)
 end
 
 function testPatchToText()
@@ -1005,6 +1000,10 @@ function testPatchMake()
       .. ' cdefabcdefabcdefabcdefabcdef\n+123\n'
   patches = dmp.patch_make(text1, text2)
   assertEquals(expectedPatch, dmp.patch_toText(patches))
+
+  -- Test null inputs.
+  success, result = pcall(dmp.patch_make, nil, nil)
+  assertEquals(false, success)
 end
 
 function testPatchSplitMax()
@@ -1158,6 +1157,10 @@ function runTests()
   end
   print('Tests passed: ' .. passed)
   print('Tests failed: ' .. failed)
+  if failed ~= 0 then
+    os.exit(1)
+  end
 end
 
 runTests()
+

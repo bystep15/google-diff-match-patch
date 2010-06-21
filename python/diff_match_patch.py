@@ -93,17 +93,21 @@ class diff_match_patch:
       Array of changes.
     """
 
-    # Check for equality (speedup)
+    # Check for null inputs.
+    if text1 == None or text2 == None:
+      raise ValueError("Null inputs. (diff_main)")
+
+    # Check for equality (speedup).
     if text1 == text2:
       return [(self.DIFF_EQUAL, text1)]
 
-    # Trim off common prefix (speedup)
+    # Trim off common prefix (speedup).
     commonlength = self.diff_commonPrefix(text1, text2)
     commonprefix = text1[:commonlength]
     text1 = text1[commonlength:]
     text2 = text2[commonlength:]
 
-    # Trim off common suffix (speedup)
+    # Trim off common suffix (speedup).
     commonlength = self.diff_commonSuffix(text1, text2)
     if commonlength == 0:
       commonsuffix = ''
@@ -112,10 +116,10 @@ class diff_match_patch:
       text1 = text1[:-commonlength]
       text2 = text2[:-commonlength]
 
-    # Compute the diff on the middle block
+    # Compute the diff on the middle block.
     diffs = self.diff_compute(text1, text2, checklines)
 
-    # Restore the prefix and suffix
+    # Restore the prefix and suffix.
     if commonprefix:
       diffs[:0] = [(self.DIFF_EQUAL, commonprefix)]
     if commonsuffix:
@@ -138,11 +142,11 @@ class diff_match_patch:
       Array of changes.
     """
     if not text1:
-      # Just add some text (speedup)
+      # Just add some text (speedup).
       return [(self.DIFF_INSERT, text2)]
 
     if not text2:
-      # Just delete some text (speedup)
+      # Just delete some text (speedup).
       return [(self.DIFF_DELETE, text1)]
 
     if len(text1) > len(text2):
@@ -151,7 +155,7 @@ class diff_match_patch:
       (shorttext, longtext) = (text1, text2)
     i = longtext.find(shorttext)
     if i != -1:
-      # Shorter text is inside the longer text (speedup)
+      # Shorter text is inside the longer text (speedup).
       diffs = [(self.DIFF_INSERT, longtext[:i]), (self.DIFF_EQUAL, shorttext),
                (self.DIFF_INSERT, longtext[i + len(shorttext):])]
       # Swap insertions for deletions if diff is reversed.
@@ -1130,9 +1134,9 @@ class diff_match_patch:
         try:
           n = int(param)
         except ValueError:
-          raise ValueError, "Invalid number in diff_fromDelta: " + param
+          raise ValueError("Invalid number in diff_fromDelta: " + param)
         if n < 0:
-          raise ValueError, "Negative number in diff_fromDelta: " + param
+          raise ValueError("Negative number in diff_fromDelta: " + param)
         text = text1[pointer : pointer + n]
         pointer += n
         if token[0] == "=":
@@ -1141,10 +1145,10 @@ class diff_match_patch:
           diffs.append((self.DIFF_DELETE, text))
       else:
         # Anything else is an error.
-        raise ValueError, ("Invalid diff operation in diff_fromDelta: " +
+        raise ValueError("Invalid diff operation in diff_fromDelta: " +
             token[0])
     if pointer != len(text1):
-      raise ValueError, (
+      raise ValueError(
           "Delta length (%d) does not equal source text length (%d)." %
          (pointer, len(text1)))
     return diffs
@@ -1162,6 +1166,10 @@ class diff_match_patch:
     Returns:
       Best match index or -1.
     """
+    # Check for null inputs.
+    if text == None or pattern == None:
+      raise ValueError("Null inputs. (match_main)")
+
     loc = max(0, min(loc, len(text)))
     if text == pattern:
       # Shortcut (potentially not guaranteed by the algorithm)
@@ -1745,7 +1753,7 @@ class diff_match_patch:
     while len(text) != 0:
       m = re.match("^@@ -(\d+),?(\d*) \+(\d+),?(\d*) @@$", text[0])
       if not m:
-        raise ValueError, "Invalid patch string: " + text[0]
+        raise ValueError("Invalid patch string: " + text[0])
       patch = patch_obj()
       patches.append(patch)
       patch.start1 = int(m.group(1))
@@ -1794,7 +1802,7 @@ class diff_match_patch:
           pass
         else:
           # WTF?
-          raise ValueError, "Invalid patch mode: '%s'\n%s" % (sign, line)
+          raise ValueError("Invalid patch mode: '%s'\n%s" % (sign, line))
         del text[0]
     return patches
 
