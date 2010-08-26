@@ -375,15 +375,39 @@ class DiffTest(DiffMatchPatchTest):
 
   def testDiffPath(self):
     # Trace a path from back to front.
+    
+    def diff_footprint(x, y):
+      # Helper method for encoding footprints.
+      return (x << 32) + y
+
     # Single letters.
     v_map = []
-    v_map.append({(0,0):True})
-    v_map.append({(0,1):True, (1,0):True})
-    v_map.append({(0,2):True, (2,0):True, (2,2):True})
-    v_map.append({(0,3):True, (2,3):True, (3,0):True, (4,3):True})
-    v_map.append({(0,4):True, (2,4):True, (4,0):True, (4,4):True, (5,3):True})
-    v_map.append({(0,5):True, (2,5):True, (4,5):True, (5,0):True, (6,3):True, (6,5):True})
-    v_map.append({(0,6):True, (2,6):True, (4,6):True, (6,6):True, (7,5):True})
+    v_map.append({diff_footprint(0, 0):True})
+    v_map.append({diff_footprint(0, 1):True,
+                  diff_footprint(1, 0):True})
+    v_map.append({diff_footprint(0, 2):True,
+                  diff_footprint(2, 0):True,
+                  diff_footprint(2, 2):True})
+    v_map.append({diff_footprint(0, 3):True,
+                  diff_footprint(2, 3):True,
+                  diff_footprint(3, 0):True,
+                  diff_footprint(4, 3):True})
+    v_map.append({diff_footprint(0, 4):True,
+                  diff_footprint(2, 4):True,
+                  diff_footprint(4, 0):True,
+                  diff_footprint(4, 4):True,
+                  diff_footprint(5, 3):True})
+    v_map.append({diff_footprint(0, 5):True,
+                  diff_footprint(2, 5):True,
+                  diff_footprint(4, 5):True,
+                  diff_footprint(5, 0):True,
+                  diff_footprint(6, 3):True,
+                  diff_footprint(6, 5):True})
+    v_map.append({diff_footprint(0, 6):True,
+                  diff_footprint(2, 6):True,
+                  diff_footprint(4, 6):True,
+                  diff_footprint(6, 6):True,
+                  diff_footprint(7, 5):True})
     self.assertEquals([(self.dmp.DIFF_INSERT, "W"), (self.dmp.DIFF_DELETE, "A"), (self.dmp.DIFF_EQUAL, "1"), (self.dmp.DIFF_DELETE, "B"), (self.dmp.DIFF_EQUAL, "2"), (self.dmp.DIFF_INSERT, "X"), (self.dmp.DIFF_DELETE, "C"), (self.dmp.DIFF_EQUAL, "3"), (self.dmp.DIFF_DELETE, "D")], self.dmp.diff_path1(v_map, "A1B2C3D", "W12X3"))
 
     v_map.pop()
@@ -391,19 +415,37 @@ class DiffTest(DiffMatchPatchTest):
 
     # Double letters.
     v_map = []
-    v_map.append({(0,0):True})
-    v_map.append({(0,1):True, (1,0):True})
-    v_map.append({(0,2):True, (1,1):True, (2,0):True})
-    v_map.append({(0,3):True, (1,2):True, (2,1):True, (3,0):True})
-    v_map.append({(0,4):True, (1,3):True, (3,1):True, (4,0):True, (4,4):True})
+    v_map.append({diff_footprint(0, 0):True})
+    v_map.append({diff_footprint(0, 1):True,
+                  diff_footprint(1, 0):True})
+    v_map.append({diff_footprint(0, 2):True,
+                  diff_footprint(1, 1):True,
+                  diff_footprint(2, 0):True})
+    v_map.append({diff_footprint(0, 3):True,
+                  diff_footprint(1, 2):True,
+                  diff_footprint(2, 1):True,
+                  diff_footprint(3, 0):True})
+    v_map.append({diff_footprint(0, 4):True,
+                  diff_footprint(1, 3):True,
+                  diff_footprint(3, 1):True,
+                  diff_footprint(4, 0):True,
+                  diff_footprint(4, 4):True})
     self.assertEquals([(self.dmp.DIFF_INSERT, "WX"), (self.dmp.DIFF_DELETE, "AB"), (self.dmp.DIFF_EQUAL, "12")], self.dmp.diff_path1(v_map, "AB12", "WX12"))
 
     v_map = []
-    v_map.append({(0,0):True})
-    v_map.append({(0,1):True, (1,0):True})
-    v_map.append({(1,1):True, (2,0):True, (2,4):True})
-    v_map.append({(2,1):True, (2,5):True, (3,0):True, (3,4):True})
-    v_map.append({(2,6):True, (3,5):True, (4,4):True})
+    v_map.append({diff_footprint(0, 0):True})
+    v_map.append({diff_footprint(0, 1):True,
+                  diff_footprint(1, 0):True})
+    v_map.append({diff_footprint(1, 1):True,
+                  diff_footprint(2, 0):True,
+                  diff_footprint(2, 4):True})
+    v_map.append({diff_footprint(2, 1):True,
+                  diff_footprint(2, 5):True,
+                  diff_footprint(3, 0):True,
+                  diff_footprint(3, 4):True})
+    v_map.append({diff_footprint(2, 6):True,
+                  diff_footprint(3, 5):True,
+                  diff_footprint(4, 4):True})
     self.assertEquals([(self.dmp.DIFF_DELETE, "CD"), (self.dmp.DIFF_EQUAL, "34"), (self.dmp.DIFF_INSERT, "YZ")], self.dmp.diff_path2(v_map, "CD34", "34YZ"))
 
   def testDiffMain(self):

@@ -417,15 +417,15 @@ public class diff_match_patch {
     int text2_length = text2.length();
     int max_d = text1_length + text2_length - 1;
     boolean doubleEnd = Diff_DualThreshold * 2 < max_d;
-    List<Set<Long>> v_map1 = new ArrayList<Set<Long>>();
-    List<Set<Long>> v_map2 = new ArrayList<Set<Long>>();
+    List<Set<String>> v_map1 = new ArrayList<Set<String>>();
+    List<Set<String>> v_map2 = new ArrayList<Set<String>>();
     Map<Integer, Integer> v1 = new HashMap<Integer, Integer>();
     Map<Integer, Integer> v2 = new HashMap<Integer, Integer>();
     v1.put(1, 0);
     v2.put(1, 0);
     int x, y;
-    Long footstep = 0L;  // Used to track overlapping paths.
-    Map<Long, Integer> footsteps = new HashMap<Long, Integer>();
+    String footstep = "";  // Used to track overlapping paths.
+    Map<String, Integer> footsteps = new HashMap<String, Integer>();
     boolean done = false;
     // If the total number of characters is odd, then the front path will
     // collide with the reverse path.
@@ -437,7 +437,7 @@ public class diff_match_patch {
       }
 
       // Walk the front path one step.
-      v_map1.add(new HashSet<Long>());  // Adds at index 'd'.
+      v_map1.add(new HashSet<String>());  // Adds at index 'd'.
       for (int k = -d; k <= d; k += 2) {
         if (k == -d || k != d && v1.get(k - 1) < v1.get(k + 1)) {
           x = v1.get(k + 1);
@@ -485,7 +485,7 @@ public class diff_match_patch {
 
       if (doubleEnd) {
         // Walk the reverse path one step.
-        v_map2.add(new HashSet<Long>());  // Adds at index 'd'.
+        v_map2.add(new HashSet<String>());  // Adds at index 'd'.
         for (int k = -d; k <= d; k += 2) {
           if (k == -d || k != d && v2.get(k - 1) < v2.get(k + 1)) {
             x = v2.get(k + 1);
@@ -540,7 +540,7 @@ public class diff_match_patch {
    * @param text2 New string fragment to be diffed.
    * @return LinkedList of Diff objects.
    */
-  protected LinkedList<Diff> diff_path1(List<Set<Long>> v_map,
+  protected LinkedList<Diff> diff_path1(List<Set<String>> v_map,
                                         String text1, String text2) {
     LinkedList<Diff> path = new LinkedList<Diff>();
     int x = text1.length();
@@ -593,7 +593,7 @@ public class diff_match_patch {
    * @param text2 New string fragment to be diffed.
    * @return LinkedList of Diff objects.
    */
-  protected LinkedList<Diff> diff_path2(List<Set<Long>> v_map,
+  protected LinkedList<Diff> diff_path2(List<Set<String>> v_map,
                                         String text1, String text2) {
     LinkedList<Diff> path = new LinkedList<Diff>();
     int x = text1.length();
@@ -645,16 +645,11 @@ public class diff_match_patch {
    * Compute a good hash of two integers.
    * @param x First int.
    * @param y Second int.
-   * @return A long made up of both ints.
+   * @return A string made up of both ints.
    */
-  protected long diff_footprint(int x, int y) {
-    // The maximum size for a long is 9,223,372,036,854,775,807
-    // The maximum size for an int is 2,147,483,647
-    // Two ints fit nicely in one long.
-    long result = x;
-    result = result << 32;
-    result += y;
-    return result;
+  protected String diff_footprint(int x, int y) {
+    // Performance note: Inlining this function seems to slow down execution.
+    return x + "," + y;
   }
 
 

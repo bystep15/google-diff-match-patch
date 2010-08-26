@@ -361,6 +361,8 @@ diff_match_patch.prototype.diff_map = function(text1, text2) {
   var text2_length = text2.length;
   var max_d = text1_length + text2_length - 1;
   var doubleEnd = this.Diff_DualThreshold * 2 < max_d;
+  // JavaScript efficiency note: (x << 32) + y doesn't work since numbers are
+  // only 32 bit.  Use x + ',' + y to create a hash instead.
   var v_map1 = [];
   var v_map2 = [];
   var v1 = {};
@@ -371,8 +373,6 @@ diff_match_patch.prototype.diff_map = function(text1, text2) {
   var footstep;  // Used to track overlapping paths.
   var footsteps = {};
   var done = false;
-  // Safari 1.x doesn't have hasOwnProperty
-  var hasOwnProperty = !!(footsteps.hasOwnProperty);
   // If the total number of characters is odd, then the front path will collide
   // with the reverse path.
   var front = (text1_length + text2_length) % 2;
@@ -393,8 +393,7 @@ diff_match_patch.prototype.diff_map = function(text1, text2) {
       y = x - k;
       if (doubleEnd) {
         footstep = x + ',' + y;
-        if (front && (hasOwnProperty ? footsteps.hasOwnProperty(footstep) :
-                      (footsteps[footstep] !== undefined))) {
+        if (front && footsteps[footstep] !== undefined) {
           done = true;
         }
         if (!front) {
@@ -407,8 +406,7 @@ diff_match_patch.prototype.diff_map = function(text1, text2) {
         y++;
         if (doubleEnd) {
           footstep = x + ',' + y;
-          if (front && (hasOwnProperty ? footsteps.hasOwnProperty(footstep) :
-              (footsteps[footstep] !== undefined))) {
+          if (front && footsteps[footstep] !== undefined) {
             done = true;
           }
           if (!front) {
@@ -442,8 +440,7 @@ diff_match_patch.prototype.diff_map = function(text1, text2) {
         }
         y = x - k;
         footstep = (text1_length - x) + ',' + (text2_length - y);
-        if (!front && (hasOwnProperty ? footsteps.hasOwnProperty(footstep) :
-                       (footsteps[footstep] !== undefined))) {
+        if (!front && footsteps[footstep] !== undefined) {
           done = true;
         }
         if (front) {
@@ -455,8 +452,7 @@ diff_match_patch.prototype.diff_map = function(text1, text2) {
           x++;
           y++;
           footstep = (text1_length - x) + ',' + (text2_length - y);
-          if (!front && (hasOwnProperty ? footsteps.hasOwnProperty(footstep) :
-                         (footsteps[footstep] !== undefined))) {
+          if (!front && footsteps[footstep] !== undefined) {
             done = true;
           }
           if (front) {
@@ -498,8 +494,7 @@ diff_match_patch.prototype.diff_path1 = function(v_map, text1, text2) {
   var last_op = null;
   for (var d = v_map.length - 2; d >= 0; d--) {
     while (1) {
-      if (v_map[d].hasOwnProperty ? v_map[d].hasOwnProperty((x - 1) + ',' + y) :
-          (v_map[d][(x - 1) + ',' + y] !== undefined)) {
+      if (v_map[d][(x - 1) + ',' + y] !== undefined) {
         x--;
         if (last_op === DIFF_DELETE) {
           path[0][1] = text1.charAt(x) + path[0][1];
@@ -508,9 +503,7 @@ diff_match_patch.prototype.diff_path1 = function(v_map, text1, text2) {
         }
         last_op = DIFF_DELETE;
         break;
-      } else if (v_map[d].hasOwnProperty ?
-                 v_map[d].hasOwnProperty(x + ',' + (y - 1)) :
-                 (v_map[d][x + ',' + (y - 1)] !== undefined)) {
+      } else if (v_map[d][x + ',' + (y - 1)] !== undefined) {
         y--;
         if (last_op === DIFF_INSERT) {
           path[0][1] = text2.charAt(y) + path[0][1];
@@ -522,7 +515,7 @@ diff_match_patch.prototype.diff_path1 = function(v_map, text1, text2) {
       } else {
         x--;
         y--;
-        if (text1.charCodeAt(x) != text2.charCodeAt(y)) {
+        if (text1.charAt(x) != text2.charAt(y)) {
           throw new Error('No diagonal.  Can\'t happen. (diff_path1)');
         }
         if (last_op === DIFF_EQUAL) {
@@ -555,8 +548,7 @@ diff_match_patch.prototype.diff_path2 = function(v_map, text1, text2) {
   var last_op = null;
   for (var d = v_map.length - 2; d >= 0; d--) {
     while (1) {
-      if (v_map[d].hasOwnProperty ? v_map[d].hasOwnProperty((x - 1) + ',' + y) :
-          (v_map[d][(x - 1) + ',' + y] !== undefined)) {
+      if (v_map[d][(x - 1) + ',' + y] !== undefined) {
         x--;
         if (last_op === DIFF_DELETE) {
           path[pathLength - 1][1] += text1.charAt(text1.length - x - 1);
@@ -566,9 +558,7 @@ diff_match_patch.prototype.diff_path2 = function(v_map, text1, text2) {
         }
         last_op = DIFF_DELETE;
         break;
-      } else if (v_map[d].hasOwnProperty ?
-                 v_map[d].hasOwnProperty(x + ',' + (y - 1)) :
-                 (v_map[d][x + ',' + (y - 1)] !== undefined)) {
+      } else if (v_map[d][x + ',' + (y - 1)] !== undefined) {
         y--;
         if (last_op === DIFF_INSERT) {
           path[pathLength - 1][1] += text2.charAt(text2.length - y - 1);
@@ -581,8 +571,8 @@ diff_match_patch.prototype.diff_path2 = function(v_map, text1, text2) {
       } else {
         x--;
         y--;
-        if (text1.charCodeAt(text1.length - x - 1) !=
-            text2.charCodeAt(text2.length - y - 1)) {
+        if (text1.charAt(text1.length - x - 1) !=
+            text2.charAt(text2.length - y - 1)) {
           throw new Error('No diagonal.  Can\'t happen. (diff_path2)');
         }
         if (last_op === DIFF_EQUAL) {
@@ -608,7 +598,7 @@ diff_match_patch.prototype.diff_path2 = function(v_map, text1, text2) {
  */
 diff_match_patch.prototype.diff_commonPrefix = function(text1, text2) {
   // Quick check for common null cases.
-  if (!text1 || !text2 || text1.charCodeAt(0) !== text2.charCodeAt(0)) {
+  if (!text1 || !text2 || text1.charAt(0) != text2.charAt(0)) {
     return 0;
   }
   // Binary search.
@@ -639,8 +629,8 @@ diff_match_patch.prototype.diff_commonPrefix = function(text1, text2) {
  */
 diff_match_patch.prototype.diff_commonSuffix = function(text1, text2) {
   // Quick check for common null cases.
-  if (!text1 || !text2 || text1.charCodeAt(text1.length - 1) !==
-                          text2.charCodeAt(text2.length - 1)) {
+  if (!text1 || !text2 || text1.charAt(text1.length - 1) !=
+                          text2.charAt(text2.length - 1)) {
     return 0;
   }
   // Binary search.

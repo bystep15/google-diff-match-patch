@@ -389,36 +389,36 @@ public class diff_match_patch_test extends TestCase {
 
     // Single letters.
     // Trace a path from back to front.
-    List<Set<Long>> v_map;
-    Set<Long> row_set;
-    v_map = new ArrayList<Set<Long>>();
+    List<Set<String>> v_map;
+    Set<String> row_set;
+    v_map = new ArrayList<Set<String>>();
     {
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(0, 0));
       v_map.add(row_set);
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(0, 1));
       row_set.add(dmp.diff_footprint(1, 0));
       v_map.add(row_set);
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(0, 2));
       row_set.add(dmp.diff_footprint(2, 0));
       row_set.add(dmp.diff_footprint(2, 2));
       v_map.add(row_set);
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(0, 3));
       row_set.add(dmp.diff_footprint(2, 3));
       row_set.add(dmp.diff_footprint(3, 0));
       row_set.add(dmp.diff_footprint(4, 3));
       v_map.add(row_set);
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(0, 4));
       row_set.add(dmp.diff_footprint(2, 4));
       row_set.add(dmp.diff_footprint(4, 0));
       row_set.add(dmp.diff_footprint(4, 4));
       row_set.add(dmp.diff_footprint(5, 3));
       v_map.add(row_set);
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(0, 5));
       row_set.add(dmp.diff_footprint(2, 5));
       row_set.add(dmp.diff_footprint(4, 5));
@@ -426,7 +426,7 @@ public class diff_match_patch_test extends TestCase {
       row_set.add(dmp.diff_footprint(6, 3));
       row_set.add(dmp.diff_footprint(6, 5));
       v_map.add(row_set);
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(0, 6));
       row_set.add(dmp.diff_footprint(2, 6));
       row_set.add(dmp.diff_footprint(4, 6));
@@ -444,27 +444,27 @@ public class diff_match_patch_test extends TestCase {
 
     // Double letters.
     // Trace a path from back to front.
-    v_map = new ArrayList<Set<Long>>();
+    v_map = new ArrayList<Set<String>>();
     {
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(0, 0));
       v_map.add(row_set);
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(0, 1));
       row_set.add(dmp.diff_footprint(1, 0));
       v_map.add(row_set);
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(0, 2));
       row_set.add(dmp.diff_footprint(1, 1));
       row_set.add(dmp.diff_footprint(2, 0));
       v_map.add(row_set);
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(0, 3));
       row_set.add(dmp.diff_footprint(1, 2));
       row_set.add(dmp.diff_footprint(2, 1));
       row_set.add(dmp.diff_footprint(3, 0));
       v_map.add(row_set);
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(0, 4));
       row_set.add(dmp.diff_footprint(1, 3));
       row_set.add(dmp.diff_footprint(3, 1));
@@ -476,27 +476,27 @@ public class diff_match_patch_test extends TestCase {
     assertEquals("diff_path1: Double letters.", diffs, dmp.diff_path1(v_map, "AB12", "WX12"));
 
     // Trace a path from front to back.
-    v_map = new ArrayList<Set<Long>>();
+    v_map = new ArrayList<Set<String>>();
     {
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(0, 0));
       v_map.add(row_set);
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(0, 1));
       row_set.add(dmp.diff_footprint(1, 0));
       v_map.add(row_set);
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(1, 1));
       row_set.add(dmp.diff_footprint(2, 0));
       row_set.add(dmp.diff_footprint(2, 4));
       v_map.add(row_set);
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(2, 1));
       row_set.add(dmp.diff_footprint(2, 5));
       row_set.add(dmp.diff_footprint(3, 0));
       row_set.add(dmp.diff_footprint(3, 4));
       v_map.add(row_set);
-      row_set = new HashSet<Long>();
+      row_set = new HashSet<String>();
       row_set.add(dmp.diff_footprint(2, 6));
       row_set.add(dmp.diff_footprint(3, 5));
       row_set.add(dmp.diff_footprint(4, 4));
