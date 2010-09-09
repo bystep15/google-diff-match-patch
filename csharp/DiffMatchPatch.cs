@@ -304,7 +304,7 @@ namespace DiffMatchPatch {
 
       string longtext = text1.Length > text2.Length ? text1 : text2;
       string shorttext = text1.Length > text2.Length ? text2 : text1;
-      int i = longtext.IndexOf(shorttext);
+      int i = longtext.IndexOf(shorttext, StringComparison.Ordinal);
       if (i != -1) {
         // Shorter text is inside the longer text (speedup).
         Operation op = (text1.Length > text2.Length) ?
@@ -839,7 +839,8 @@ namespace DiffMatchPatch {
       string best_common = string.Empty;
       string best_longtext_a = string.Empty, best_longtext_b = string.Empty;
       string best_shorttext_a = string.Empty, best_shorttext_b = string.Empty;
-      while (j < shorttext.Length && (j = shorttext.IndexOf(seed, j + 1)) != -1) {
+      while (j < shorttext.Length && (j = shorttext.IndexOf(seed, j + 1,
+          StringComparison.Ordinal)) != -1) {
         int prefixLength = diff_commonPrefix(longtext.Substring(i),
                                              shorttext.Substring(j));
         int suffixLength = diff_commonSuffix(longtext.Substring(0, i),
@@ -1207,7 +1208,8 @@ namespace DiffMatchPatch {
         if (diffs[pointer - 1].operation == Operation.EQUAL &&
           diffs[pointer + 1].operation == Operation.EQUAL) {
           // This is a single edit surrounded by equalities.
-          if (diffs[pointer].text.EndsWith(diffs[pointer - 1].text)) {
+          if (diffs[pointer].text.EndsWith(diffs[pointer - 1].text,
+              StringComparison.Ordinal)) {
             // Shift the edit over the previous equality.
             diffs[pointer].text = diffs[pointer - 1].text +
                 diffs[pointer].text.Substring(0, diffs[pointer].text.Length -
@@ -1216,7 +1218,8 @@ namespace DiffMatchPatch {
                 + diffs[pointer + 1].text;
             diffs.Splice(pointer - 1, 1);
             changes = true;
-          } else if (diffs[pointer].text.StartsWith(diffs[pointer + 1].text)) {
+          } else if (diffs[pointer].text.StartsWith(diffs[pointer + 1].text,
+              StringComparison.Ordinal)) {
             // Shift the edit over the next equality.
             diffs[pointer - 1].text += diffs[pointer + 1].text;
             diffs[pointer].text =
@@ -1528,13 +1531,14 @@ namespace DiffMatchPatch {
       // Highest score beyond which we give up.
       double score_threshold = Match_Threshold;
       // Is there a nearby exact match? (speedup)
-      int best_loc = text.IndexOf(pattern, loc);
+      int best_loc = text.IndexOf(pattern, loc, StringComparison.Ordinal);
       if (best_loc != -1) {
         score_threshold = Math.Min(match_bitapScore(0, best_loc, loc,
             pattern), score_threshold);
         // What about in the other direction? (speedup)
         best_loc = text.LastIndexOf(pattern,
-            Math.Min(loc + pattern.Length, text.Length));
+            Math.Min(loc + pattern.Length, text.Length),
+            StringComparison.Ordinal);
         if (best_loc != -1) {
           score_threshold = Math.Min(match_bitapScore(0, best_loc, loc,
               pattern), score_threshold);
@@ -1673,7 +1677,8 @@ namespace DiffMatchPatch {
 
       // Look for the first and last matches of pattern in text.  If two
       // different matches are found, increase the pattern length.
-      while (text.IndexOf(pattern) != text.LastIndexOf(pattern)
+      while (text.IndexOf(pattern, StringComparison.Ordinal)
+          != text.LastIndexOf(pattern, StringComparison.Ordinal)
           && pattern.Length < Match_MaxBits - Patch_Margin - Patch_Margin) {
         padding += Patch_Margin;
         pattern = text.JavaSubstring(Math.Max(0, patch.start2 - padding),
@@ -1780,14 +1785,13 @@ namespace DiffMatchPatch {
           case Operation.INSERT:
             patch.diffs.Add(aDiff);
             patch.length2 += aDiff.text.Length;
-            postpatch_text = postpatch_text.Substring(0, char_count2)
-                + aDiff.text + postpatch_text.Substring(char_count2);
+            postpatch_text = postpatch_text.Insert(char_count2, aDiff.text);
             break;
           case Operation.DELETE:
             patch.length1 += aDiff.text.Length;
             patch.diffs.Add(aDiff);
-            postpatch_text = postpatch_text.Substring(0, char_count2)
-                + postpatch_text.Substring(char_count2 + aDiff.text.Length);
+            postpatch_text = postpatch_text.Remove(char_count2,
+                aDiff.text.Length);
             break;
           case Operation.EQUAL:
             if (aDiff.text.Length <= 2 * Patch_Margin
@@ -1944,9 +1948,8 @@ namespace DiffMatchPatch {
                     text = text.Insert(start_loc + index2, aDiff.text);
                   } else if (aDiff.operation == Operation.DELETE) {
                     // Deletion
-                    text = text.Substring(0, start_loc + index2)
-                        + text.Substring(start_loc + diff_xIndex(diffs,
-                        index1 + aDiff.text.Length));
+                    text = text.Remove(start_loc + index2, diff_xIndex(diffs,
+                        index1 + aDiff.text.Length) - index2);
                   }
                 }
                 if (aDiff.operation != Operation.DELETE) {
@@ -1959,8 +1962,8 @@ namespace DiffMatchPatch {
         x++;
       }
       // Strip the padding off.
-      text = text.JavaSubstring(nullPadding.Length, text.Length
-          - nullPadding.Length);
+      text = text.Substring(nullPadding.Length, text.Length
+          - 2 * nullPadding.Length);
       return new Object[] { text, results };
     }
 
