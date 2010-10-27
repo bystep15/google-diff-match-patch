@@ -51,7 +51,7 @@ public class diff_match_patch_test extends TestCase {
 
 
   public void testDiffCommonPrefix() {
-    // Detect and remove any common prefix.
+    // Detect any common prefix.
     assertEquals("diff_commonPrefix: Null case.", 0, dmp.diff_commonPrefix("abc", "xyz"));
 
     assertEquals("diff_commonPrefix: Non-null case.", 4, dmp.diff_commonPrefix("1234abcdef", "1234xyz"));
@@ -60,12 +60,23 @@ public class diff_match_patch_test extends TestCase {
   }
 
   public void testDiffCommonSuffix() {
-    // Detect and remove any common suffix.
+    // Detect any common suffix.
     assertEquals("diff_commonSuffix: Null case.", 0, dmp.diff_commonSuffix("abc", "xyz"));
 
     assertEquals("diff_commonSuffix: Non-null case.", 4, dmp.diff_commonSuffix("abcdef1234", "xyz1234"));
 
     assertEquals("diff_commonSuffix: Whole case.", 4, dmp.diff_commonSuffix("1234", "xyz1234"));
+  }
+
+  public void testDiffCommonOverlap() {
+    // Detect any suffix/prefix overlap.
+    assertEquals("diff_commonOverlap: Null case.", 0, dmp.diff_commonOverlap("", "abcd"));
+
+    assertEquals("diff_commonOverlap: Whole case.", 3, dmp.diff_commonOverlap("abc", "abcd"));
+
+    assertEquals("diff_commonOverlap: No overlap.", 0, dmp.diff_commonOverlap("123456", "abcd"));
+
+    assertEquals("diff_commonOverlap: Overlap.", 3, dmp.diff_commonOverlap("123456xxx", "xxxabcd"));
   }
 
   public void testDiffHalfmatch() {
@@ -260,6 +271,10 @@ public class diff_match_patch_test extends TestCase {
     diffs = diffList(new Diff(EQUAL, "The c"), new Diff(DELETE, "ow and the c"), new Diff(EQUAL, "at."));
     dmp.diff_cleanupSemantic(diffs);
     assertEquals("diff_cleanupSemantic: Word boundaries.", diffList(new Diff(EQUAL, "The "), new Diff(DELETE, "cow and the "), new Diff(EQUAL, "cat.")), diffs);
+
+    diffs = diffList(new Diff(DELETE, "abcxx"), new Diff(INSERT, "xxdef"));
+    dmp.diff_cleanupSemantic(diffs);
+    assertEquals("diff_cleanupSemantic: Overlap elimination.", diffList(new Diff(DELETE, "abc"), new Diff(EQUAL, "xx"), new Diff(INSERT, "def")), diffs);
   }
 
   public void testDiffCleanupEfficiency() {
@@ -508,8 +523,11 @@ public class diff_match_patch_test extends TestCase {
 
   public void testDiffMain() {
     // Perform a trivial diff.
-    LinkedList<Diff> diffs = diffList(new Diff(EQUAL, "abc"));
-    assertEquals("diff_main: Null case.", diffs, dmp.diff_main("abc", "abc", false));
+    LinkedList<Diff> diffs = diffList();
+    assertEquals("diff_main: Null case.", diffs, dmp.diff_main("", "", false));
+
+    diffs = diffList(new Diff(EQUAL, "abc"));
+    assertEquals("diff_main: Equality.", diffs, dmp.diff_main("abc", "abc", false));
 
     diffs = diffList(new Diff(EQUAL, "ab"), new Diff(INSERT, "123"), new Diff(EQUAL, "c"));
     assertEquals("diff_main: Simple insertion.", diffs, dmp.diff_main("abc", "ab123c", false));
@@ -709,11 +727,11 @@ public class diff_match_patch_test extends TestCase {
     String strp = "@@ -21,18 +22,17 @@\n jump\n-s\n+ed\n  over \n-the\n+a\n  laz\n";
     List<Patch> patches;
     patches = dmp.patch_fromText(strp);
-    assertEquals("patch_toText: Single", strp, dmp.patch_toText(patches));
+    assertEquals("patch_toText: Single.", strp, dmp.patch_toText(patches));
 
     strp = "@@ -1,9 +1,9 @@\n-f\n+F\n oo+fooba\n@@ -7,9 +7,9 @@\n obar\n-,\n+.\n  tes\n";
     patches = dmp.patch_fromText(strp);
-    assertEquals("patch_toText: Dual", strp, dmp.patch_toText(patches));
+    assertEquals("patch_toText: Dual.", strp, dmp.patch_toText(patches));
   }
 
   public void testPatchAddContext() {
@@ -739,26 +757,29 @@ public class diff_match_patch_test extends TestCase {
   @SuppressWarnings("deprecation")
   public void testPatchMake() {
     LinkedList<Patch> patches;
+    patches = dmp.patch_make("", "");
+    assertEquals("patch_make: Null case.", "", dmp.patch_toText(patches));
+
     String text1 = "The quick brown fox jumps over the lazy dog.";
     String text2 = "That quick brown fox jumped over a lazy dog.";
     String expectedPatch = "@@ -1,8 +1,7 @@\n Th\n-at\n+e\n  qui\n@@ -21,17 +21,18 @@\n jump\n-ed\n+s\n  over \n-a\n+the\n  laz\n";
     // The second patch must be "-21,17 +21,18", not "-22,17 +21,18" due to rolling context.
     patches = dmp.patch_make(text2, text1);
-    assertEquals("patch_make: Text2+Text1 inputs", expectedPatch, dmp.patch_toText(patches));
+    assertEquals("patch_make: Text2+Text1 inputs.", expectedPatch, dmp.patch_toText(patches));
 
     expectedPatch = "@@ -1,11 +1,12 @@\n Th\n-e\n+at\n  quick b\n@@ -22,18 +22,17 @@\n jump\n-s\n+ed\n  over \n-the\n+a\n  laz\n";
     patches = dmp.patch_make(text1, text2);
-    assertEquals("patch_make: Text1+Text2 inputs", expectedPatch, dmp.patch_toText(patches));
+    assertEquals("patch_make: Text1+Text2 inputs.", expectedPatch, dmp.patch_toText(patches));
 
     LinkedList<Diff> diffs = dmp.diff_main(text1, text2, false);
     patches = dmp.patch_make(diffs);
-    assertEquals("patch_make: Diff input", expectedPatch, dmp.patch_toText(patches));
+    assertEquals("patch_make: Diff input.", expectedPatch, dmp.patch_toText(patches));
 
     patches = dmp.patch_make(text1, diffs);
-    assertEquals("patch_make: Text1+Diff inputs", expectedPatch, dmp.patch_toText(patches));
+    assertEquals("patch_make: Text1+Diff inputs.", expectedPatch, dmp.patch_toText(patches));
 
     patches = dmp.patch_make(text1, text2, diffs);
-    assertEquals("patch_make: Text1+Text2+Diff inputs (deprecated)", expectedPatch, dmp.patch_toText(patches));
+    assertEquals("patch_make: Text1+Text2+Diff inputs (deprecated).", expectedPatch, dmp.patch_toText(patches));
 
     patches = dmp.patch_make("`1234567890-=[]\\;',./", "~!@#$%^&*()_+{}|:\"<>?");
     assertEquals("patch_toText: Character encoding.", "@@ -1,21 +1,21 @@\n-%601234567890-=%5B%5D%5C;',./\n+~!@#$%25%5E&*()_+%7B%7D%7C:%22%3C%3E?\n", dmp.patch_toText(patches));

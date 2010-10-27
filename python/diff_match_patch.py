@@ -99,7 +99,9 @@ class diff_match_patch:
 
     # Check for equality (speedup).
     if text1 == text2:
-      return [(self.DIFF_EQUAL, text1)]
+      if text1:
+        return [(self.DIFF_EQUAL, text1)]
+      return []
 
     # Trim off common prefix (speedup).
     commonlength = self.diff_commonPrefix(text1, text2)
@@ -555,6 +557,48 @@ class diff_match_patch:
       pointermid = int((pointermax - pointermin) / 2 + pointermin)
     return pointermid
 
+  def diff_commonOverlap(self, text1, text2):
+    """Determine if the suffix of one string is the prefix of another.
+
+    Args:
+      text1 First string.
+      text2 Second string.
+
+    Returns:
+      The number of characters common to the end of the first
+      string and the start of the second string.
+    """
+    # Cache the text lengths to prevent multiple calls.
+    text1_length = len(text1)
+    text2_length = len(text2)
+    # Eliminate the null case.
+    if text1_length == 0 or text2_length == 0:
+      return 0
+    # Truncate the longer string.
+    if text1_length > text2_length:
+      text1 = text1[-text2_length:]
+    elif text1_length < text2_length:
+      text2 = text2[:text1_length]
+    text_length = min(text1_length, text2_length)
+    # Quick check for the worst case.
+    if text1 == text2:
+      return text_length
+
+    # Start by looking for a single character match
+    # and increase length until no match is found.
+    # Performance analysis: http://neil.fraser.name/news/2010/11/04/
+    best = 0
+    length = 1
+    while True:
+      pattern = text1[-length:]
+      found = text2.find(pattern)
+      if found == -1:
+        return best
+      length += found
+      if text1[-length:] == text2[:length]:
+        best = length
+        length += 1
+
   def diff_halfMatch(self, text1, text2):
     """Do the two texts share a substring which is at least half the length of
     the longer text?
@@ -649,16 +693,16 @@ class diff_match_patch:
     length_changes1 = 0  # Number of chars that changed prior to the equality.
     length_changes2 = 0  # Number of chars that changed after the equality.
     while pointer < len(diffs):
-      if diffs[pointer][0] == self.DIFF_EQUAL:  # equality found
+      if diffs[pointer][0] == self.DIFF_EQUAL:  # Equality found.
         equalities.append(pointer)
         length_changes1 = length_changes2
         length_changes2 = 0
         lastequality = diffs[pointer][1]
-      else:  # an insertion or deletion
+      else:  # An insertion or deletion.
         length_changes2 += len(diffs[pointer][1])
         if (lastequality != None and (len(lastequality) <= length_changes1) and
             (len(lastequality) <= length_changes2)):
-          # Duplicate record
+          # Duplicate record.
           diffs.insert(equalities[-1], (self.DIFF_DELETE, lastequality))
           # Change second copy to insert.
           diffs[equalities[-1] + 1] = (self.DIFF_INSERT,
@@ -678,10 +722,30 @@ class diff_match_patch:
           changes = True
       pointer += 1
 
+    # Normalize the diff.
     if changes:
       self.diff_cleanupMerge(diffs)
-
     self.diff_cleanupSemanticLossless(diffs)
+
+    # Find any overlaps between deletions and insertions.
+    # e.g: <del>abcxx</del><ins>xxdef</ins>
+    #   -> <del>abc</del>xx<ins>def</ins>
+    pointer = 1
+    while pointer < len(diffs):
+      if (diffs[pointer - 1][0] == self.DIFF_DELETE and
+          diffs[pointer][0] == self.DIFF_INSERT):
+        deletion = diffs[pointer - 1][1]
+        insertion = diffs[pointer][1]
+        overlap_length = self.diff_commonOverlap(deletion, insertion)
+        if overlap_length != 0:
+          # Overlap found.  Insert an equality and trim the surrounding edits.
+          diffs.insert(pointer, (self.DIFF_EQUAL, insertion[:overlap_length]))
+          diffs[pointer - 1] = (self.DIFF_DELETE,
+                                deletion[:len(deletion) - overlap_length])
+          diffs[pointer + 1] = (self.DIFF_INSERT, insertion[overlap_length:])
+          pointer += 1
+        pointer += 1
+      pointer += 1
 
   def diff_cleanupSemanticLossless(self, diffs):
     """Look for single edits surrounded on both sides by equalities
@@ -799,7 +863,7 @@ class diff_match_patch:
     post_ins = False  # Is there an insertion operation after the last equality.
     post_del = False  # Is there a deletion operation after the last equality.
     while pointer < len(diffs):
-      if diffs[pointer][0] == self.DIFF_EQUAL:  # equality found
+      if diffs[pointer][0] == self.DIFF_EQUAL:  # Equality found.
         if (len(diffs[pointer][1]) < self.Diff_EditCost and
             (post_ins or post_del)):
           # Candidate found.
@@ -813,7 +877,7 @@ class diff_match_patch:
           lastequality = ''
 
         post_ins = post_del = False
-      else:  # an insertion or deletion
+      else:  # An insertion or deletion.
         if diffs[pointer][0] == self.DIFF_DELETE:
           post_del = True
         else:
@@ -829,12 +893,12 @@ class diff_match_patch:
         if lastequality and ((pre_ins and pre_del and post_ins and post_del) or
                              ((len(lastequality) < self.Diff_EditCost / 2) and
                               (pre_ins + pre_del + post_ins + post_del) == 3)):
-          # Duplicate record
+          # Duplicate record.
           diffs.insert(equalities[-1], (self.DIFF_DELETE, lastequality))
           # Change second copy to insert.
           diffs[equalities[-1] + 1] = (self.DIFF_INSERT,
               diffs[equalities[-1] + 1][1])
-          equalities.pop()  # Throw away the equality we just deleted
+          equalities.pop()  # Throw away the equality we just deleted.
           lastequality = ''
           if pre_ins and pre_del:
             # No changes made which could affect previous entry, keep going.
@@ -842,7 +906,7 @@ class diff_match_patch:
             equalities = []
           else:
             if len(equalities):
-              equalities.pop()  # Throw away the previous equality
+              equalities.pop()  # Throw away the previous equality.
             if len(equalities):
               pointer = equalities[-1]
             else:

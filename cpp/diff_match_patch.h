@@ -256,7 +256,7 @@ class diff_match_patch {
                          const QString &text1, const QString &text2);
 
   /**
-   * Determine the common prefix of two strings
+   * Determine the common prefix of two strings.
    * @param text1 First string.
    * @param text2 Second string.
    * @return The number of characters common to the start of each string.
@@ -265,13 +265,23 @@ class diff_match_patch {
   int diff_commonPrefix(const QString &text1, const QString &text2);
 
   /**
-   * Determine the common suffix of two strings
+   * Determine the common suffix of two strings.
    * @param text1 First string.
    * @param text2 Second string.
    * @return The number of characters common to the end of each string.
    */
  public:
   int diff_commonSuffix(const QString &text1, const QString &text2);
+
+  /**
+   * Determine if the suffix of one string is the prefix of another.
+   * @param text1 First string.
+   * @param text2 Second string.
+   * @return The number of characters common to the end of the first
+   *     string and the start of the second string.
+   */
+ public:
+  int diff_commonOverlap(const QString &text1, const QString &text2);
 
   /**
    * Do the two texts share a substring which is at least half the length of

@@ -46,7 +46,7 @@ class DiffTest(DiffMatchPatchTest):
   """DIFF TEST FUNCTIONS"""
 
   def testDiffCommonPrefix(self):
-    # Detect and remove any common prefix.
+    # Detect any common prefix.
     # Null case.
     self.assertEquals(0, self.dmp.diff_commonPrefix("abc", "xyz"))
 
@@ -57,7 +57,7 @@ class DiffTest(DiffMatchPatchTest):
     self.assertEquals(4, self.dmp.diff_commonPrefix("1234", "1234xyz"))
 
   def testDiffCommonSuffix(self):
-    # Detect and remove any common suffix.
+    # Detect any common suffix.
     # Null case.
     self.assertEquals(0, self.dmp.diff_commonSuffix("abc", "xyz"))
 
@@ -66,6 +66,19 @@ class DiffTest(DiffMatchPatchTest):
 
     # Whole case.
     self.assertEquals(4, self.dmp.diff_commonSuffix("1234", "xyz1234"))
+
+  def testDiffCommonOverlap(self):
+    # Null case.
+    self.assertEquals(0, self.dmp.diff_commonOverlap("", "abcd"))
+
+    # Whole case.
+    self.assertEquals(3, self.dmp.diff_commonOverlap("abc", "abcd"))
+
+    # No overlap.
+    self.assertEquals(0, self.dmp.diff_commonOverlap("123456", "abcd"))
+
+    # Overlap.
+    self.assertEquals(3, self.dmp.diff_commonOverlap("123456xxx", "xxxabcd"))
 
   def testDiffHalfMatch(self):
     # Detect a halfmatch.
@@ -253,6 +266,11 @@ class DiffTest(DiffMatchPatchTest):
     diffs = [(self.dmp.DIFF_EQUAL, "The c"), (self.dmp.DIFF_DELETE, "ow and the c"), (self.dmp.DIFF_EQUAL, "at.")]
     self.dmp.diff_cleanupSemantic(diffs)
     self.assertEquals([(self.dmp.DIFF_EQUAL, "The "), (self.dmp.DIFF_DELETE, "cow and the "), (self.dmp.DIFF_EQUAL, "cat.")], diffs)
+
+    # Overlap elimination.
+    diffs = [(self.dmp.DIFF_DELETE, "abcxx"), (self.dmp.DIFF_INSERT, "xxdef")]
+    self.dmp.diff_cleanupSemantic(diffs)
+    self.assertEquals([(self.dmp.DIFF_DELETE, "abc"), (self.dmp.DIFF_EQUAL, "xx"), (self.dmp.DIFF_INSERT, "def")], diffs)
 
   def testDiffCleanupEfficiency(self):
     # Cleanup operationally trivial equalities.
@@ -452,6 +470,9 @@ class DiffTest(DiffMatchPatchTest):
   def testDiffMain(self):
     # Perform a trivial diff.
     # Null case.
+    self.assertEquals([], self.dmp.diff_main("", "", False))
+
+    # Equality.
     self.assertEquals([(self.dmp.DIFF_EQUAL, "abc")], self.dmp.diff_main("abc", "abc", False))
 
     # Simple insertion.
@@ -671,6 +692,11 @@ class PatchTest(DiffMatchPatchTest):
     self.assertEquals("@@ -1,27 +1,28 @@\n Th\n-e\n+at\n  quick brown fox jumps. \n", str(p))
 
   def testPatchMake(self):
+    # Null case.
+    patches = self.dmp.patch_make("", "")
+    self.assertEquals("", self.dmp.patch_toText(patches))
+
+
     text1 = "The quick brown fox jumps over the lazy dog."
     text2 = "That quick brown fox jumped over a lazy dog."
     # Text2+Text1 inputs.

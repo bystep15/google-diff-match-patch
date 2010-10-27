@@ -239,7 +239,10 @@ function diff_main(text1, text2, opt_checklines)
 
   -- Check for equality (speedup).
   if text1 == text2 then
-    return {{DIFF_EQUAL, text1}}
+    if #text1 > 0 then
+      return {{DIFF_EQUAL, text1}}
+    end
+    return {}
   end
 
   if opt_checklines == nil then
@@ -296,18 +299,18 @@ function diff_cleanupSemantic(diffs)
   local length_changes2 = 0
 
   while diffs[pointer] do
-    if (diffs[pointer][1] == DIFF_EQUAL) then  -- equality found
+    if diffs[pointer][1] == DIFF_EQUAL then  -- Equality found.
       equalitiesLength = equalitiesLength + 1
       equalities[equalitiesLength] = pointer
       length_changes1 = length_changes2
       length_changes2 = 0
       lastequality = diffs[pointer][2]
-    else  -- an insertion or deletion
+    else  -- An insertion or deletion.
       length_changes2 = length_changes2 + #(diffs[pointer][2])
       if lastequality and (#lastequality > 0)
          and (#lastequality <= length_changes1)
          and (#lastequality <= length_changes2) then
-        -- Duplicate record
+        -- Duplicate record.
         tinsert(diffs, equalities[equalitiesLength],
          {DIFF_DELETE, lastequality})
         -- Change second copy to insert.
@@ -324,10 +327,36 @@ function diff_cleanupSemantic(diffs)
     end
     pointer = pointer + 1
   end
+
+  -- Normalize the diff.
   if changes then
     _diff_cleanupMerge(diffs)
   end
   _diff_cleanupSemanticLossless(diffs)
+
+  -- Find any overlaps between deletions and insertions.
+  -- e.g: <del>abcxx</del><ins>xxdef</ins>
+  --   -> <del>abc</del>xx<ins>def</ins>
+  pointer = 2
+  while (diffs[pointer]) do
+    if (diffs[pointer - 1][1] == DIFF_DELETE and
+        diffs[pointer][1] == DIFF_INSERT) then
+      local deletion = diffs[pointer - 1][2]
+      local insertion = diffs[pointer][2]
+      local overlap_length = _diff_commonOverlap(deletion, insertion)
+      if overlap_length > 0 then
+        -- Overlap found.  Insert an equality and trim the surrounding edits.
+        tinsert(diffs, pointer,
+            {DIFF_EQUAL, strsub(insertion, 1, overlap_length)})
+        diffs[pointer - 1][2] =
+            strsub(deletion, 1, #deletion - overlap_length)
+        diffs[pointer + 1][2] = strsub(insertion, overlap_length + 1)
+        pointer = pointer + 1
+      end
+      pointer = pointer + 1
+    end
+    pointer = pointer + 1
+  end
 end
 
 --[[
@@ -362,7 +391,7 @@ function diff_cleanupEfficiency(diffs)
   local post_del = 0
 
   while diffs[pointer] do
-    if (diffs[pointer][1] == DIFF_EQUAL) then   -- equality found
+    if diffs[pointer][1] == DIFF_EQUAL then  -- Equality found.
       local diffText = diffs[pointer][2]
       if (#diffText < Diff_EditCost) and (post_ins == 1 or post_del == 1) then
         -- Candidate found.
@@ -376,8 +405,8 @@ function diff_cleanupEfficiency(diffs)
         lastequality = ''
       end
       post_ins, post_del = 0, 0
-    else  -- an insertion or deletion
-      if (diffs[pointer][1] == DIFF_DELETE) then
+    else  -- An insertion or deletion.
+      if diffs[pointer][1] == DIFF_DELETE then
         post_del = 1
       else
         post_ins = 1
@@ -403,7 +432,7 @@ function diff_cleanupEfficiency(diffs)
             {DIFF_DELETE, lastequality})
         -- Change second copy to insert.
         diffs[equalities[equalitiesLength] + 1][1] = DIFF_INSERT
-        -- Throw away the equality we just deleted;
+        -- Throw away the equality we just deleted.
         equalitiesLength = equalitiesLength - 1
         lastequality = ''
         if (pre_ins == 1) and (pre_del == 1) then
@@ -465,16 +494,16 @@ function diff_prettyHtml(diffs)
     local op = diff[1]   -- Operation (insert, delete, equal)
     local data = diff[2]  -- Text of change.
     local text = gsub(data, htmlEncode_pattern, htmlEncode_replace)
-    if (op == DIFF_INSERT) then
+    if op == DIFF_INSERT then
       html[x] = '<INS STYLE="background:#E6FFE6;" TITLE="i=' .. i .. '">'
           .. text .. '</INS>'
-    elseif (op == DIFF_DELETE) then
+    elseif op == DIFF_DELETE then
       html[x] = '<DEL STYLE="background:#FFE6E6;" TITLE="i=' .. i .. '">'
           .. text .. '</DEL>'
-    else--if (op == DIFF_EQUAL) then
+    else--if op == DIFF_EQUAL then
       html[x] = '<SPAN TITLE="i=' .. i .. '">' .. text .. '</SPAN>'
     end
-    if (op ~= DIFF_DELETE) then
+    if op ~= DIFF_DELETE then
       i = i + #data
     end
   end
@@ -497,12 +526,12 @@ end
 * @private
 --]]
 function _diff_compute(text1, text2, checklines)
-  if (#text1 == 0) then
+  if #text1 == 0 then
     -- Just add some text (speedup).
     return {{DIFF_INSERT, text2}}
   end
 
-  if (#text2 == 0) then
+  if #text2 == 0 then
     -- Just delete some text (speedup).
     return {{DIFF_DELETE, text1}}
   end
@@ -513,7 +542,7 @@ function _diff_compute(text1, text2, checklines)
   local shorttext = (#text1 > #text2) and text2 or text1
   local i = indexOf(longtext, shorttext)
 
-  if (i ~= nil) then
+  if i ~= nil then
     -- Shorter text is inside the longer text (speedup).
     diffs = {
       {DIFF_INSERT, strsub(longtext, 1, i - 1)},
@@ -521,7 +550,7 @@ function _diff_compute(text1, text2, checklines)
       {DIFF_INSERT, strsub(longtext, i + #shorttext)}
     }
     -- Swap insertions for deletions if diff is reversed.
-    if (#text1 > #text2) then
+    if #text1 > #text2 then
       diffs[1][1], diffs[3][1] = DIFF_DELETE, DIFF_DELETE
     end
     return diffs
@@ -561,7 +590,7 @@ function _diff_compute(text1, text2, checklines)
     text1, text2, linearray = _diff_toLines(text1, text2)
   end
   diffs = _diff_map(text1, text2)
-  if (diffs == nil) then
+  if diffs == nil then
     -- No acceptable result.
     diffs = {{DIFF_DELETE, text1}, {DIFF_INSERT, text2}}
   end
@@ -972,7 +1001,7 @@ function _diff_path2(v_map, text1, text2)
 end
 
 --[[
-* Determine the common prefix of two strings
+* Determine the common prefix of two strings.
 * @param {string} text1 First string.
 * @param {string} text2 Second string.
 * @return {number} The number of characters common to the start of each
@@ -1005,7 +1034,7 @@ end
 
 
 --[[
-* Determine the common suffix of two strings
+* Determine the common suffix of two strings.
 * @param {string} text1 First string.
 * @param {string} text2 Second string.
 * @return {number} The number of characters common to the end of each string.
@@ -1033,6 +1062,53 @@ function _diff_commonSuffix(text1, text2)
     pointermid = floor(pointermin + (pointermax - pointermin) / 2)
   end
   return pointermid
+end
+
+--[[
+* Determine if the suffix of one string is the prefix of another.
+* @param {string} text1 First string.
+* @param {string} text2 Second string.
+* @return {number} The number of characters common to the end of the first
+*     string and the start of the second string.
+--]]
+function _diff_commonOverlap(text1, text2)
+  -- Cache the text lengths to prevent multiple calls.
+  local text1_length = #text1
+  local text2_length = #text2
+  -- Eliminate the null case.
+  if (text1_length == 0 or text2_length == 0) then
+    return 0
+  end
+  -- Truncate the longer string.
+  if (text1_length > text2_length) then
+    text1 = strsub(text1, text1_length - text2_length + 1)
+  elseif (text1_length < text2_length) then
+    text2 = strsub(text2, 1, text1_length)
+  end
+  local text_length = min(text1_length, text2_length)
+  -- Quick check for the worst case.
+  if (text1 == text2) then
+    return text_length
+  end
+
+  -- Start by looking for a single character match
+  -- and increase length until no match is found.
+  -- Performance analysis: http://neil.fraser.name/news/2010/11/04/
+  local best = 0
+  local length = 1
+  while (1) do
+    local pattern = strsub(text1, text_length - length + 1)
+    local found = strfind(text2, pattern, 1, true)
+    if (found == nil) then
+      return best
+    end
+    length = length + found - 1
+    if (strsub(text1, text_length - length + 1) == strsub(text2, 1, length))
+        then
+      best = length
+      length = length + 1
+    end
+  end
 end
 
 --[[
@@ -2059,9 +2135,9 @@ function _new_patch_obj()
     --[[ @type {Array.<Array.<number|string>>} ]]
     diffs = {};
     --[[ @type {?number} ]]
-    start1 = 1; -- nil;
+    start1 = 1;  -- nil;
     --[[ @type {?number} ]]
-    start2 = 1; -- nil;
+    start2 = 1;  -- nil;
     --[[ @type {number} ]]
     length1 = 0;
     --[[ @type {number} ]]
@@ -2372,6 +2448,7 @@ _M.patch_apply = patch_apply
 -- Expose some non-API functions as well, for testing purposes etc.
 _M.diff_commonPrefix = _diff_commonPrefix
 _M.diff_commonSuffix = _diff_commonSuffix
+_M.diff_commonOverlap = _diff_commonOverlap
 _M.diff_halfMatch = _diff_halfMatch
 _M.diff_cleanupMerge = _diff_cleanupMerge
 _M.diff_cleanupSemanticLossless = _diff_cleanupSemanticLossless

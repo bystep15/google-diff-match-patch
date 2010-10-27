@@ -191,7 +191,9 @@ QList<Diff> diff_match_patch::diff_main(const QString &text1, const QString &tex
   // Check for equality (speedup).
   QList<Diff> diffs;
   if (text1 == text2) {
-    diffs.append(Diff(EQUAL, text1));
+    if (!text1.isEmpty()) {
+      diffs.append(Diff(EQUAL, text1));
+    }
     return diffs;
   }
 
@@ -662,6 +664,47 @@ int diff_match_patch::diff_commonSuffix(const QString &text1,
   return n;
 }
 
+int diff_match_patch::diff_commonOverlap(const QString &text1,
+                                         const QString &text2) {
+  // Cache the text lengths to prevent multiple calls.
+  const int text1_length = text1.length();
+  const int text2_length = text2.length();
+  // Eliminate the null case.
+  if (text1_length == 0 || text2_length == 0) {
+    return 0;
+  }
+  // Truncate the longer string.
+  QString text1_trunc = text1;
+  QString text2_trunc = text2;
+  if (text1_length > text2_length) {
+    text1_trunc = text1.right(text2_length);
+  } else if (text1_length < text2_length) {
+    text2_trunc = text2.left(text1_length);
+  }
+  const int text_length = qMin(text1_length, text2_length);
+  // Quick check for the worst case.
+  if (text1_trunc == text2_trunc) {
+    return text_length;
+  }
+
+  // Start by looking for a single character match
+  // and increase length until no match is found.
+  // Performance analysis: http://neil.fraser.name/news/2010/11/04/
+  int best = 0;
+  int length = 1;
+  while (1) {
+    QString pattern = text1_trunc.right(length);
+    int found = text2_trunc.indexOf(pattern);
+    if (found == -1) {
+      return best;
+    }
+    length += found;
+    if (text1_trunc.right(length) == text2_trunc.left(length)) {
+      best = length;
+      length++;
+    }
+  }
+}
 
 QStringList diff_match_patch::diff_halfMatch(const QString &text1,
                                              const QString &text2) {
@@ -749,13 +792,13 @@ void diff_match_patch::diff_cleanupSemantic(QList<Diff> &diffs) {
   Diff *thisDiff = pointer.hasNext() ? &pointer.next() : NULL;
   while (thisDiff != NULL) {
     if (thisDiff->operation == EQUAL) {
-      // equality found
+      // Equality found.
       equalities.push(*thisDiff);
       length_changes1 = length_changes2;
       length_changes2 = 0;
       lastequality = thisDiff->text;
     } else {
-      // an insertion or deletion
+      // An insertion or deletion.
       length_changes2 += thisDiff->text.length();
       if (!lastequality.isNull() && (lastequality.length() <= length_changes1)
           && (lastequality.length() <= length_changes2)) {
@@ -798,10 +841,44 @@ void diff_match_patch::diff_cleanupSemantic(QList<Diff> &diffs) {
     thisDiff = pointer.hasNext() ? &pointer.next() : NULL;
   }
 
+  // Normalize the diff.
   if (changes) {
     diff_cleanupMerge(diffs);
   }
   diff_cleanupSemanticLossless(diffs);
+
+  // Find any overlaps between deletions and insertions.
+  // e.g: <del>abcxx</del><ins>xxdef</ins>
+  //   -> <del>abc</del>xx<ins>def</ins>
+  pointer.toFront();
+  Diff *prevDiff = NULL;
+  thisDiff = NULL;
+  if (pointer.hasNext()) {
+    prevDiff = &pointer.next();
+    if (pointer.hasNext()) {
+      thisDiff = &pointer.next();
+    }
+  }
+  while (thisDiff != NULL) {
+    if (prevDiff->operation == DELETE &&
+        thisDiff->operation == INSERT) {
+      QString deletion = prevDiff->text;
+      QString insertion = thisDiff->text;
+      int overlap_length = diff_commonOverlap(deletion, insertion);
+      if (overlap_length != 0) {
+        // Overlap found.  Insert an equality and trim the surrounding edits.
+        pointer.previous();
+        pointer.insert(Diff(EQUAL, insertion.left(overlap_length)));
+        prevDiff->text =
+            deletion.left(deletion.length() - overlap_length);
+        thisDiff->text = insertion.mid(overlap_length);
+        // pointer.insert inserts the element before the cursor, so there is
+        // no need to step past the new element.
+      }
+      thisDiff = pointer.hasNext() ? &pointer.next() : NULL;
+    }
+    thisDiff = pointer.hasNext() ? &pointer.next() : NULL;
+  }
 }
 
 
@@ -946,7 +1023,7 @@ void diff_match_patch::diff_cleanupEfficiency(QList<Diff> &diffs) {
 
   while (thisDiff != NULL) {
     if (thisDiff->operation == EQUAL) {
-      // equality found
+      // Equality found.
       if (thisDiff->text.length() < Diff_EditCost && (post_ins || post_del)) {
         // Candidate found.
         equalities.push(*thisDiff);
@@ -961,7 +1038,7 @@ void diff_match_patch::diff_cleanupEfficiency(QList<Diff> &diffs) {
       }
       post_ins = post_del = false;
     } else {
-      // an insertion or deletion
+      // An insertion or deletion.
       if (thisDiff->operation == DELETE) {
         post_del = true;
       } else {

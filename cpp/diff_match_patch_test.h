@@ -30,6 +30,7 @@ class diff_match_patch_test {
   //  DIFF TEST FUNCTIONS
   void testDiffCommonPrefix();
   void testDiffCommonSuffix();
+  void testDiffCommonOverlap();
   void testDiffHalfmatch();
   void testDiffLinesToChars();
   void testDiffCharsToLines();

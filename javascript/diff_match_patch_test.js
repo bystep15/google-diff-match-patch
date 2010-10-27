@@ -81,7 +81,7 @@ var dmp = new diff_match_patch();
 
 
 function testDiffCommonPrefix() {
-  // Detect and remove any common prefix.
+  // Detect any common prefix.
   // Null case.
   assertEquals(0, dmp.diff_commonPrefix('abc', 'xyz'));
 
@@ -93,7 +93,7 @@ function testDiffCommonPrefix() {
 }
 
 function testDiffCommonSuffix() {
-  // Detect and remove any common suffix.
+  // Detect any common suffix.
   // Null case.
   assertEquals(0, dmp.diff_commonSuffix('abc', 'xyz'));
 
@@ -102,6 +102,21 @@ function testDiffCommonSuffix() {
 
   // Whole case.
   assertEquals(4, dmp.diff_commonSuffix('1234', 'xyz1234'));
+}
+
+function testDiffCommonOverlap() {
+  // Detect any suffix/prefix overlap.
+  // Null case.
+  assertEquals(0, dmp.diff_commonOverlap('', 'abcd'));
+
+  // Whole case.
+  assertEquals(3, dmp.diff_commonOverlap('abc', 'abcd'));
+
+  // No overlap.
+  assertEquals(0, dmp.diff_commonOverlap('123456', 'abcd'));
+
+  // Overlap.
+  assertEquals(3, dmp.diff_commonOverlap('123456xxx', 'xxxabcd'));
 }
 
 function testDiffHalfMatch() {
@@ -297,6 +312,11 @@ function testDiffCleanupSemantic() {
   diffs = [[DIFF_EQUAL, 'The c'], [DIFF_DELETE, 'ow and the c'], [DIFF_EQUAL, 'at.']];
   dmp.diff_cleanupSemantic(diffs);
   assertEquivalent([[DIFF_EQUAL, 'The '], [DIFF_DELETE, 'cow and the '], [DIFF_EQUAL, 'cat.']], diffs);
+
+  // Overlap elimination.
+  diffs = [[DIFF_DELETE, 'abcxx'], [DIFF_INSERT, 'xxdef']];
+  dmp.diff_cleanupSemantic(diffs);
+  assertEquivalent([[DIFF_DELETE, 'abc'], [DIFF_EQUAL, 'xx'], [DIFF_INSERT, 'def']], diffs);
 }
 
 function testDiffCleanupEfficiency() {
@@ -466,6 +486,9 @@ function testDiffPath() {
 function testDiffMain() {
   // Perform a trivial diff.
   // Null case.
+  assertEquivalent([], dmp.diff_main('', '', false));
+
+  // Equality.
   assertEquivalent([[DIFF_EQUAL, 'abc']], dmp.diff_main('abc', 'abc', false));
 
   // Simple insertion.
@@ -691,12 +714,16 @@ function testPatchAddContext() {
 }
 
 function testPatchMake() {
+  // Null case.
+  var patches = dmp.patch_make('', '');
+  assertEquals('', dmp.patch_toText(patches));
+
   var text1 = 'The quick brown fox jumps over the lazy dog.';
   var text2 = 'That quick brown fox jumped over a lazy dog.';
   // Text2+Text1 inputs.
   var expectedPatch = '@@ -1,8 +1,7 @@\n Th\n-at\n+e\n  qui\n@@ -21,17 +21,18 @@\n jump\n-ed\n+s\n  over \n-a\n+the\n  laz\n';
   // The second patch must be "-21,17 +21,18", not "-22,17 +21,18" due to rolling context.
-  var patches = dmp.patch_make(text2, text1);
+  patches = dmp.patch_make(text2, text1);
   assertEquals(expectedPatch, dmp.patch_toText(patches));
 
   // Text1+Text2 inputs.

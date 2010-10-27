@@ -44,6 +44,7 @@ void diff_match_patch_test::run_all_tests() {
   try {
     testDiffCommonPrefix();
     testDiffCommonSuffix();
+    testDiffCommonOverlap();
     testDiffHalfmatch();
     testDiffLinesToChars();
     testDiffCharsToLines();
@@ -78,7 +79,7 @@ void diff_match_patch_test::run_all_tests() {
 //  DIFF TEST FUNCTIONS
 
 void diff_match_patch_test::testDiffCommonPrefix() {
-  // Detect and remove any common prefix.
+  // Detect any common prefix.
   assertEquals("diff_commonPrefix: Null case.", 0, dmp.diff_commonPrefix("abc", "xyz"));
 
   assertEquals("diff_commonPrefix: Non-null case.", 4, dmp.diff_commonPrefix("1234abcdef", "1234xyz"));
@@ -87,12 +88,23 @@ void diff_match_patch_test::testDiffCommonPrefix() {
 }
 
 void diff_match_patch_test::testDiffCommonSuffix() {
-  // Detect and remove any common suffix.
+  // Detect any common suffix.
   assertEquals("diff_commonSuffix: Null case.", 0, dmp.diff_commonSuffix("abc", "xyz"));
 
   assertEquals("diff_commonSuffix: Non-null case.", 4, dmp.diff_commonSuffix("abcdef1234", "xyz1234"));
 
   assertEquals("diff_commonSuffix: Whole case.", 4, dmp.diff_commonSuffix("1234", "xyz1234"));
+}
+
+void diff_match_patch_test::testDiffCommonOverlap() {
+  // Detect any suffix/prefix overlap.
+  assertEquals("diff_commonOverlap: Null case.", 0, dmp.diff_commonOverlap("", "abcd"));
+
+  assertEquals("diff_commonOverlap: Whole case.", 3, dmp.diff_commonOverlap("abc", "abcd"));
+
+  assertEquals("diff_commonOverlap: No overlap.", 0, dmp.diff_commonOverlap("123456", "abcd"));
+
+  assertEquals("diff_commonOverlap: Overlap.", 3, dmp.diff_commonOverlap("123456xxx", "xxxabcd"));
 }
 
 void diff_match_patch_test::testDiffHalfmatch() {
@@ -302,6 +314,10 @@ void diff_match_patch_test::testDiffCleanupSemantic() {
   diffs = diffList(Diff(EQUAL, "The c"), Diff(DELETE, "ow and the c"), Diff(EQUAL, "at."));
   dmp.diff_cleanupSemantic(diffs);
   assertEquals("diff_cleanupSemantic: Word boundaries.", diffList(Diff(EQUAL, "The "), Diff(DELETE, "cow and the "), Diff(EQUAL, "cat.")), diffs);
+
+  diffs = diffList(Diff(DELETE, "abcxx"), Diff(INSERT, "xxdef"));
+  dmp.diff_cleanupSemantic(diffs);
+  assertEquals("diff_cleanupSemantic: Overlap elimination.", diffList(Diff(DELETE, "abc"), Diff(EQUAL, "xx"), Diff(INSERT, "def")), diffs);
 }
 
 void diff_match_patch_test::testDiffCleanupEfficiency() {
@@ -548,8 +564,11 @@ void diff_match_patch_test::testDiffPath() {
 
 void diff_match_patch_test::testDiffMain() {
   // Perform a trivial diff.
-  QList<Diff> diffs = diffList(Diff(EQUAL, "abc"));
-  assertEquals("diff_main: Null case.", diffs, dmp.diff_main("abc", "abc", false));
+  QList<Diff> diffs = diffList();
+  assertEquals("diff_main: Null case.", diffs, dmp.diff_main("", "", false));
+
+  diffs = diffList(Diff(EQUAL, "abc"));
+  assertEquals("diff_main: Equality.", diffs, dmp.diff_main("abc", "abc", false));
 
   diffs = diffList(Diff(EQUAL, "ab"), Diff(INSERT, "123"), Diff(EQUAL, "c"));
   assertEquals("diff_main: Simple insertion.", diffs, dmp.diff_main("abc", "ab123c", false));
@@ -778,6 +797,9 @@ void diff_match_patch_test::testPatchAddContext() {
 
 void diff_match_patch_test::testPatchMake() {
   QList<Patch> patches;
+  patches = dmp.patch_make("", "");
+  assertEquals("patch_make: Null case", "", dmp.patch_toText(patches));
+
   QString text1 = "The quick brown fox jumps over the lazy dog.";
   QString text2 = "That quick brown fox jumped over a lazy dog.";
   QString expectedPatch = "@@ -1,8 +1,7 @@\n Th\n-at\n+e\n  qui\n@@ -21,17 +21,18 @@\n jump\n-ed\n+s\n  over \n-a\n+the\n  laz\n";

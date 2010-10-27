@@ -105,7 +105,10 @@ diff_match_patch.prototype.diff_main = function(text1, text2, opt_checklines) {
 
   // Check for equality (speedup).
   if (text1 == text2) {
-    return [[DIFF_EQUAL, text1]];
+    if (text1) {
+      return [[DIFF_EQUAL, text1]];
+    }
+    return [];
   }
 
   if (typeof opt_checklines == 'undefined') {
@@ -493,7 +496,7 @@ diff_match_patch.prototype.diff_path1 = function(v_map, text1, text2) {
   /** @type {?number} */
   var last_op = null;
   for (var d = v_map.length - 2; d >= 0; d--) {
-    while (1) {
+    while (true) {
       if (v_map[d][(x - 1) + ',' + y] !== undefined) {
         x--;
         if (last_op === DIFF_DELETE) {
@@ -547,7 +550,7 @@ diff_match_patch.prototype.diff_path2 = function(v_map, text1, text2) {
   /** @type {?number} */
   var last_op = null;
   for (var d = v_map.length - 2; d >= 0; d--) {
-    while (1) {
+    while (true) {
       if (v_map[d][(x - 1) + ',' + y] !== undefined) {
         x--;
         if (last_op === DIFF_DELETE) {
@@ -590,7 +593,7 @@ diff_match_patch.prototype.diff_path2 = function(v_map, text1, text2) {
 
 
 /**
- * Determine the common prefix of two strings
+ * Determine the common prefix of two strings.
  * @param {string} text1 First string.
  * @param {string} text2 Second string.
  * @return {number} The number of characters common to the start of each
@@ -622,7 +625,7 @@ diff_match_patch.prototype.diff_commonPrefix = function(text1, text2) {
 
 
 /**
- * Determine the common suffix of two strings
+ * Determine the common suffix of two strings.
  * @param {string} text1 First string.
  * @param {string} text2 Second string.
  * @return {number} The number of characters common to the end of each string.
@@ -650,6 +653,53 @@ diff_match_patch.prototype.diff_commonSuffix = function(text1, text2) {
     pointermid = Math.floor((pointermax - pointermin) / 2 + pointermin);
   }
   return pointermid;
+};
+
+
+/**
+ * Determine if the suffix of one string is the prefix of another.
+ * @param {string} text1 First string.
+ * @param {string} text2 Second string.
+ * @return {number} The number of characters common to the end of the first
+ *     string and the start of the second string.
+ */
+diff_match_patch.prototype.diff_commonOverlap = function(text1, text2) {
+  // Cache the text lengths to prevent multiple calls.
+  var text1_length = text1.length;
+  var text2_length = text2.length;
+  // Eliminate the null case.
+  if (text1_length == 0 || text2_length == 0) {
+    return 0;
+  }
+  // Truncate the longer string.
+  if (text1_length > text2_length) {
+    text1 = text1.substring(text1_length - text2_length);
+  } else if (text1_length < text2_length) {
+    text2 = text2.substring(0, text1_length);
+  }
+  var text_length = Math.min(text1_length, text2_length);
+  // Quick check for the worst case.
+  if (text1 == text2) {
+    return text_length;
+  }
+
+  // Start by looking for a single character match
+  // and increase length until no match is found.
+  // Performance analysis: http://neil.fraser.name/news/2010/11/04/
+  var best = 0;
+  var length = 1;
+  while (true) {
+    var pattern = text1.substring(text_length - length);
+    var found = text2.indexOf(pattern);
+    if (found == -1) {
+      return best;
+    }
+    length += found;
+    if (text1.substring(text_length - length) == text2.substring(0, length)) {
+      best = length;
+      length++;
+    }
+  }
 };
 
 
@@ -761,16 +811,16 @@ diff_match_patch.prototype.diff_cleanupSemantic = function(diffs) {
   // Number of characters that changed after the equality.
   var length_changes2 = 0;
   while (pointer < diffs.length) {
-    if (diffs[pointer][0] == DIFF_EQUAL) {  // equality found
+    if (diffs[pointer][0] == DIFF_EQUAL) {  // Equality found.
       equalities[equalitiesLength++] = pointer;
       length_changes1 = length_changes2;
       length_changes2 = 0;
       lastequality = diffs[pointer][1];
-    } else {  // an insertion or deletion
+    } else {  // An insertion or deletion.
       length_changes2 += diffs[pointer][1].length;
       if (lastequality !== null && (lastequality.length <= length_changes1) &&
           (lastequality.length <= length_changes2)) {
-        // Duplicate record
+        // Duplicate record.
         diffs.splice(equalities[equalitiesLength - 1], 0,
                      [DIFF_DELETE, lastequality]);
         // Change second copy to insert.
@@ -788,10 +838,36 @@ diff_match_patch.prototype.diff_cleanupSemantic = function(diffs) {
     }
     pointer++;
   }
+
+  // Normalize the diff.
   if (changes) {
     this.diff_cleanupMerge(diffs);
   }
   this.diff_cleanupSemanticLossless(diffs);
+
+  // Find any overlaps between deletions and insertions.
+  // e.g: <del>abcxx</del><ins>xxdef</ins>
+  //   -> <del>abc</del>xx<ins>def</ins>
+  pointer = 1;
+  while (pointer < diffs.length) {
+    if (diffs[pointer - 1][0] == DIFF_DELETE &&
+        diffs[pointer][0] == DIFF_INSERT) {
+      var deletion = diffs[pointer - 1][1];
+      var insertion = diffs[pointer][1];
+      var overlap_length = this.diff_commonOverlap(deletion, insertion);
+      if (overlap_length) {
+        // Overlap found.  Insert an equality and trim the surrounding edits.
+        diffs.splice(pointer, 0,
+            [DIFF_EQUAL, insertion.substring(0, overlap_length)]);
+        diffs[pointer - 1][1] =
+            deletion.substring(0, deletion.length - overlap_length);
+        diffs[pointer + 1][1] = insertion.substring(overlap_length);
+        pointer++;
+      }
+      pointer++;
+    }
+    pointer++;
+  }
 };
 
 
@@ -933,7 +1009,7 @@ diff_match_patch.prototype.diff_cleanupEfficiency = function(diffs) {
   // Is there a deletion operation after the last equality.
   var post_del = false;
   while (pointer < diffs.length) {
-    if (diffs[pointer][0] == DIFF_EQUAL) {  // equality found
+    if (diffs[pointer][0] == DIFF_EQUAL) {  // Equality found.
       if (diffs[pointer][1].length < this.Diff_EditCost &&
           (post_ins || post_del)) {
         // Candidate found.
@@ -947,7 +1023,7 @@ diff_match_patch.prototype.diff_cleanupEfficiency = function(diffs) {
         lastequality = '';
       }
       post_ins = post_del = false;
-    } else {  // an insertion or deletion
+    } else {  // An insertion or deletion.
       if (diffs[pointer][0] == DIFF_DELETE) {
         post_del = true;
       } else {
@@ -964,7 +1040,7 @@ diff_match_patch.prototype.diff_cleanupEfficiency = function(diffs) {
       if (lastequality && ((pre_ins && pre_del && post_ins && post_del) ||
                            ((lastequality.length < this.Diff_EditCost / 2) &&
                             (pre_ins + pre_del + post_ins + post_del) == 3))) {
-        // Duplicate record
+        // Duplicate record.
         diffs.splice(equalities[equalitiesLength - 1], 0,
                      [DIFF_DELETE, lastequality]);
         // Change second copy to insert.
@@ -976,7 +1052,7 @@ diff_match_patch.prototype.diff_cleanupEfficiency = function(diffs) {
           post_ins = post_del = true;
           equalitiesLength = 0;
         } else {
-          equalitiesLength--;  // Throw away the previous equality;
+          equalitiesLength--;  // Throw away the previous equality.
           pointer = equalitiesLength > 0 ?
               equalities[equalitiesLength - 1] : -1;
           post_ins = post_del = false;

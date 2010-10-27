@@ -159,7 +159,9 @@ public class diff_match_patch {
     LinkedList<Diff> diffs;
     if (text1.equals(text2)) {
       diffs = new LinkedList<Diff>();
-      diffs.add(new Diff(Operation.EQUAL, text1));
+      if (text1.length() != 0) {
+        diffs.add(new Diff(Operation.EQUAL, text1));
+      }
       return diffs;
     }
 
@@ -692,6 +694,54 @@ public class diff_match_patch {
 
 
   /**
+   * Determine if the suffix of one string is the prefix of another.
+   * @param text1 First string.
+   * @param text2 Second string.
+   * @return The number of characters common to the end of the first
+   *     string and the start of the second string.
+   */
+  public int diff_commonOverlap(String text1, String text2) {
+    // Cache the text lengths to prevent multiple calls.
+    int text1_length = text1.length();
+    int text2_length = text2.length();
+    // Eliminate the null case.
+    if (text1_length == 0 || text2_length == 0) {
+      return 0;
+    }
+    // Truncate the longer string.
+    if (text1_length > text2_length) {
+      text1 = text1.substring(text1_length - text2_length);
+    } else if (text1_length < text2_length) {
+      text2 = text2.substring(0, text1_length);
+    }
+    int text_length = Math.min(text1_length, text2_length);
+    // Quick check for the worst case.
+    if (text1.equals(text2)) {
+      return text_length;
+    }
+
+    // Start by looking for a single character match
+    // and increase length until no match is found.
+    // Performance analysis: http://neil.fraser.name/news/2010/11/04/
+    int best = 0;
+    int length = 1;
+    while (true) {
+      String pattern = text1.substring(text_length - length);
+      int found = text2.indexOf(pattern);
+      if (found == -1) {
+        return best;
+      }
+      length += found;
+      if (text1.substring(text_length - length).equals(
+          text2.substring(0, length))) {
+        best = length;
+        length++;
+      }
+    }
+  }
+
+
+  /**
    * Do the two texts share a substring which is at least half the length of
    * the longer text?
    * @param text1 First string.
@@ -794,13 +844,13 @@ public class diff_match_patch {
     Diff thisDiff = pointer.next();
     while (thisDiff != null) {
       if (thisDiff.operation == Operation.EQUAL) {
-        // equality found
+        // Equality found.
         equalities.push(thisDiff);
         length_changes1 = length_changes2;
         length_changes2 = 0;
         lastequality = thisDiff.text;
       } else {
-        // an insertion or deletion
+        // An insertion or deletion.
         length_changes2 += thisDiff.text.length();
         if (lastequality != null && (lastequality.length() <= length_changes1)
             && (lastequality.length() <= length_changes2)) {
@@ -843,10 +893,44 @@ public class diff_match_patch {
       thisDiff = pointer.hasNext() ? pointer.next() : null;
     }
 
+    // Normalize the diff.
     if (changes) {
       diff_cleanupMerge(diffs);
     }
     diff_cleanupSemanticLossless(diffs);
+
+    // Find any overlaps between deletions and insertions.
+    // e.g: <del>abcxx</del><ins>xxdef</ins>
+    //   -> <del>abc</del>xx<ins>def</ins>
+    pointer = diffs.listIterator();
+    Diff prevDiff = null;
+    thisDiff = null;
+    if (pointer.hasNext()) {
+      prevDiff = pointer.next();
+      if (pointer.hasNext()) {
+        thisDiff = pointer.next();
+      }
+    }
+    while (thisDiff != null) {
+      if (prevDiff.operation == Operation.DELETE &&
+          thisDiff.operation == Operation.INSERT) {
+        String deletion = prevDiff.text;
+        String insertion = thisDiff.text;
+        int overlap_length = this.diff_commonOverlap(deletion, insertion);
+        if (overlap_length != 0) {
+          // Overlap found.  Insert an equality and trim the surrounding edits.
+          pointer.previous();
+          pointer.add(new Diff(Operation.EQUAL, insertion.substring(0, overlap_length)));
+          prevDiff.text =
+              deletion.substring(0, deletion.length() - overlap_length);
+          thisDiff.text = insertion.substring(overlap_length);
+          // pointer.add inserts the element before the cursor, so there is
+          // no need to step past the new element.
+        }
+        thisDiff = pointer.hasNext() ? pointer.next() : null;
+      }
+      thisDiff = pointer.hasNext() ? pointer.next() : null;
+    }
   }
 
 
@@ -1010,7 +1094,7 @@ public class diff_match_patch {
     Diff safeDiff = thisDiff;  // The last Diff that is known to be unsplitable.
     while (thisDiff != null) {
       if (thisDiff.operation == Operation.EQUAL) {
-        // equality found
+        // Equality found.
         if (thisDiff.text.length() < Diff_EditCost && (post_ins || post_del)) {
           // Candidate found.
           equalities.push(thisDiff);
@@ -1025,7 +1109,7 @@ public class diff_match_patch {
         }
         post_ins = post_del = false;
       } else {
-        // an insertion or deletion
+        // An insertion or deletion.
         if (thisDiff.operation == Operation.DELETE) {
           post_del = true;
         } else {
@@ -1188,7 +1272,6 @@ public class diff_match_patch {
       }
       thisDiff = pointer.hasNext() ? pointer.next() : null;
     }
-    // System.out.println(diff);
     if (diffs.getLast().text.length() == 0) {
       diffs.removeLast();  // Remove the dummy entry at the end.
     }

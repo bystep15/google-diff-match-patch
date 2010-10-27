@@ -31,30 +31,60 @@ namespace nicTest {
     [Test()]
     public void diff_commonPrefixTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
-      // Detect and remove any common suffix.
+      // Detect any common suffix.
+      // Null case.
       Assert.AreEqual(0, dmp.diff_commonPrefix("abc", "xyz"));
+
+      // Non-null case.
       Assert.AreEqual(4, dmp.diff_commonPrefix("1234abcdef", "1234xyz"));
+
+      // Whole case.
       Assert.AreEqual(4, dmp.diff_commonPrefix("1234", "1234xyz"));
     }
 
     [Test()]
     public void diff_commonSuffixTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
-      // Detect and remove any common suffix.
+      // Detect any common suffix.
+      // Null case.
       Assert.AreEqual(0, dmp.diff_commonSuffix("abc", "xyz"));
+
+      // Non-null case.
       Assert.AreEqual(4, dmp.diff_commonSuffix("abcdef1234", "xyz1234"));
+
+      // Whole case.
       Assert.AreEqual(4, dmp.diff_commonSuffix("1234", "xyz1234"));
+    }
+
+    [Test()]
+    public void diff_commonOverlapTest() {
+      diff_match_patchTest dmp = new diff_match_patchTest();
+      // Detect any suffix/prefix overlap.
+      // Null case.
+      Assert.AreEqual(0, dmp.diff_commonOverlap("", "abcd"));
+
+      // Whole case.
+      Assert.AreEqual(3, dmp.diff_commonOverlap("abc", "abcd"));
+
+      // No overlap.
+      Assert.AreEqual(0, dmp.diff_commonOverlap("123456", "abcd"));
+
+      // Overlap.
+      Assert.AreEqual(3, dmp.diff_commonOverlap("123456xxx", "xxxabcd"));
     }
 
     [Test()]
     public void diff_halfmatchTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
+      // No match.
       Assert.IsNull(dmp.diff_halfMatch("1234567890", "abcdef"));
 
+      // Single Match.
       CollectionAssert.AreEqual(new string[] { "12", "90", "a", "z", "345678" }, dmp.diff_halfMatch("1234567890", "a345678z"));
 
       CollectionAssert.AreEqual(new string[] { "a", "z", "12", "90", "345678" }, dmp.diff_halfMatch("a345678z", "1234567890"));
 
+      // Multiple Matches.
       CollectionAssert.AreEqual(new string[] { "12123", "123121", "a", "z", "1234123451234" }, dmp.diff_halfMatch("121231234123451234123121", "a1234123451234z"));
 
       CollectionAssert.AreEqual(new string[] { "", "-=-=-=-=-=", "x", "", "x-=-=-=-=-=-=-=" }, dmp.diff_halfMatch("x-=-=-=-=-=-=-=-=-=-=-=-=", "xx-=-=-=-=-=-=-="));
@@ -118,10 +148,6 @@ namespace nicTest {
     [Test()]
     public void diff_charsToLinesTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
-
-      Assert.AreEqual(new Diff(Operation.EQUAL, "a"),
-          new Diff(Operation.EQUAL, "a"));
-
       // Convert chars up to lines.
       List<Diff> diffs = new List<Diff> {
           new Diff(Operation.EQUAL, "\u0001\u0002\u0001"),
@@ -160,46 +186,57 @@ namespace nicTest {
     public void diff_cleanupMergeTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Cleanup a messy diff.
+      // Null case.
       List<Diff> diffs = new List<Diff>();
       dmp.diff_cleanupMerge(diffs);
       CollectionAssert.AreEqual(new List<Diff>(), diffs);
 
+      // No change case.
       diffs = new List<Diff> {new Diff(Operation.EQUAL, "a"), new Diff(Operation.DELETE, "b"), new Diff(Operation.INSERT, "c")};
       dmp.diff_cleanupMerge(diffs);
       CollectionAssert.AreEqual(new List<Diff> {new Diff(Operation.EQUAL, "a"), new Diff(Operation.DELETE, "b"), new Diff(Operation.INSERT, "c")}, diffs);
 
+      // Merge equalities.
       diffs = new List<Diff> {new Diff(Operation.EQUAL, "a"), new Diff(Operation.EQUAL, "b"), new Diff(Operation.EQUAL, "c")};
       dmp.diff_cleanupMerge(diffs);
       CollectionAssert.AreEqual(new List<Diff> {new Diff(Operation.EQUAL, "abc")}, diffs);
 
+      // Merge deletions.
       diffs = new List<Diff> {new Diff(Operation.DELETE, "a"), new Diff(Operation.DELETE, "b"), new Diff(Operation.DELETE, "c")};
       dmp.diff_cleanupMerge(diffs);
       CollectionAssert.AreEqual(new List<Diff> {new Diff(Operation.DELETE, "abc")}, diffs);
 
+      // Merge insertions.
       diffs = new List<Diff> {new Diff(Operation.INSERT, "a"), new Diff(Operation.INSERT, "b"), new Diff(Operation.INSERT, "c")};
       dmp.diff_cleanupMerge(diffs);
       CollectionAssert.AreEqual(new List<Diff> {new Diff(Operation.INSERT, "abc")}, diffs);
 
+      // Merge interweave.
       diffs = new List<Diff> {new Diff(Operation.DELETE, "a"), new Diff(Operation.INSERT, "b"), new Diff(Operation.DELETE, "c"), new Diff(Operation.INSERT, "d"), new Diff(Operation.EQUAL, "e"), new Diff(Operation.EQUAL, "f")};
       dmp.diff_cleanupMerge(diffs);
       CollectionAssert.AreEqual(new List<Diff> {new Diff(Operation.DELETE, "ac"), new Diff(Operation.INSERT, "bd"), new Diff(Operation.EQUAL, "ef")}, diffs);
 
+      // Prefix and suffix detection.
       diffs = new List<Diff> {new Diff(Operation.DELETE, "a"), new Diff(Operation.INSERT, "abc"), new Diff(Operation.DELETE, "dc")};
       dmp.diff_cleanupMerge(diffs);
       CollectionAssert.AreEqual(new List<Diff> {new Diff(Operation.EQUAL, "a"), new Diff(Operation.DELETE, "d"), new Diff(Operation.INSERT, "b"), new Diff(Operation.EQUAL, "c")}, diffs);
 
+      // Slide edit left.
       diffs = new List<Diff> {new Diff(Operation.EQUAL, "a"), new Diff(Operation.INSERT, "ba"), new Diff(Operation.EQUAL, "c")};
       dmp.diff_cleanupMerge(diffs);
       CollectionAssert.AreEqual(new List<Diff> {new Diff(Operation.INSERT, "ab"), new Diff(Operation.EQUAL, "ac")}, diffs);
 
+      // Slide edit right.
       diffs = new List<Diff> {new Diff(Operation.EQUAL, "c"), new Diff(Operation.INSERT, "ab"), new Diff(Operation.EQUAL, "a")};
       dmp.diff_cleanupMerge(diffs);
       CollectionAssert.AreEqual(new List<Diff> {new Diff(Operation.EQUAL, "ca"), new Diff(Operation.INSERT, "ba")}, diffs);
 
+      // Slide edit left recursive.
       diffs = new List<Diff> {new Diff(Operation.EQUAL, "a"), new Diff(Operation.DELETE, "b"), new Diff(Operation.EQUAL, "c"), new Diff(Operation.DELETE, "ac"), new Diff(Operation.EQUAL, "x")};
       dmp.diff_cleanupMerge(diffs);
       CollectionAssert.AreEqual(new List<Diff> {new Diff(Operation.DELETE, "abc"), new Diff(Operation.EQUAL, "acx")}, diffs);
 
+      // Slide edit right recursive.
       diffs = new List<Diff> {new Diff(Operation.EQUAL, "x"), new Diff(Operation.DELETE, "ca"), new Diff(Operation.EQUAL, "c"), new Diff(Operation.DELETE, "b"), new Diff(Operation.EQUAL, "a")};
       dmp.diff_cleanupMerge(diffs);
       CollectionAssert.AreEqual(new List<Diff> {new Diff(Operation.EQUAL, "xca"), new Diff(Operation.DELETE, "cba")}, diffs);
@@ -209,10 +246,12 @@ namespace nicTest {
     public void diff_cleanupSemanticLosslessTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Slide diffs to match logical boundaries.
+      // Null case.
       List<Diff> diffs = new List<Diff>();
       dmp.diff_cleanupSemanticLossless(diffs);
       CollectionAssert.AreEqual(new List<Diff>(), diffs);
 
+      // Blank lines.
       diffs = new List<Diff> {
           new Diff(Operation.EQUAL, "AAA\r\n\r\nBBB"),
           new Diff(Operation.INSERT, "\r\nDDD\r\n\r\nBBB"),
@@ -224,6 +263,7 @@ namespace nicTest {
           new Diff(Operation.INSERT, "BBB\r\nDDD\r\n\r\n"),
           new Diff(Operation.EQUAL, "BBB\r\nEEE")}, diffs);
 
+      // Line boundaries.
       diffs = new List<Diff> {
           new Diff(Operation.EQUAL, "AAA\r\nBBB"),
           new Diff(Operation.INSERT, " DDD\r\nBBB"),
@@ -234,6 +274,7 @@ namespace nicTest {
           new Diff(Operation.INSERT, "BBB DDD\r\n"),
           new Diff(Operation.EQUAL, "BBB EEE")}, diffs);
 
+      // Word boundaries.
       diffs = new List<Diff> {
           new Diff(Operation.EQUAL, "The c"),
           new Diff(Operation.INSERT, "ow and the c"),
@@ -244,6 +285,7 @@ namespace nicTest {
           new Diff(Operation.INSERT, "cow and the "),
           new Diff(Operation.EQUAL, "cat.")}, diffs);
 
+      // Alphanumeric boundaries.
       diffs = new List<Diff> {
           new Diff(Operation.EQUAL, "The-c"),
           new Diff(Operation.INSERT, "ow-and-the-c"),
@@ -254,6 +296,7 @@ namespace nicTest {
           new Diff(Operation.INSERT, "cow-and-the-"),
           new Diff(Operation.EQUAL, "cat.")}, diffs);
 
+      // Hitting the start.
       diffs = new List<Diff> {
           new Diff(Operation.EQUAL, "a"),
           new Diff(Operation.DELETE, "a"),
@@ -263,6 +306,7 @@ namespace nicTest {
           new Diff(Operation.DELETE, "a"),
           new Diff(Operation.EQUAL, "aax")}, diffs);
 
+      // Hitting the end.
       diffs = new List<Diff> {
           new Diff(Operation.EQUAL, "xa"),
           new Diff(Operation.DELETE, "a"),
@@ -277,10 +321,12 @@ namespace nicTest {
     public void diff_cleanupSemanticTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Cleanup semantically trivial equalities.
+      // Null case.
       List<Diff> diffs = new List<Diff>();
       dmp.diff_cleanupSemantic(diffs);
       CollectionAssert.AreEqual(new List<Diff>(), diffs);
 
+      // No elimination.
       diffs = new List<Diff> {
           new Diff(Operation.DELETE, "a"),
           new Diff(Operation.INSERT, "b"),
@@ -293,6 +339,7 @@ namespace nicTest {
           new Diff(Operation.EQUAL, "cd"),
           new Diff(Operation.DELETE, "e")}, diffs);
 
+      // Simple elimination.
       diffs = new List<Diff> {
           new Diff(Operation.DELETE, "a"),
           new Diff(Operation.EQUAL, "b"),
@@ -302,6 +349,7 @@ namespace nicTest {
           new Diff(Operation.DELETE, "abc"),
           new Diff(Operation.INSERT, "b")}, diffs);
 
+      // Backpass elimination.
       diffs = new List<Diff> {
           new Diff(Operation.DELETE, "ab"),
           new Diff(Operation.EQUAL, "cd"),
@@ -313,6 +361,7 @@ namespace nicTest {
           new Diff(Operation.DELETE, "abcdef"),
           new Diff(Operation.INSERT, "cdfg")}, diffs);
 
+      // Multiple eliminations.
       diffs = new List<Diff> {
           new Diff(Operation.INSERT, "1"),
           new Diff(Operation.EQUAL, "A"),
@@ -328,6 +377,7 @@ namespace nicTest {
           new Diff(Operation.DELETE, "AB_AB"),
           new Diff(Operation.INSERT, "1A2_1A2")}, diffs);
 
+      // Word boundaries.
       diffs = new List<Diff> {
           new Diff(Operation.EQUAL, "The c"),
           new Diff(Operation.DELETE, "ow and the c"),
@@ -337,16 +387,29 @@ namespace nicTest {
           new Diff(Operation.EQUAL, "The "),
           new Diff(Operation.DELETE, "cow and the "),
           new Diff(Operation.EQUAL, "cat.")}, diffs);
+
+      // Overlap elimination.
+      diffs = new List<Diff> {
+          new Diff(Operation.DELETE, "abcxx"),
+          new Diff(Operation.INSERT, "xxdef")};
+      dmp.diff_cleanupSemantic(diffs);
+      CollectionAssert.AreEqual(new List<Diff> {
+          new Diff(Operation.DELETE, "abc"),
+          new Diff(Operation.EQUAL, "xx"),
+          new Diff(Operation.INSERT, "def")}, diffs);
     }
 
     [Test()]
     public void diff_cleanupEfficiencyTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
+      // Cleanup operationally trivial equalities.
       dmp.Diff_EditCost = 4;
+      // Null case.
       List<Diff> diffs = new List<Diff> ();
       dmp.diff_cleanupEfficiency(diffs);
       CollectionAssert.AreEqual(new List<Diff>(), diffs);
 
+      // No elimination.
       diffs = new List<Diff> {
           new Diff(Operation.DELETE, "ab"),
           new Diff(Operation.INSERT, "12"),
@@ -361,6 +424,7 @@ namespace nicTest {
           new Diff(Operation.DELETE, "cd"),
           new Diff(Operation.INSERT, "34")}, diffs);
 
+      // Four-edit elimination.
       diffs = new List<Diff> {
           new Diff(Operation.DELETE, "ab"),
           new Diff(Operation.INSERT, "12"),
@@ -372,6 +436,7 @@ namespace nicTest {
           new Diff(Operation.DELETE, "abxyzcd"),
           new Diff(Operation.INSERT, "12xyz34")}, diffs);
 
+      // Three-edit elimination.
       diffs = new List<Diff> {
           new Diff(Operation.INSERT, "12"),
           new Diff(Operation.EQUAL, "x"),
@@ -382,6 +447,7 @@ namespace nicTest {
           new Diff(Operation.DELETE, "xcd"),
           new Diff(Operation.INSERT, "12x34")}, diffs);
 
+      // Backpass elimination.
       diffs = new List<Diff> {
           new Diff(Operation.DELETE, "ab"),
           new Diff(Operation.INSERT, "12"),
@@ -395,6 +461,7 @@ namespace nicTest {
           new Diff(Operation.DELETE, "abxyzcd"),
           new Diff(Operation.INSERT, "12xy34z56")}, diffs);
 
+      // High cost elimination.
       dmp.Diff_EditCost = 5;
       diffs = new List<Diff> {
           new Diff(Operation.DELETE, "ab"),
@@ -417,7 +484,6 @@ namespace nicTest {
           new Diff(Operation.EQUAL, "a\n"),
           new Diff(Operation.DELETE, "<B>b</B>"),
           new Diff(Operation.INSERT, "c&d")};
-
       Assert.AreEqual("<SPAN TITLE=\"i=0\">a&para;<BR></SPAN><DEL STYLE=\"background:#FFE6E6;\" TITLE=\"i=2\">&lt;B&gt;b&lt;/B&gt;</DEL><INS STYLE=\"background:#E6FFE6;\" TITLE=\"i=2\">c&amp;d</INS>",
           dmp.diff_prettyHtml(diffs));
     }
@@ -425,6 +491,7 @@ namespace nicTest {
     [Test()]
     public void diff_textTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
+      // Compute the source and destination texts.
       List<Diff> diffs = new List<Diff> {
           new Diff(Operation.EQUAL, "jump"),
           new Diff(Operation.DELETE, "s"),
@@ -433,8 +500,8 @@ namespace nicTest {
           new Diff(Operation.DELETE, "the"),
           new Diff(Operation.INSERT, "a"),
           new Diff(Operation.EQUAL, " lazy")};
-
       Assert.AreEqual("jumps over the lazy", dmp.diff_text1(diffs));
+
       Assert.AreEqual("jumped over a lazy", dmp.diff_text2(diffs));
     }
 
@@ -706,8 +773,11 @@ namespace nicTest {
     public void diff_mainTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Perform a trivial diff.
-      List<Diff> diffs = new List<Diff> {new Diff(Operation.EQUAL, "abc")};
-      CollectionAssert.AreEqual(diffs, dmp.diff_main("abc", "abc", false), "diff_main: Null case.");
+      List<Diff> diffs = new List<Diff> {};
+      CollectionAssert.AreEqual(diffs, dmp.diff_main("", "", false), "diff_main: Null case.");
+
+      diffs = new List<Diff> {new Diff(Operation.EQUAL, "abc")};
+      CollectionAssert.AreEqual(diffs, dmp.diff_main("abc", "abc", false), "diff_main: Equality.");
 
       diffs = new List<Diff> {new Diff(Operation.EQUAL, "ab"), new Diff(Operation.INSERT, "123"), new Diff(Operation.EQUAL, "c")};
       CollectionAssert.AreEqual(diffs, dmp.diff_main("abc", "ab123c", false), "diff_main: Simple insertion.");
@@ -940,6 +1010,9 @@ namespace nicTest {
     public void patch_makeTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       List<Patch> patches;
+      patches = dmp.patch_make("", "");
+      Assert.AreEqual("", dmp.patch_toText(patches), "patch_make: Null case.");
+
       string text1 = "The quick brown fox jumps over the lazy dog.";
       string text2 = "That quick brown fox jumped over a lazy dog.";
       string expectedPatch = "@@ -1,8 +1,7 @@\n Th\n-at\n+e\n  qui\n@@ -21,17 +21,18 @@\n jump\n-ed\n+s\n  over \n-a\n+the\n  laz\n";
