@@ -889,10 +889,17 @@ void diff_match_patch_test::testPatchApply() {
   dmp.Match_Threshold = 0.5f;
   dmp.Patch_DeleteThreshold = 0.5f;
   QList<Patch> patches;
-  patches = dmp.patch_make("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.");
-  QPair<QString, QVector<bool> > results = dmp.patch_apply(patches, "The quick brown fox jumps over the lazy dog.");
+  patches = dmp.patch_make("", "");
+  QPair<QString, QVector<bool> > results = dmp.patch_apply(patches, "Hello world.");
   QVector<bool> boolArray = results.second;
-  QString resultStr = results.first + "\t" + (boolArray[0] ? "true" : "false") + "\t" + (boolArray[1] ? "true" : "false");
+
+  QString resultStr =  + "\t" + sprintf(str, "%s\t%d", results.first, boolArray.count());
+  assertEquals("patch_apply: Null case.", "Hello world.\t0", resultStr);
+
+  patches = dmp.patch_make("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.");
+  results = dmp.patch_apply(patches, "The quick brown fox jumps over the lazy dog.");
+  boolArray = results.second;
+  resultStr = results.first + "\t" + (boolArray[0] ? "true" : "false") + "\t" + (boolArray[1] ? "true" : "false");
   assertEquals("patch_apply: Exact match.", "That quick brown fox jumped over a lazy dog.\ttrue\ttrue", resultStr);
 
   results = dmp.patch_apply(patches, "The quick red rabbit jumps over the tired tiger.");

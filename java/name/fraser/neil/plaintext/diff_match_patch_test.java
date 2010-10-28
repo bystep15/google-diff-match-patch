@@ -849,10 +849,16 @@ public class diff_match_patch_test extends TestCase {
     dmp.Match_Threshold = 0.5f;
     dmp.Patch_DeleteThreshold = 0.5f;
     LinkedList<Patch> patches;
-    patches = dmp.patch_make("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.");
-    Object[] results = dmp.patch_apply(patches, "The quick brown fox jumps over the lazy dog.");
+    patches = dmp.patch_make("", "");
+    Object[] results = dmp.patch_apply(patches, "Hello world.");
     boolean[] boolArray = (boolean[]) results[1];
-    String resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
+    String resultStr = results[0] + "\t" + boolArray.length;
+    assertEquals("patch_apply: Null case.", "Hello world.\t0", resultStr);
+
+    patches = dmp.patch_make("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.");
+    results = dmp.patch_apply(patches, "The quick brown fox jumps over the lazy dog.");
+    boolArray = (boolean[]) results[1];
+    resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
     assertEquals("patch_apply: Exact match.", "That quick brown fox jumped over a lazy dog.\ttrue\ttrue", resultStr);
 
     results = dmp.patch_apply(patches, "The quick red rabbit jumps over the tired tiger.");

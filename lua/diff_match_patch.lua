@@ -1076,18 +1076,18 @@ function _diff_commonOverlap(text1, text2)
   local text1_length = #text1
   local text2_length = #text2
   -- Eliminate the null case.
-  if (text1_length == 0 or text2_length == 0) then
+  if text1_length == 0 or text2_length == 0 then
     return 0
   end
   -- Truncate the longer string.
-  if (text1_length > text2_length) then
+  if text1_length > text2_length then
     text1 = strsub(text1, text1_length - text2_length + 1)
-  elseif (text1_length < text2_length) then
+  elseif text1_length < text2_length then
     text2 = strsub(text2, 1, text1_length)
   end
   local text_length = min(text1_length, text2_length)
   -- Quick check for the worst case.
-  if (text1 == text2) then
+  if text1 == text2 then
     return text_length
   end
 
@@ -1096,15 +1096,15 @@ function _diff_commonOverlap(text1, text2)
   -- Performance analysis: http://neil.fraser.name/news/2010/11/04/
   local best = 0
   local length = 1
-  while (1) do
+  while true do
     local pattern = strsub(text1, text_length - length + 1)
     local found = strfind(text2, pattern, 1, true)
-    if (found == nil) then
+    if found == nil then
       return best
     end
     length = length + found - 1
-    if (strsub(text1, text_length - length + 1) == strsub(text2, 1, length))
-        then
+    if found == 1 or strsub(text1, text_length - length + 1) ==
+                     strsub(text2, 1, length) then
       best = length
       length = length + 1
     end
@@ -1147,7 +1147,7 @@ function _diff_halfMatchI(longtext, shorttext, i)
       best_shorttext_b = strsub(shorttext, j + prefixLength)
     end
   end
-  if (#best_common >= #longtext / 2) then
+  if #best_common >= #longtext / 2 then
     return {best_longtext_a, best_longtext_b,
         best_shorttext_a, best_shorttext_b, best_common}
   else
@@ -1917,8 +1917,8 @@ end
 *     new text and an array of boolean values.
 --]]
 function patch_apply(patches, text)
-  if (patches[1] == nil) then
-    return {text, {}}
+  if patches[1] == nil then
+    return text, {}
   end
 
   -- Deep copy the patches so that no changes are made to originals.
@@ -1939,15 +1939,15 @@ function patch_apply(patches, text)
     local text1 = _diff_text1(patch.diffs)
     local start_loc
     local end_loc = -1
-    if (#text1 > Match_MaxBits) then
+    if #text1 > Match_MaxBits then
       -- _patch_splitMax will only provide an oversized pattern in
       -- the case of a monster delete.
       start_loc = match_main(text,
           strsub(text1, 1, Match_MaxBits), expected_loc)
-      if (start_loc ~= -1) then
+      if start_loc ~= -1 then
         end_loc = match_main(text, strsub(text1, -Match_MaxBits),
             expected_loc + #text1 - Match_MaxBits)
-        if (end_loc == -1) or (start_loc >= end_loc) then
+        if end_loc == -1 or start_loc >= end_loc then
           -- Can't find valid trailing context.  Drop this patch.
           start_loc = -1
         end
@@ -1955,7 +1955,7 @@ function patch_apply(patches, text)
     else
       start_loc = match_main(text, text1, expected_loc)
     end
-    if (start_loc == -1) then
+    if start_loc == -1 then
       -- No match found.  :(
       results[x] = false
       -- Subtract the delta for this failed patch from subsequent patches.
@@ -1965,12 +1965,12 @@ function patch_apply(patches, text)
       results[x] = true
       delta = start_loc - expected_loc
       local text2
-      if (end_loc == -1) then
+      if end_loc == -1 then
         text2 = strsub(text, start_loc, start_loc + #text1 - 1)
       else
         text2 = strsub(text, start_loc, end_loc + Match_MaxBits - 1)
       end
-      if (text1 == text2) then
+      if text1 == text2 then
         -- Perfect match, just shove the replacement text in.
         text = strsub(text, 1, start_loc - 1) .. _diff_text2(patch.diffs)
             .. strsub(text, start_loc + #text1)
@@ -1987,17 +1987,17 @@ function patch_apply(patches, text)
           local index1 = 1
           local index2
           for y, mod in ipairs(patch.diffs) do
-            if (mod[1] ~= DIFF_EQUAL) then
+            if mod[1] ~= DIFF_EQUAL then
               index2 = _diff_xIndex(diffs, index1)
             end
-            if (mod[1] == DIFF_INSERT) then
+            if mod[1] == DIFF_INSERT then
               text = strsub(text, 1, start_loc + index2 - 2)
                   .. mod[2] .. strsub(text, start_loc + index2 - 1)
-            elseif (mod[1] == DIFF_DELETE) then
+            elseif mod[1] == DIFF_DELETE then
               text = strsub(text, 1, start_loc + index2 - 2) .. strsub(text,
                   start_loc + _diff_xIndex(diffs, index1 + #mod[2] - 1))
             end
-            if (mod[1] ~= DIFF_DELETE) then
+            if mod[1] ~= DIFF_DELETE then
               index1 = index1 + #mod[2]
             end
           end

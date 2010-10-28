@@ -696,7 +696,6 @@ class PatchTest(DiffMatchPatchTest):
     patches = self.dmp.patch_make("", "")
     self.assertEquals("", self.dmp.patch_toText(patches))
 
-
     text1 = "The quick brown fox jumps over the lazy dog."
     text2 = "That quick brown fox jumped over a lazy dog."
     # Text2+Text1 inputs.
@@ -790,6 +789,11 @@ class PatchTest(DiffMatchPatchTest):
     self.dmp.Match_Distance = 1000
     self.dmp.Match_Threshold = 0.5
     self.dmp.Patch_DeleteThreshold = 0.5
+    # Null case.
+    patches = self.dmp.patch_make("", "")
+    results = self.dmp.patch_apply(patches, "Hello world.")
+    self.assertEquals(("Hello world.", []), results)
+
     # Exact match.
     patches = self.dmp.patch_make("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.")
     results = self.dmp.patch_apply(patches, "The quick brown fox jumps over the lazy dog.")

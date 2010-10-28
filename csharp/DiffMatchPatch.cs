@@ -820,7 +820,7 @@ namespace DiffMatchPatch {
           return best;
         }
         length += found;
-        if (text1.Substring(text_length - length) ==
+        if (found == 0 || text1.Substring(text_length - length) ==
             text2.Substring(0, length)) {
           best = length;
           length++;

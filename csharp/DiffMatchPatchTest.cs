@@ -1121,10 +1121,16 @@ namespace nicTest {
       dmp.Match_Threshold = 0.5f;
       dmp.Patch_DeleteThreshold = 0.5f;
       List<Patch> patches;
-      patches = dmp.patch_make("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.");
-      Object[] results = dmp.patch_apply(patches, "The quick brown fox jumps over the lazy dog.");
+      patches = dmp.patch_make("", "");
+      Object[] results = dmp.patch_apply(patches, "Hello world.");
       bool[] boolArray = (bool[])results[1];
-      string resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
+      string resultStr = results[0] + "\t" + boolArray.Length;
+      Assert.AreEqual("Hello world.\t0", resultStr, "patch_apply: Null case.");
+
+      patches = dmp.patch_make("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.");
+      results = dmp.patch_apply(patches, "The quick brown fox jumps over the lazy dog.");
+      boolArray = (bool[])results[1];
+      resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
       Assert.AreEqual("That quick brown fox jumped over a lazy dog.\tTrue\tTrue", resultStr, "patch_apply: Exact match.");
 
       results = dmp.patch_apply(patches, "The quick red rabbit jumps over the tired tiger.");

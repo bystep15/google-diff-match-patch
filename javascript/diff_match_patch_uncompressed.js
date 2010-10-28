@@ -695,7 +695,8 @@ diff_match_patch.prototype.diff_commonOverlap = function(text1, text2) {
       return best;
     }
     length += found;
-    if (text1.substring(text_length - length) == text2.substring(0, length)) {
+    if (found == 0 || text1.substring(text_length - length) ==
+        text2.substring(0, length)) {
       best = length;
       length++;
     }

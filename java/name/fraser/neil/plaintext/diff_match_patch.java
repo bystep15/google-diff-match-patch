@@ -732,7 +732,7 @@ public class diff_match_patch {
         return best;
       }
       length += found;
-      if (text1.substring(text_length - length).equals(
+      if (found == 0 || text1.substring(text_length - length).equals(
           text2.substring(0, length))) {
         best = length;
         length++;

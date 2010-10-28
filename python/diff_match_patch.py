@@ -595,7 +595,7 @@ class diff_match_patch:
       if found == -1:
         return best
       length += found
-      if text1[-length:] == text2[:length]:
+      if found == 0 or text1[-length:] == text2[:length]:
         best = length
         length += 1
 

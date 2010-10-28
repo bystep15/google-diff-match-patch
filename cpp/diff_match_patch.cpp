@@ -692,14 +692,14 @@ int diff_match_patch::diff_commonOverlap(const QString &text1,
   // Performance analysis: http://neil.fraser.name/news/2010/11/04/
   int best = 0;
   int length = 1;
-  while (1) {
+  while (true) {
     QString pattern = text1_trunc.right(length);
     int found = text2_trunc.indexOf(pattern);
     if (found == -1) {
       return best;
     }
     length += found;
-    if (text1_trunc.right(length) == text2_trunc.left(length)) {
+    if (found == 0 || text1_trunc.right(length) == text2_trunc.left(length)) {
       best = length;
       length++;
     }

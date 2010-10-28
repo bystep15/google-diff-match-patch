@@ -815,10 +815,14 @@ function testPatchApply() {
   dmp.Match_Distance = 1000;
   dmp.Match_Threshold = 0.5;
   dmp.Patch_DeleteThreshold = 0.5;
+  // Null case.
+  var patches = dmp.patch_make('', '');
+  var results = dmp.patch_apply(patches, 'Hello world.');
+  assertEquivalent(['Hello world.', []], results);
 
   // Exact match.
-  var patches = dmp.patch_make('The quick brown fox jumps over the lazy dog.', 'That quick brown fox jumped over a lazy dog.');
-  var results = dmp.patch_apply(patches, 'The quick brown fox jumps over the lazy dog.');
+  patches = dmp.patch_make('The quick brown fox jumps over the lazy dog.', 'That quick brown fox jumped over a lazy dog.');
+  results = dmp.patch_apply(patches, 'The quick brown fox jumps over the lazy dog.');
   assertEquivalent(['That quick brown fox jumped over a lazy dog.', [true, true]], results);
 
   // Partial match.

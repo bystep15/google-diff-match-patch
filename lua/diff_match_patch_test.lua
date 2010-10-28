@@ -1077,6 +1077,10 @@ function testPatchApply()
   dmp.settings{Match_Distance = 1000}
   dmp.settings{Match_Threshold = 0.5}
   dmp.settings{Patch_DeleteThreshold = 0.5}
+  -- Null case.
+  patches = dmp.patch_make('', '')
+  assertEquivalent({'Hello world.', {}},
+      {dmp.patch_apply(patches, 'Hello world.')})
 
   -- Exact match.
   patches = dmp.patch_make('The quick brown fox jumps over the lazy dog.',
