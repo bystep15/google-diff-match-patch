@@ -710,7 +710,7 @@ QStringList diff_match_patch::diff_halfMatch(const QString &text1,
                                              const QString &text2) {
   const QString longtext = text1.length() > text2.length() ? text1 : text2;
   const QString shorttext = text1.length() > text2.length() ? text2 : text1;
-  if (longtext.length() < 10 || shorttext.length() < 1) {
+  if (longtext.length() < 4 || shorttext.length() * 2 < longtext.length()) {
     return QStringList();  // Pointless.
   }
 

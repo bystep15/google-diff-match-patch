@@ -79,10 +79,16 @@ namespace nicTest {
       // No match.
       Assert.IsNull(dmp.diff_halfMatch("1234567890", "abcdef"));
 
+      Assert.IsNull(dmp.diff_halfMatch("12345", "23"));
+
       // Single Match.
       CollectionAssert.AreEqual(new string[] { "12", "90", "a", "z", "345678" }, dmp.diff_halfMatch("1234567890", "a345678z"));
 
       CollectionAssert.AreEqual(new string[] { "a", "z", "12", "90", "345678" }, dmp.diff_halfMatch("a345678z", "1234567890"));
+
+      CollectionAssert.AreEqual(new string[] { "abc", "z", "1234", "0", "56789" }, dmp.diff_halfMatch("abc56789z", "1234567890"));
+
+      CollectionAssert.AreEqual(new string[] { "a", "xyz", "1", "7890", "23456" }, dmp.diff_halfMatch("a23456xyz", "1234567890"));
 
       // Multiple Matches.
       CollectionAssert.AreEqual(new string[] { "12123", "123121", "a", "z", "1234123451234" }, dmp.diff_halfMatch("121231234123451234123121", "a1234123451234z"));
@@ -220,6 +226,11 @@ namespace nicTest {
       diffs = new List<Diff> {new Diff(Operation.DELETE, "a"), new Diff(Operation.INSERT, "abc"), new Diff(Operation.DELETE, "dc")};
       dmp.diff_cleanupMerge(diffs);
       CollectionAssert.AreEqual(new List<Diff> {new Diff(Operation.EQUAL, "a"), new Diff(Operation.DELETE, "d"), new Diff(Operation.INSERT, "b"), new Diff(Operation.EQUAL, "c")}, diffs);
+
+      // Prefix and suffix detection with equalities.
+      diffs = new List<Diff> {new Diff(Operation.EQUAL, "x"), new Diff(Operation.DELETE, "a"), new Diff(Operation.INSERT, "abc"), new Diff(Operation.DELETE, "dc"), new Diff(Operation.EQUAL, "y")};
+      dmp.diff_cleanupMerge(diffs);
+      CollectionAssert.AreEqual(new List<Diff> {new Diff(Operation.EQUAL, "xa"), new Diff(Operation.DELETE, "d"), new Diff(Operation.INSERT, "b"), new Diff(Operation.EQUAL, "cy")}, diffs);
 
       // Slide edit left.
       diffs = new List<Diff> {new Diff(Operation.EQUAL, "a"), new Diff(Operation.INSERT, "ba"), new Diff(Operation.EQUAL, "c")};

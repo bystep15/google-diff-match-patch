@@ -753,7 +753,7 @@ public class diff_match_patch {
   protected String[] diff_halfMatch(String text1, String text2) {
     String longtext = text1.length() > text2.length() ? text1 : text2;
     String shorttext = text1.length() > text2.length() ? text2 : text1;
-    if (longtext.length() < 10 || shorttext.length() < 1) {
+    if (longtext.length() < 4 || shorttext.length() * 2 < longtext.length()) {
       return null;  // Pointless.
     }
 

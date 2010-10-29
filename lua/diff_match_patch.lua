@@ -1168,7 +1168,7 @@ end
 function _diff_halfMatch(text1, text2)
   local longtext = (#text1 > #text2) and text1 or text2
   local shorttext = (#text1 > #text2) and text2 or text1
-  if (#longtext < 10) or (#shorttext < 1) then
+  if (#longtext < 4) or (#shorttext * 2 < #longtext) then
     return nil  -- Pointless.
   end
 

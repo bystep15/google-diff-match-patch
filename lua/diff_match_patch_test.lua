@@ -154,11 +154,16 @@ function testDiffHalfMatch()
 
   -- No match.
   assertEquivalent({nil}, {dmp.diff_halfMatch('1234567890', 'abcdef')})
+  assertEquivalent({nil}, {dmp.diff_halfMatch('12345', '23')})
   -- Single Match.
   assertEquivalent({'12', '90', 'a', 'z', '345678'},
       {dmp.diff_halfMatch('1234567890', 'a345678z')})
   assertEquivalent({'a', 'z', '12', '90', '345678'},
       {dmp.diff_halfMatch('a345678z', '1234567890')})
+  assertEquivalent({'abc', 'z', '1234', '0', '56789'},
+      {dmp.diff_halfMatch('abc56789z', '1234567890')})
+  assertEquivalent({'a', 'xyz', '1', '7890', '23456'},
+      {dmp.diff_halfMatch('a23456xyz', '1234567890')})
   -- Multiple Matches.
   assertEquivalent({'12123', '123121', 'a', 'z', '1234123451234'},
       {dmp.diff_halfMatch('121231234123451234123121', 'a1234123451234z')})
@@ -248,6 +253,12 @@ function testDiffCleanupMerge()
   dmp.diff_cleanupMerge(diffs)
   assertEquivalent({{DIFF_EQUAL, 'a'}, {DIFF_DELETE, 'd'},
       {DIFF_INSERT, 'b'}, {DIFF_EQUAL, 'c'}}, diffs)
+  -- Prefix and suffix detection with equalities.
+  diffs = {{DIFF_EQUAL, 'x'}, {DIFF_DELETE, 'a'}, {DIFF_INSERT, 'abc'},
+      {DIFF_DELETE, 'dc'}, {DIFF_EQUAL, 'y'}}
+  dmp.diff_cleanupMerge(diffs)
+  assertEquivalent({{DIFF_EQUAL, 'xa'}, {DIFF_DELETE, 'd'},
+      {DIFF_INSERT, 'b'}, {DIFF_EQUAL, 'cy'}}, diffs)
   -- Slide edit left.
   diffs = {{DIFF_EQUAL, 'a'}, {DIFF_INSERT, 'ba'}, {DIFF_EQUAL, 'c'}}
   dmp.diff_cleanupMerge(diffs)

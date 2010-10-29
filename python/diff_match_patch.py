@@ -616,7 +616,7 @@ class diff_match_patch:
       (longtext, shorttext) = (text1, text2)
     else:
       (shorttext, longtext) = (text1, text2)
-    if len(longtext) < 10 or len(shorttext) < 1:
+    if len(longtext) < 4 or len(shorttext) * 2 < len(longtext):
       return None  # Pointless.
 
     def diff_halfMatchI(longtext, shorttext, i):
@@ -710,7 +710,7 @@ class diff_match_patch:
           # Throw away the equality we just deleted.
           equalities.pop()
           # Throw away the previous equality (it needs to be reevaluated).
-          if len(equalities) != 0:
+          if len(equalities):
             equalities.pop()
           if len(equalities):
             pointer = equalities[-1]
@@ -1707,6 +1707,8 @@ class diff_match_patch:
       patches: Array of patch objects.
     """
     if self.Match_MaxBits == 0:
+      # Python has the option of not splitting strings due to its ability
+      # to handle integers of arbitrary precision.
       return
     for x in xrange(len(patches)):
       if patches[x].length1 > self.Match_MaxBits:

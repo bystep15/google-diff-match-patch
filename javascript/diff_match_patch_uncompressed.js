@@ -716,7 +716,7 @@ diff_match_patch.prototype.diff_commonOverlap = function(text1, text2) {
 diff_match_patch.prototype.diff_halfMatch = function(text1, text2) {
   var longtext = text1.length > text2.length ? text1 : text2;
   var shorttext = text1.length > text2.length ? text2 : text1;
-  if (longtext.length < 10 || shorttext.length < 1) {
+  if (longtext.length < 4 || shorttext.length * 2 < longtext.length) {
     return null;  // Pointless.
   }
   var dmp = this;  // 'this' becomes 'window' in a closure.

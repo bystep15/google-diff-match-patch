@@ -841,7 +841,7 @@ namespace DiffMatchPatch {
     protected string[] diff_halfMatch(string text1, string text2) {
       string longtext = text1.Length > text2.Length ? text1 : text2;
       string shorttext = text1.Length > text2.Length ? text2 : text1;
-      if (longtext.Length < 10 || shorttext.Length < 1) {
+      if (longtext.Length < 4 || shorttext.Length * 2 < longtext.Length) {
         return null;  // Pointless.
       }
 

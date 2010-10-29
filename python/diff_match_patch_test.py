@@ -85,10 +85,16 @@ class DiffTest(DiffMatchPatchTest):
     # No match.
     self.assertEquals(None, self.dmp.diff_halfMatch("1234567890", "abcdef"))
 
+    self.assertEquals(None, self.dmp.diff_halfMatch("12345", "23"))
+
     # Single Match.
     self.assertEquals(("12", "90", "a", "z", "345678"), self.dmp.diff_halfMatch("1234567890", "a345678z"))
 
     self.assertEquals(("a", "z", "12", "90", "345678"), self.dmp.diff_halfMatch("a345678z", "1234567890"))
+
+    self.assertEquals(("abc", "z", "1234", "0", "56789"), self.dmp.diff_halfMatch("abc56789z", "1234567890"))
+
+    self.assertEquals(("a", "xyz", "1", "7890", "23456"), self.dmp.diff_halfMatch("a23456xyz", "1234567890"))
 
     # Multiple Matches.
     self.assertEquals(("12123", "123121", "a", "z", "1234123451234"), self.dmp.diff_halfMatch("121231234123451234123121", "a1234123451234z"))
@@ -177,6 +183,11 @@ class DiffTest(DiffMatchPatchTest):
     diffs = [(self.dmp.DIFF_DELETE, "a"), (self.dmp.DIFF_INSERT, "abc"), (self.dmp.DIFF_DELETE, "dc")]
     self.dmp.diff_cleanupMerge(diffs)
     self.assertEquals([(self.dmp.DIFF_EQUAL, "a"), (self.dmp.DIFF_DELETE, "d"), (self.dmp.DIFF_INSERT, "b"), (self.dmp.DIFF_EQUAL, "c")], diffs)
+
+    # Prefix and suffix detection with equalities.
+    diffs = [(self.dmp.DIFF_EQUAL, "x"), (self.dmp.DIFF_DELETE, "a"), (self.dmp.DIFF_INSERT, "abc"), (self.dmp.DIFF_DELETE, "dc"), (self.dmp.DIFF_EQUAL, "y")]
+    self.dmp.diff_cleanupMerge(diffs)
+    self.assertEquals([(self.dmp.DIFF_EQUAL, "xa"), (self.dmp.DIFF_DELETE, "d"), (self.dmp.DIFF_INSERT, "b"), (self.dmp.DIFF_EQUAL, "cy")], diffs)
 
     # Slide edit left.
     diffs = [(self.dmp.DIFF_EQUAL, "a"), (self.dmp.DIFF_INSERT, "ba"), (self.dmp.DIFF_EQUAL, "c")]

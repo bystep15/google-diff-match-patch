@@ -109,11 +109,17 @@ void diff_match_patch_test::testDiffCommonOverlap() {
 
 void diff_match_patch_test::testDiffHalfmatch() {
   // Detect a halfmatch.
-  assertNull("diff_halfMatch: No match.", dmp.diff_halfMatch("1234567890", "abcdef"));
+  assertNull("diff_halfMatch: No match #1.", dmp.diff_halfMatch("1234567890", "abcdef"));
+
+  assertNull("diff_halfMatch: No match #2.", dmp.diff_halfMatch("12345", "23"));
 
   assertEquals("diff_halfMatch: Single Match #1.", QString("12,90,a,z,345678").split(","), dmp.diff_halfMatch("1234567890", "a345678z"));
 
   assertEquals("diff_halfMatch: Single Match #2.", QString("a,z,12,90,345678").split(","), dmp.diff_halfMatch("a345678z", "1234567890"));
+
+  assertEquals("diff_halfMatch: Single Match #3.", QString("abc,z,1234,0,56789").split(","), dmp.diff_halfMatch("abc56789z", "1234567890"));
+
+  assertEquals("diff_halfMatch: Single Match #4.", QString("a,xyz,1,7890,23456").split(","), dmp.diff_halfMatch("a23456xyz", "1234567890"));
 
   assertEquals("diff_halfMatch: Multiple Matches #1.", QString("12123,123121,a,z,1234123451234").split(","), dmp.diff_halfMatch("121231234123451234123121", "a1234123451234z"));
 
@@ -240,6 +246,10 @@ void diff_match_patch_test::testDiffCleanupMerge() {
   diffs = diffList(Diff(DELETE, "a"), Diff(INSERT, "abc"), Diff(DELETE, "dc"));
   dmp.diff_cleanupMerge(diffs);
   assertEquals("diff_cleanupMerge: Prefix and suffix detection.", diffList(Diff(EQUAL, "a"), Diff(DELETE, "d"), Diff(INSERT, "b"), Diff(EQUAL, "c")), diffs);
+
+  diffs = diffList(Diff(EQUAL, "x"), Diff(DELETE, "a"), Diff(INSERT, "abc"), Diff(DELETE, "dc"), Diff(EQUAL, "y"));
+  dmp.diff_cleanupMerge(diffs);
+  assertEquals("diff_cleanupMerge: Prefix and suffix detection with equalities.", diffList(Diff(EQUAL, "xa"), Diff(DELETE, "d"), Diff(INSERT, "b"), Diff(EQUAL, "cy")), diffs);
 
   diffs = diffList(Diff(EQUAL, "a"), Diff(INSERT, "ba"), Diff(EQUAL, "c"));
   dmp.diff_cleanupMerge(diffs);
@@ -893,7 +903,7 @@ void diff_match_patch_test::testPatchApply() {
   QPair<QString, QVector<bool> > results = dmp.patch_apply(patches, "Hello world.");
   QVector<bool> boolArray = results.second;
 
-  QString resultStr =  + "\t" + sprintf(str, "%s\t%d", results.first, boolArray.count());
+  QString resultStr = QString("%1\t%2").arg(results.first).arg(boolArray.count());
   assertEquals("patch_apply: Null case.", "Hello world.\t0", resultStr);
 
   patches = dmp.patch_make("The quick brown fox jumps over the lazy dog.", "That quick brown fox jumped over a lazy dog.");
