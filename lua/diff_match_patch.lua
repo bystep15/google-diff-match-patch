@@ -1332,21 +1332,21 @@ function _diff_cleanupMerge(diffs)
   local commonlength
   while diffs[pointer] do
     local diff_type = diffs[pointer][1]
-    if (diff_type == DIFF_INSERT) then
+    if diff_type == DIFF_INSERT then
       count_insert = count_insert + 1
       text_insert = text_insert .. diffs[pointer][2]
       pointer = pointer + 1
-    elseif (diff_type == DIFF_DELETE) then
+    elseif diff_type == DIFF_DELETE then
       count_delete = count_delete + 1
       text_delete = text_delete .. diffs[pointer][2]
       pointer = pointer + 1
-    elseif (diff_type == DIFF_EQUAL) then
+    elseif diff_type == DIFF_EQUAL then
       -- Upon reaching an equality, check for prior redundancies.
-      if (count_delete > 0) or (count_insert > 0) then
+      if count_delete + count_insert > 1 then
         if (count_delete > 0) and (count_insert > 0) then
           -- Factor out any common prefixies.
           commonlength = _diff_commonPrefix(text_insert, text_delete)
-          if (commonlength > 0) then
+          if commonlength > 0 then
             local back_pointer = pointer - count_delete - count_insert
             if (back_pointer > 1) and (diffs[back_pointer - 1][1] == DIFF_EQUAL)
                 then
@@ -1362,7 +1362,7 @@ function _diff_cleanupMerge(diffs)
           end
           -- Factor out any common suffixies.
           commonlength = _diff_commonSuffix(text_insert, text_delete)
-          if (commonlength ~= 0) then
+          if commonlength ~= 0 then
             diffs[pointer][2] =
             strsub(text_insert, -commonlength) .. diffs[pointer][2]
             text_insert = strsub(text_insert, 1, -commonlength - 1)
@@ -1370,10 +1370,10 @@ function _diff_cleanupMerge(diffs)
           end
         end
         -- Delete the offending records and add the merged ones.
-        if (count_delete == 0) then
+        if count_delete == 0 then
           tsplice(diffs, pointer - count_insert,
           count_insert, {DIFF_INSERT, text_insert})
-        elseif (count_insert == 0) then
+        elseif count_insert == 0 then
           tsplice(diffs, pointer - count_delete,
           count_delete, {DIFF_DELETE, text_delete})
         else
@@ -1394,7 +1394,7 @@ function _diff_cleanupMerge(diffs)
       text_delete, text_insert = '', ''
     end
   end
-  if (diffs[#diffs][2] == '') then
+  if diffs[#diffs][2] == '' then
     diffs[#diffs] = nil  -- Remove the dummy entry at the end.
   end
 
@@ -1404,7 +1404,7 @@ function _diff_cleanupMerge(diffs)
   local changes = false
   pointer = 2
   -- Intentionally ignore the first and last element (don't need checking).
-  while (pointer < #diffs) do
+  while pointer < #diffs do
     local prevDiff, nextDiff = diffs[pointer - 1], diffs[pointer + 1]
     if (prevDiff[1] == DIFF_EQUAL) and (nextDiff[1] == DIFF_EQUAL) then
       -- This is a single edit surrounded by equalities.

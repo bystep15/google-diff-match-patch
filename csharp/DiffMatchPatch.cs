@@ -1219,7 +1219,7 @@ namespace DiffMatchPatch {
             break;
           case Operation.EQUAL:
             // Upon reaching an equality, check for prior redundancies.
-            if (count_delete != 0 || count_insert != 0) {
+            if (count_delete + count_insert > 1) {
               if (count_delete != 0 && count_insert != 0) {
                 // Factor out any common prefixies.
                 commonlength = this.diff_commonPrefix(text_insert, text_delete);

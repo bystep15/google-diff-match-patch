@@ -1206,7 +1206,8 @@ public class diff_match_patch {
         prevEqual = null;
         break;
       case EQUAL:
-        if (count_delete != 0 || count_insert != 0) {
+        if (count_delete + count_insert > 1) {
+          boolean both_types = count_delete != 0 && count_insert != 0;
           // Delete the offending records.
           pointer.previous();  // Reverse direction.
           while (count_delete-- > 0) {
@@ -1217,7 +1218,7 @@ public class diff_match_patch {
             pointer.previous();
             pointer.remove();
           }
-          if (count_delete != 0 && count_insert != 0) {
+          if (both_types) {
             // Factor out any common prefixies.
             commonlength = diff_commonPrefix(text_insert, text_delete);
             if (commonlength != 0) {

@@ -942,7 +942,7 @@ class diff_match_patch:
         pointer += 1
       elif diffs[pointer][0] == self.DIFF_EQUAL:
         # Upon reaching an equality, check for prior redundancies.
-        if count_delete != 0 or count_insert != 0:
+        if count_delete + count_insert > 1:
           if count_delete != 0 and count_insert != 0:
             # Factor out any common prefixies.
             commonlength = self.diff_commonPrefix(text_insert, text_delete)

@@ -1132,7 +1132,8 @@ void diff_match_patch::diff_cleanupMerge(QList<Diff> &diffs) {
         prevEqual = NULL;
         break;
       case EQUAL:
-        if (count_delete != 0 || count_insert != 0) {
+        if (count_delete + count_insert > 1) {
+          bool both_types = count_delete != 0 && count_insert != 0;
           // Delete the offending records.
           pointer.previous();  // Reverse direction.
           while (count_delete-- > 0) {
@@ -1143,7 +1144,7 @@ void diff_match_patch::diff_cleanupMerge(QList<Diff> &diffs) {
             pointer.previous();
             pointer.remove();
           }
-          if (count_delete != 0 && count_insert != 0) {
+          if (both_types) {
             // Factor out any common prefixies.
             commonlength = diff_commonPrefix(text_insert, text_delete);
             if (commonlength != 0) {
