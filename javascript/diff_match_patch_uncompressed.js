@@ -1241,11 +1241,15 @@ diff_match_patch.prototype.diff_xIndex = function(diffs, loc) {
 diff_match_patch.prototype.diff_prettyHtml = function(diffs) {
   var html = [];
   var i = 0;
+  var pattern_amp = /&/g;
+  var pattern_lt = /</g;
+  var pattern_gt = />/g;
+  var pattern_para = /\n/g;
   for (var x = 0; x < diffs.length; x++) {
     var op = diffs[x][0];    // Operation (insert, delete, equal)
     var data = diffs[x][1];  // Text of change.
-    var text = data.replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;').replace(/\n/g, '&para;<BR>');
+    var text = data.replace(pattern_amp, '&amp;').replace(pattern_lt, '&lt;')
+        .replace(pattern_gt, '&gt;').replace(pattern_para, '&para;<BR>');
     switch (op) {
       case DIFF_INSERT:
         html[x] = '<INS STYLE="background:#E6FFE6;" TITLE="i=' + i + '">' +
@@ -1355,8 +1359,7 @@ diff_match_patch.prototype.diff_toDelta = function(diffs) {
         break;
     }
   }
-  // Opera doesn't know how to encode char 0.
-  return text.join('\t').replace(/\x00/g, '%00').replace(/%20/g, ' ');
+  return text.join('\t').replace(/%20/g, ' ');
 };
 
 
@@ -1372,8 +1375,6 @@ diff_match_patch.prototype.diff_fromDelta = function(text1, delta) {
   var diffs = [];
   var diffsLength = 0;  // Keeping our own length var is faster in JS.
   var pointer = 0;  // Cursor in text1
-  // Opera doesn't know how to decode char 0.
-  delta = delta.replace(/%00/g, '\0');
   var tokens = delta.split(/\t/g);
   for (var x = 0; x < tokens.length; x++) {
     // Each token begins with a one character parameter which specifies the
@@ -2081,12 +2082,11 @@ diff_match_patch.prototype.patch_fromText = function(textline) {
   if (!textline) {
     return patches;
   }
-  // Opera doesn't know how to decode char 0.
-  textline = textline.replace(/%00/g, '\0');
   var text = textline.split('\n');
   var textPointer = 0;
+  var patchHeader = /^@@ -(\d+),?(\d*) \+(\d+),?(\d*) @@$/;
   while (textPointer < text.length) {
-    var m = text[textPointer].match(/^@@ -(\d+),?(\d*) \+(\d+),?(\d*) @@$/);
+    var m = text[textPointer].match(patchHeader);
     if (!m) {
       throw new Error('Invalid patch string: ' + text[textPointer]);
     }
@@ -2205,8 +2205,7 @@ patch_obj.prototype.toString = function() {
     }
     text[x + 1] = op + encodeURI(this.diffs[x][1]) + '\n';
   }
-  // Opera doesn't know how to encode char 0.
-  return text.join('').replace(/\x00/g, '%00').replace(/%20/g, ' ');
+  return text.join('').replace(/%20/g, ' ');
 };
 
 
