@@ -639,36 +639,36 @@ namespace nicTest {
 
       // Single letters.
       // Trace a path from back to front.
-      List<HashSet<long>> v_map;
-      HashSet<long> row_set;
-      v_map = new List<HashSet<long>>();
+      List<HashSet<string>> v_map;
+      HashSet<string> row_set;
+      v_map = new List<HashSet<string>>();
       {
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(0, 0));
         v_map.Add(row_set);
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(0, 1));
         row_set.Add(dmp.diff_footprint(1, 0));
         v_map.Add(row_set);
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(0, 2));
         row_set.Add(dmp.diff_footprint(2, 0));
         row_set.Add(dmp.diff_footprint(2, 2));
         v_map.Add(row_set);
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(0, 3));
         row_set.Add(dmp.diff_footprint(2, 3));
         row_set.Add(dmp.diff_footprint(3, 0));
         row_set.Add(dmp.diff_footprint(4, 3));
         v_map.Add(row_set);
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(0, 4));
         row_set.Add(dmp.diff_footprint(2, 4));
         row_set.Add(dmp.diff_footprint(4, 0));
         row_set.Add(dmp.diff_footprint(4, 4));
         row_set.Add(dmp.diff_footprint(5, 3));
         v_map.Add(row_set);
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(0, 5));
         row_set.Add(dmp.diff_footprint(2, 5));
         row_set.Add(dmp.diff_footprint(4, 5));
@@ -676,7 +676,7 @@ namespace nicTest {
         row_set.Add(dmp.diff_footprint(6, 3));
         row_set.Add(dmp.diff_footprint(6, 5));
         v_map.Add(row_set);
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(0, 6));
         row_set.Add(dmp.diff_footprint(2, 6));
         row_set.Add(dmp.diff_footprint(4, 6));
@@ -712,27 +712,27 @@ namespace nicTest {
 
       // Double letters.
       // Trace a path from back to front.
-      v_map = new List<HashSet<long>>();
+      v_map = new List<HashSet<string>>();
       {
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(0, 0));
         v_map.Add(row_set);
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(0, 1));
         row_set.Add(dmp.diff_footprint(1, 0));
         v_map.Add(row_set);
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(0, 2));
         row_set.Add(dmp.diff_footprint(1, 1));
         row_set.Add(dmp.diff_footprint(2, 0));
         v_map.Add(row_set);
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(0, 3));
         row_set.Add(dmp.diff_footprint(1, 2));
         row_set.Add(dmp.diff_footprint(2, 1));
         row_set.Add(dmp.diff_footprint(3, 0));
         v_map.Add(row_set);
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(0, 4));
         row_set.Add(dmp.diff_footprint(1, 3));
         row_set.Add(dmp.diff_footprint(3, 1));
@@ -747,27 +747,27 @@ namespace nicTest {
       CollectionAssert.AreEqual(diffs, dmp.diff_path1(v_map, "AB12", "WX12"), "diff_path1: Double letters.");
 
       // Trace a path from front to back.
-      v_map = new List<HashSet<long>>();
+      v_map = new List<HashSet<string>>();
       {
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(0, 0));
         v_map.Add(row_set);
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(0, 1));
         row_set.Add(dmp.diff_footprint(1, 0));
         v_map.Add(row_set);
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(1, 1));
         row_set.Add(dmp.diff_footprint(2, 0));
         row_set.Add(dmp.diff_footprint(2, 4));
         v_map.Add(row_set);
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(2, 1));
         row_set.Add(dmp.diff_footprint(2, 5));
         row_set.Add(dmp.diff_footprint(3, 0));
         row_set.Add(dmp.diff_footprint(3, 4));
         v_map.Add(row_set);
-        row_set = new HashSet<long>();
+        row_set = new HashSet<string>();
         row_set.Add(dmp.diff_footprint(2, 6));
         row_set.Add(dmp.diff_footprint(3, 5));
         row_set.Add(dmp.diff_footprint(4, 4));

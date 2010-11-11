@@ -650,8 +650,7 @@ public class diff_match_patch {
    * @return A string made up of both ints.
    */
   protected String diff_footprint(int x, int y) {
-    // Performance note: Inlining this function seems to slow down execution.
-    return x + "," + y;
+    return Long.toString(((long)x << 32) + y);
   }
 
 

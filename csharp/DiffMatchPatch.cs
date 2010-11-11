@@ -501,15 +501,15 @@ namespace DiffMatchPatch {
       int text2_length = text2.Length;
       int max_d = text1_length + text2_length - 1;
       bool doubleEnd = Diff_DualThreshold * 2 < max_d;
-      List<HashSet<long>> v_map1 = new List<HashSet<long>>();
-      List<HashSet<long>> v_map2 = new List<HashSet<long>>();
+      List<HashSet<string>> v_map1 = new List<HashSet<string>>();
+      List<HashSet<string>> v_map2 = new List<HashSet<string>>();
       Dictionary<int, int> v1 = new Dictionary<int, int>();
       Dictionary<int, int> v2 = new Dictionary<int, int>();
       v1.Add(1, 0);
       v2.Add(1, 0);
       int x, y;
-      long footstep = 0L;  // Used to track overlapping paths.
-      Dictionary<long, int> footsteps = new Dictionary<long, int>();
+      string footstep = "";  // Used to track overlapping paths.
+      Dictionary<string, int> footsteps = new Dictionary<string, int>();
       bool done = false;
       // If the total number of characters is odd, then the front path will
       // collide with the reverse path.
@@ -521,7 +521,7 @@ namespace DiffMatchPatch {
         }
 
         // Walk the front path one step.
-        v_map1.Add(new HashSet<long>());  // Adds at index 'd'.
+        v_map1.Add(new HashSet<string>());  // Adds at index 'd'.
         for (int k = -d; k <= d; k += 2) {
           if (k == -d || k != d && v1[k - 1] < v1[k + 1]) {
             x = v1[k + 1];
@@ -574,7 +574,7 @@ namespace DiffMatchPatch {
 
         if (doubleEnd) {
           // Walk the reverse path one step.
-          v_map2.Add(new HashSet<long>());  // Adds at index 'd'.
+          v_map2.Add(new HashSet<string>());  // Adds at index 'd'.
           for (int k = -d; k <= d; k += 2) {
             if (k == -d || k != d && v2[k - 1] < v2[k + 1]) {
               x = v2[k + 1];
@@ -632,7 +632,7 @@ namespace DiffMatchPatch {
      * @param text2 New string fragment to be diffed.
      * @return List of Diff objects.
      */
-    protected List<Diff> diff_path1(List<HashSet<long>> v_map,
+    protected List<Diff> diff_path1(List<HashSet<string>> v_map,
                                     string text1, string text2) {
       List<Diff> path = new List<Diff>();
       int pathLast = -1;
@@ -687,7 +687,7 @@ namespace DiffMatchPatch {
      * @param text2 New string fragment to be diffed.
      * @return List of Diff objects.
      */
-    protected List<Diff> diff_path2(List<HashSet<long>> v_map,
+    protected List<Diff> diff_path2(List<HashSet<string>> v_map,
                                     string text1, string text2) {
       List<Diff> path = new List<Diff>();
       int pathLast = -1;
@@ -742,16 +742,10 @@ namespace DiffMatchPatch {
      * Compute a good hash of two integers.
      * @param x First int.
      * @param y Second int.
-     * @return A long made up of both ints.
+     * @return A string made up of both ints.
      */
-    protected long diff_footprint(int x, int y) {
-      // The maximum size for a long is 9,223,372,036,854,775,807
-      // The maximum size for an int is 2,147,483,647
-      // Two ints fit nicely in one long.
-      long result = x;
-      result = result << 32;
-      result += y;
-      return result;
+    protected string diff_footprint(int x, int y) {
+      return Convert.ToString(((long)x << 32) + y);
     }
 
     /**
