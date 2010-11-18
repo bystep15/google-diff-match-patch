@@ -86,16 +86,19 @@ var DIFF_DELETE = -1;
 var DIFF_INSERT = 1;
 var DIFF_EQUAL = 0;
 
+/** @typedef {!Array.<number|string>} */
+diff_match_patch.Diff;
+
 
 /**
  * Find the differences between two texts.  Simplifies the problem by stripping
  * any common prefix or suffix off the texts before diffing.
  * @param {string} text1 Old string to be diffed.
  * @param {string} text2 New string to be diffed.
- * @param {boolean} opt_checklines Optional speedup flag.  If present and false,
+ * @param {boolean=} opt_checklines Optional speedup flag.  If present and false,
  *     then don't run a line-level diff first to identify the changed areas.
  *     Defaults to true, which does a faster, slightly less optimal diff
- * @return {Array.<Array.<number|string>>} Array of diff tuples.
+ * @return {!Array.<!diff_match_patch.Diff>} Array of diff tuples.
  */
 diff_match_patch.prototype.diff_main = function(text1, text2, opt_checklines) {
   // Check for null inputs.
@@ -151,7 +154,7 @@ diff_match_patch.prototype.diff_main = function(text1, text2, opt_checklines) {
  * @param {boolean} checklines Speedup flag.  If false, then don't run a
  *     line-level diff first to identify the changed areas.
  *     If true, then run a faster, slightly less optimal diff
- * @return {Array.<Array.<number|string>>} Array of diff tuples.
+ * @return {!Array.<!diff_match_patch.Diff>} Array of diff tuples.
  * @private
  */
 diff_match_patch.prototype.diff_compute = function(text1, text2, checklines) {
@@ -204,13 +207,14 @@ diff_match_patch.prototype.diff_compute = function(text1, text2, checklines) {
     // Too trivial for the overhead.
     checklines = false;
   }
+  /** @type {!Array.<string>} */
   var linearray;
   if (checklines) {
     // Scan the text on a line-by-line basis first.
     var a = this.diff_linesToChars(text1, text2);
-    text1 = a[0];
-    text2 = a[1];
-    linearray = a[2];
+    text1 = /** @type {string} */(a[0]);
+    text2 = /** @type {string} */(a[1]);
+    linearray = /** @type {!Array.<string>} */(a[2]);
   }
   diffs = this.diff_map(text1, text2);
   if (!diffs) {
@@ -273,7 +277,7 @@ diff_match_patch.prototype.diff_compute = function(text1, text2, checklines) {
  * hashes where each Unicode character represents one line.
  * @param {string} text1 First string.
  * @param {string} text2 Second string.
- * @return {Array.<string|Array.<string>>} Three element Array, containing the
+ * @return {!Array.<string|!Array.<string>>} Three element Array, containing the
  *     encoded text1, the encoded text2 and the array of unique strings.  The
  *     zeroth element of the array of unique strings is intentionally blank.
  * @private
@@ -332,8 +336,8 @@ diff_match_patch.prototype.diff_linesToChars = function(text1, text2) {
 /**
  * Rehydrate the text in a diff from a string of line hashes to real lines of
  * text.
- * @param {Array.<Array.<number|string>>} diffs Array of diff tuples.
- * @param {Array.<string>} lineArray Array of unique strings.
+ * @param {!Array.<!diff_match_patch.Diff>} diffs Array of diff tuples.
+ * @param {!Array.<string>} lineArray Array of unique strings.
  * @private
  */
 diff_match_patch.prototype.diff_charsToLines = function(diffs, lineArray) {
@@ -352,7 +356,7 @@ diff_match_patch.prototype.diff_charsToLines = function(diffs, lineArray) {
  * Explore the intersection points between the two texts.
  * @param {string} text1 Old string to be diffed.
  * @param {string} text2 New string to be diffed.
- * @return {?Array.<Array.<number|string>>} Array of diff tuples or null if no
+ * @return {Array.<!diff_match_patch.Diff>} Array of diff tuples or null if no
  *     diff available.
  * @private
  */
@@ -483,10 +487,10 @@ diff_match_patch.prototype.diff_map = function(text1, text2) {
 
 /**
  * Work from the middle back to the start to determine the path.
- * @param {Array.<Object>} v_map Array of paths.
+ * @param {!Array.<!Object>} v_map Array of paths.
  * @param {string} text1 Old string fragment to be diffed.
  * @param {string} text2 New string fragment to be diffed.
- * @return {Array.<Array.<number|string>>} Array of diff tuples.
+ * @return {!Array.<!diff_match_patch.Diff>} Array of diff tuples.
  * @private
  */
 diff_match_patch.prototype.diff_path1 = function(v_map, text1, text2) {
@@ -536,10 +540,10 @@ diff_match_patch.prototype.diff_path1 = function(v_map, text1, text2) {
 
 /**
  * Work from the middle back to the end to determine the path.
- * @param {Array.<Object>} v_map Array of paths.
+ * @param {!Array.<!Object>} v_map Array of paths.
  * @param {string} text1 Old string fragment to be diffed.
  * @param {string} text2 New string fragment to be diffed.
- * @return {Array.<Array.<number|string>>} Array of diff tuples.
+ * @return {!Array.<!diff_match_patch.Diff>} Array of diff tuples.
  * @private
  */
 diff_match_patch.prototype.diff_path2 = function(v_map, text1, text2) {
@@ -709,7 +713,7 @@ diff_match_patch.prototype.diff_commonOverlap = function(text1, text2) {
  * longer text?
  * @param {string} text1 First string.
  * @param {string} text2 Second string.
- * @return {?Array.<string>} Five element Array, containing the prefix of
+ * @return {Array.<string>} Five element Array, containing the prefix of
  *     text1, the suffix of text1, the prefix of text2, the suffix of
  *     text2 and the common middle.  Or null if there was no match.
  */
@@ -728,7 +732,7 @@ diff_match_patch.prototype.diff_halfMatch = function(text1, text2) {
    * @param {string} longtext Longer string.
    * @param {string} shorttext Shorter string.
    * @param {number} i Start index of quarter length substring within longtext
-   * @return {?Array.<string>} Five element Array, containing the prefix of
+   * @return {Array.<string>} Five element Array, containing the prefix of
    *     longtext, the suffix of longtext, the prefix of shorttext, the suffix
    *     of shorttext and the common middle.  Or null if there was no match.
    * @private
@@ -799,12 +803,13 @@ diff_match_patch.prototype.diff_halfMatch = function(text1, text2) {
 
 /**
  * Reduce the number of edits by eliminating semantically trivial equalities.
- * @param {Array.<Array.<number|string>>} diffs Array of diff tuples.
+ * @param {!Array.<!diff_match_patch.Diff>} diffs Array of diff tuples.
  */
 diff_match_patch.prototype.diff_cleanupSemantic = function(diffs) {
   var changes = false;
   var equalities = [];  // Stack of indices where equalities are found.
   var equalitiesLength = 0;  // Keeping our own length var is faster in JS.
+  /** @type {?string} */
   var lastequality = null;  // Always equal to equalities[equalitiesLength-1][1]
   var pointer = 0;  // Index of current position.
   // Number of characters that changed prior to the equality.
@@ -816,7 +821,7 @@ diff_match_patch.prototype.diff_cleanupSemantic = function(diffs) {
       equalities[equalitiesLength++] = pointer;
       length_changes1 = length_changes2;
       length_changes2 = 0;
-      lastequality = diffs[pointer][1];
+      lastequality = /** @type {string} */(diffs[pointer][1]);
     } else {  // An insertion or deletion.
       length_changes2 += diffs[pointer][1].length;
       if (lastequality !== null && (lastequality.length <= length_changes1) &&
@@ -853,8 +858,8 @@ diff_match_patch.prototype.diff_cleanupSemantic = function(diffs) {
   while (pointer < diffs.length) {
     if (diffs[pointer - 1][0] == DIFF_DELETE &&
         diffs[pointer][0] == DIFF_INSERT) {
-      var deletion = diffs[pointer - 1][1];
-      var insertion = diffs[pointer][1];
+      var deletion = /** @type {string} */(diffs[pointer - 1][1]);
+      var insertion = /** @type {string} */(diffs[pointer][1]);
       var overlap_length = this.diff_commonOverlap(deletion, insertion);
       if (overlap_length) {
         // Overlap found.  Insert an equality and trim the surrounding edits.
@@ -876,7 +881,7 @@ diff_match_patch.prototype.diff_cleanupSemantic = function(diffs) {
  * Look for single edits surrounded on both sides by equalities
  * which can be shifted sideways to align the edit to a word boundary.
  * e.g: The c<ins>at c</ins>ame. -> The <ins>cat </ins>came.
- * @param {Array.<Array.<number|string>>} diffs Array of diff tuples.
+ * @param {!Array.<!diff_match_patch.Diff>} diffs Array of diff tuples.
  */
 diff_match_patch.prototype.diff_cleanupSemanticLossless = function(diffs) {
   // Define some regex patterns for matching boundaries.
@@ -935,9 +940,9 @@ diff_match_patch.prototype.diff_cleanupSemanticLossless = function(diffs) {
     if (diffs[pointer - 1][0] == DIFF_EQUAL &&
         diffs[pointer + 1][0] == DIFF_EQUAL) {
       // This is a single edit surrounded by equalities.
-      var equality1 = diffs[pointer - 1][1];
-      var edit = diffs[pointer][1];
-      var equality2 = diffs[pointer + 1][1];
+      var equality1 = /** @type {string} */(diffs[pointer - 1][1]);
+      var edit = /** @type {string} */(diffs[pointer][1]);
+      var equality2 = /** @type {string} */(diffs[pointer + 1][1]);
 
       // First, shift the edit as far left as possible.
       var commonOffset = this.diff_commonSuffix(equality1, edit);
@@ -993,7 +998,7 @@ diff_match_patch.prototype.diff_cleanupSemanticLossless = function(diffs) {
 
 /**
  * Reduce the number of edits by eliminating operationally trivial equalities.
- * @param {Array.<Array.<number|string>>} diffs Array of diff tuples.
+ * @param {!Array.<!diff_match_patch.Diff>} diffs Array of diff tuples.
  */
 diff_match_patch.prototype.diff_cleanupEfficiency = function(diffs) {
   var changes = false;
@@ -1073,7 +1078,7 @@ diff_match_patch.prototype.diff_cleanupEfficiency = function(diffs) {
 /**
  * Reorder and merge like edit sections.  Merge equalities.
  * Any edit section can move as long as it doesn't cross an equality.
- * @param {Array.<Array.<number|string>>} diffs Array of diff tuples.
+ * @param {!Array.<!diff_match_patch.Diff>} diffs Array of diff tuples.
  */
 diff_match_patch.prototype.diff_cleanupMerge = function(diffs) {
   diffs.push([DIFF_EQUAL, '']);  // Add a dummy entry at the end.
@@ -1201,7 +1206,7 @@ diff_match_patch.prototype.diff_cleanupMerge = function(diffs) {
  * loc is a location in text1, compute and return the equivalent location in
  * text2.
  * e.g. 'The cat' vs 'The big cat', 1->1, 5->8
- * @param {Array.<Array.<number|string>>} diffs Array of diff tuples.
+ * @param {!Array.<!diff_match_patch.Diff>} diffs Array of diff tuples.
  * @param {number} loc Location within text1.
  * @return {number} Location within text2.
  */
@@ -1235,7 +1240,7 @@ diff_match_patch.prototype.diff_xIndex = function(diffs, loc) {
 
 /**
  * Convert a diff array into a pretty HTML report.
- * @param {Array.<Array.<number|string>>} diffs Array of diff tuples.
+ * @param {!Array.<!diff_match_patch.Diff>} diffs Array of diff tuples.
  * @return {string} HTML representation.
  */
 diff_match_patch.prototype.diff_prettyHtml = function(diffs) {
@@ -1273,7 +1278,7 @@ diff_match_patch.prototype.diff_prettyHtml = function(diffs) {
 
 /**
  * Compute and return the source text (all equalities and deletions).
- * @param {Array.<Array.<number|string>>} diffs Array of diff tuples.
+ * @param {!Array.<!diff_match_patch.Diff>} diffs Array of diff tuples.
  * @return {string} Source text.
  */
 diff_match_patch.prototype.diff_text1 = function(diffs) {
@@ -1289,7 +1294,7 @@ diff_match_patch.prototype.diff_text1 = function(diffs) {
 
 /**
  * Compute and return the destination text (all equalities and insertions).
- * @param {Array.<Array.<number|string>>} diffs Array of diff tuples.
+ * @param {!Array.<!diff_match_patch.Diff>} diffs Array of diff tuples.
  * @return {string} Destination text.
  */
 diff_match_patch.prototype.diff_text2 = function(diffs) {
@@ -1306,7 +1311,7 @@ diff_match_patch.prototype.diff_text2 = function(diffs) {
 /**
  * Compute the Levenshtein distance; the number of inserted, deleted or
  * substituted characters.
- * @param {Array.<Array.<number|string>>} diffs Array of diff tuples.
+ * @param {!Array.<!diff_match_patch.Diff>} diffs Array of diff tuples.
  * @return {number} Number of changes.
  */
 diff_match_patch.prototype.diff_levenshtein = function(diffs) {
@@ -1341,7 +1346,7 @@ diff_match_patch.prototype.diff_levenshtein = function(diffs) {
  * required to transform text1 into text2.
  * E.g. =3\t-2\t+ing  -> Keep 3 chars, delete 2 chars, insert 'ing'.
  * Operations are tab-separated.  Inserted text is escaped using %xx notation.
- * @param {Array.<Array.<number|string>>} diffs Array of diff tuples.
+ * @param {!Array.<!diff_match_patch.Diff>} diffs Array of diff tuples.
  * @return {string} Delta text.
  */
 diff_match_patch.prototype.diff_toDelta = function(diffs) {
@@ -1368,8 +1373,8 @@ diff_match_patch.prototype.diff_toDelta = function(diffs) {
  * operations required to transform text1 into text2, compute the full diff.
  * @param {string} text1 Source string for the diff.
  * @param {string} delta Delta text.
- * @return {Array.<Array.<number|string>>} Array of diff tuples.
- * @throws {Error} If invalid input.
+ * @return {!Array.<!diff_match_patch.Diff>} Array of diff tuples.
+ * @throws {!Error} If invalid input.
  */
 diff_match_patch.prototype.diff_fromDelta = function(text1, delta) {
   var diffs = [];
@@ -1574,7 +1579,7 @@ diff_match_patch.prototype.match_bitap = function(text, pattern, loc) {
 /**
  * Initialise the alphabet for the Bitap algorithm.
  * @param {string} pattern The text to encode.
- * @return {Object} Hash of character locations.
+ * @return {!Object} Hash of character locations.
  * @private
  */
 diff_match_patch.prototype.match_alphabet = function(pattern) {
@@ -1595,7 +1600,7 @@ diff_match_patch.prototype.match_alphabet = function(pattern) {
 /**
  * Increase the context until it is unique,
  * but don't let the pattern expand beyond Match_MaxBits.
- * @param {patch_obj} patch The patch to grow.
+ * @param {!patch_obj} patch The patch to grow.
  * @param {string} text Source text.
  * @private
  */
@@ -1653,13 +1658,13 @@ diff_match_patch.prototype.patch_addContext = function(patch, text) {
  * Method 4 (deprecated, use method 3):
  * a = text1, b = text2, c = diffs
  *
- * @param {string|Array.<Array.<number|string>>} a text1 (methods 1,3,4) or
+ * @param {string|!Array.<!diff_match_patch.Diff>} a text1 (methods 1,3,4) or
  * Array of diff tuples for text1 to text2 (method 2).
- * @param {string|Array.<Array.<number|string>>} opt_b text2 (methods 1,4) or
+ * @param {string|!Array.<!diff_match_patch.Diff>} opt_b text2 (methods 1,4) or
  * Array of diff tuples for text1 to text2 (method 3) or undefined (method 2).
- * @param {string|Array.<Array.<number|string>>} opt_c Array of diff tuples for
+ * @param {string|!Array.<!diff_match_patch.Diff>} opt_c Array of diff tuples for
  * text1 to text2 (method 4) or undefined (methods 1,2,3).
- * @return {Array.<patch_obj>} Array of patch objects.
+ * @return {!Array.<!patch_obj>} Array of patch objects.
  */
 diff_match_patch.prototype.patch_make = function(a, opt_b, opt_c) {
   var text1, diffs;
@@ -1667,8 +1672,8 @@ diff_match_patch.prototype.patch_make = function(a, opt_b, opt_c) {
       typeof opt_c == 'undefined') {
     // Method 1: text1, text2
     // Compute diffs from text1 and text2.
-    text1 = a;
-    diffs = this.diff_main(text1, opt_b, true);
+    text1 = /** @type {string} */(a);
+    diffs = this.diff_main(text1, /** @type {string} */(opt_b), true);
     if (diffs.length > 2) {
       this.diff_cleanupSemantic(diffs);
       this.diff_cleanupEfficiency(diffs);
@@ -1677,19 +1682,19 @@ diff_match_patch.prototype.patch_make = function(a, opt_b, opt_c) {
       typeof opt_c == 'undefined') {
     // Method 2: diffs
     // Compute text1 from diffs.
-    diffs = a;
+    diffs = /** @type {!Array.<!diff_match_patch.Diff>} */(a);
     text1 = this.diff_text1(diffs);
   } else if (typeof a == 'string' && opt_b && typeof opt_b == 'object' &&
       typeof opt_c == 'undefined') {
     // Method 3: text1, diffs
-    text1 = a;
-    diffs = opt_b;
+    text1 = /** @type {string} */(a);
+    diffs = /** @type {!Array.<!diff_match_patch.Diff>} */(opt_b);
   } else if (typeof a == 'string' && typeof opt_b == 'string' &&
       opt_c && typeof opt_c == 'object') {
     // Method 4: text1, text2, diffs
     // text2 is not used.
-    text1 = a;
-    diffs = opt_c;
+    text1 = /** @type {string} */(a);
+    diffs = /** @type {!Array.<!diff_match_patch.Diff>} */(opt_c);
   } else {
     throw new Error('Unknown call format to patch_make.');
   }
@@ -1776,8 +1781,8 @@ diff_match_patch.prototype.patch_make = function(a, opt_b, opt_c) {
 
 /**
  * Given an array of patches, return another array that is identical.
- * @param {Array.<patch_obj>} patches Array of patch objects.
- * @return {Array.<patch_obj>} Array of patch objects.
+ * @param {!Array.<!patch_obj>} patches Array of patch objects.
+ * @return {!Array.<!patch_obj>} Array of patch objects.
  */
 diff_match_patch.prototype.patch_deepCopy = function(patches) {
   // Making deep copies is hard in JavaScript.
@@ -1802,9 +1807,9 @@ diff_match_patch.prototype.patch_deepCopy = function(patches) {
 /**
  * Merge a set of patches onto the text.  Return a patched text, as well
  * as a list of true/false values indicating which patches were applied.
- * @param {Array.<patch_obj>} patches Array of patch objects.
+ * @param {!Array.<!patch_obj>} patches Array of patch objects.
  * @param {string} text Old text.
- * @return {Array.<string|Array.<boolean>>} Two element Array, containing the
+ * @return {!Array.<string|!Array.<boolean>>} Two element Array, containing the
  *      new text and an array of boolean values.
  */
 diff_match_patch.prototype.patch_apply = function(patches, text) {
@@ -1910,7 +1915,7 @@ diff_match_patch.prototype.patch_apply = function(patches, text) {
 /**
  * Add some padding on text start and end so that edges can match something.
  * Intended to be called only from within patch_apply.
- * @param {Array.<patch_obj>} patches Array of patch objects.
+ * @param {!Array.<!patch_obj>} patches Array of patch objects.
  * @return {string} The padding string added to each side.
  */
 diff_match_patch.prototype.patch_addPadding = function(patches) {
@@ -1969,7 +1974,7 @@ diff_match_patch.prototype.patch_addPadding = function(patches) {
 /**
  * Look through the patches and break up any which are longer than the maximum
  * limit of the match algorithm.
- * @param {Array.<patch_obj>} patches Array of patch objects.
+ * @param {!Array.<!patch_obj>} patches Array of patch objects.
  */
 diff_match_patch.prototype.patch_splitMax = function(patches) {
   for (var x = 0; x < patches.length; x++) {
@@ -2059,7 +2064,7 @@ diff_match_patch.prototype.patch_splitMax = function(patches) {
 
 /**
  * Take a list of patches and return a textual representation.
- * @param {Array.<patch_obj>} patches Array of patch objects.
+ * @param {!Array.<!patch_obj>} patches Array of patch objects.
  * @return {string} Text representation of patches.
  */
 diff_match_patch.prototype.patch_toText = function(patches) {
@@ -2074,8 +2079,8 @@ diff_match_patch.prototype.patch_toText = function(patches) {
 /**
  * Parse a textual representation of patches and return a list of patch objects.
  * @param {string} textline Text representation of patches.
- * @return {Array.<patch_obj>} Array of patch objects.
- * @throws {Error} If invalid input.
+ * @return {!Array.<!patch_obj>} Array of patch objects.
+ * @throws {!Error} If invalid input.
  */
 diff_match_patch.prototype.patch_fromText = function(textline) {
   var patches = [];
@@ -2153,7 +2158,7 @@ diff_match_patch.prototype.patch_fromText = function(textline) {
  * @constructor
  */
 function patch_obj() {
-  /** @type {Array.<Array.<number|string>>} */
+  /** @type {!Array.<!diff_match_patch.Diff>} */
   this.diffs = [];
   /** @type {?number} */
   this.start1 = null;
