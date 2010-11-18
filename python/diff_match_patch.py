@@ -30,6 +30,7 @@ import math
 import time
 import urllib
 import re
+import sys
 
 class diff_match_patch:
   """Class containing the diff, match and patch methods.
@@ -78,7 +79,7 @@ class diff_match_patch:
   DIFF_INSERT = 1
   DIFF_EQUAL = 0
 
-  def diff_main(self, text1, text2, checklines=True):
+  def diff_main(self, text1, text2, checklines=True, deadline=None):
     """Find the differences between two texts.  Simplifies the problem by
       stripping any common prefix or suffix off the texts before diffing.
 
@@ -88,10 +89,19 @@ class diff_match_patch:
       checklines: Optional speedup flag.  If present and false, then don't run
         a line-level diff first to identify the changed areas.
         Defaults to true, which does a faster, slightly less optimal diff.
+      deadline: Optional time when the diff should be complete by.  Used
+        internally for recursive calls.  Users should set DiffTimeout instead.
 
     Returns:
       Array of changes.
     """
+    # Set a deadline by which time the diff must be complete.
+    if deadline == None:
+      # Unlike in most languages, Python counts time in seconds.
+      if self.Diff_Timeout <= 0:
+        deadline = sys.maxint
+      else:
+        deadline = time.time() + self.Diff_Timeout
 
     # Check for null inputs.
     if text1 == None or text2 == None:
@@ -119,7 +129,7 @@ class diff_match_patch:
       text2 = text2[:-commonlength]
 
     # Compute the diff on the middle block.
-    diffs = self.diff_compute(text1, text2, checklines)
+    diffs = self.diff_compute(text1, text2, checklines, deadline)
 
     # Restore the prefix and suffix.
     if commonprefix:
@@ -129,7 +139,7 @@ class diff_match_patch:
     self.diff_cleanupMerge(diffs)
     return diffs
 
-  def diff_compute(self, text1, text2, checklines):
+  def diff_compute(self, text1, text2, checklines, deadline):
     """Find the differences between two texts.  Assumes that the texts do not
       have any common prefix or suffix.
 
@@ -139,6 +149,7 @@ class diff_match_patch:
       checklines: Speedup flag.  If false, then don't run a line-level diff
         first to identify the changed areas.
         If true, then run a faster, slightly less optimal diff.
+      deadline: Time when the diff should be complete by.
 
     Returns:
       Array of changes.
@@ -185,9 +196,8 @@ class diff_match_patch:
       # Scan the text on a line-by-line basis first.
       (text1, text2, linearray) = self.diff_linesToChars(text1, text2)
 
-    diffs = self.diff_map(text1, text2)
-    if not diffs:  # No acceptable result.
-      diffs = [(self.DIFF_DELETE, text1), (self.DIFF_INSERT, text2)]
+    diffs = self.diff_map(text1, text2, deadline)
+
     if checklines:
       # Convert the diff back to original text.
       self.diff_charsToLines(diffs, linearray)
@@ -213,7 +223,7 @@ class diff_match_patch:
           # Upon reaching an equality, check for prior redundancies.
           if count_delete >= 1 and count_insert >= 1:
             # Delete the offending records and add the merged ones.
-            a = self.diff_main(text_delete, text_insert, False)
+            a = self.diff_main(text_delete, text_insert, False, deadline)
             diffs[pointer - count_delete - count_insert : pointer] = a
             pointer = pointer - count_delete - count_insert + len(a)
           count_insert = 0
@@ -296,19 +306,18 @@ class diff_match_patch:
         text.append(lineArray[ord(char)])
       diffs[x] = (diffs[x][0], "".join(text))
 
-  def diff_map(self, text1, text2):
+  def diff_map(self, text1, text2, deadline):
     """Explore the intersection points between the two texts.
 
     Args:
       text1: Old string to be diffed.
       text2: New string to be diffed.
+      deadline: Time at which to bail if not yet complete.
 
     Returns:
-      Array of diff tuples or None if no diff available.
+      Array of diff tuples.
     """
 
-    # Unlike in most languages, Python counts time in seconds.
-    s_end = time.time() + self.Diff_Timeout  # Don't run for too long.
     # Cache the text lengths to prevent multiple calls.
     text1_length = len(text1)
     text2_length = len(text2)
@@ -330,9 +339,9 @@ class diff_match_patch:
     # collide with the reverse path.
     front = (text1_length + text2_length) % 2
     for d in xrange(max_d):
-      # Bail out if timeout reached.
-      if self.Diff_Timeout > 0 and time.time() > s_end:
-        return None
+      # Bail out if deadline is reached.
+      if time.time() > deadline:
+        break
 
       # Walk the front path one step.
       v_map1.append({})
@@ -407,8 +416,9 @@ class diff_match_patch:
                                 text2[text2_length - y:])
             return a + b
 
-    # Number of diffs equals number of characters, no commonality at all.
-    return None
+    # Diff took too long and hit the deadline or
+    # number of diffs equals number of characters, no commonality at all.
+    return [(self.DIFF_DELETE, text1), (self.DIFF_INSERT, text2)]
 
   def diff_path1(self, v_map, text1, text2):
     """Work from the middle back to the start to determine the path.

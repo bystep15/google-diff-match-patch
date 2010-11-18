@@ -57,10 +57,13 @@ void diff_match_patch_test::run_all_tests() {
     testDiffDelta();
     testDiffXIndex();
     testDiffPath();
+    testDiffMap();
     testDiffMain();
+
     testMatchAlphabet();
     testMatchBitap();
     testMatchMain();
+
     testPatchObj();
     testPatchFromText();
     testPatchToText();
@@ -572,6 +575,21 @@ void diff_match_patch_test::testDiffPath() {
   assertEquals("diff_path2: Double letters.", diffs, dmp.diff_path2(v_map, "CD34", "34YZ"));
 }
 
+void diff_match_patch_test::testDiffMap() {
+  // Normal.
+  QString a = "cat";
+  QString b = "map";
+  // Since the resulting diff hasn't been normalized, it would be ok if
+  // the insertion and deletion pairs are swapped.
+  // If the order changes, tweak this test as required.
+  QList<Diff> diffs = diffList(Diff(INSERT, "m"), Diff(DELETE, "c"), Diff(EQUAL, "a"), Diff(INSERT, "p"), Diff(DELETE, "t"));
+  assertEquals("diff_map: Normal.", diffs, dmp.diff_map(a, b, std::numeric_limits<clock_t>::max()));
+
+  // Timeout.
+  diffs = diffList(Diff(DELETE, "cat"), Diff(INSERT, "map"));
+  assertEquals("diff_map: Timeout.", diffs, dmp.diff_map(a, b, 0));
+}
+
 void diff_match_patch_test::testDiffMain() {
   // Perform a trivial diff.
   QList<Diff> diffs = diffList();
@@ -617,7 +635,7 @@ void diff_match_patch_test::testDiffMain() {
   assertEquals("diff_main: Overlap #3.", diffs, dmp.diff_main("abcy", "xaxcxabc", false));
   dmp.Diff_DualThreshold = 32;
 
-  dmp.Diff_Timeout = 0.001f;  // 1ms
+  dmp.Diff_Timeout = 0.1f;  // 100ms
   // This test may 'fail' on extremely fast computers.  If so, just increase the text lengths.
   QString a = "`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n";
   QString b = "I am the very model of a modern major general,\nI've information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical.\n";
@@ -626,7 +644,17 @@ void diff_match_patch_test::testDiffMain() {
     a = a + a;
     b = b + b;
   }
-  assertNull("diff_main: Timeout.", dmp.diff_map(a, b));
+  clock_t startTime = clock();
+  dmp.diff_main(a, b);
+  clock_t endTime = clock();
+  // Test that we took at least the timeout period.
+  assertTrue("diff_main: Timeout min.", dmp.Diff_Timeout * CLOCKS_PER_SEC <= endTime - startTime);
+  // Test that we didn't take forever (be forgiving).
+  // Theoretically this test could fail very occasionally if the
+  // OS task swaps or locks up for a second at the wrong moment.
+  // Java seems to overrun by ~80% (compared with 10% for other languages).
+  // Therefore use an upper limit of 0.5s instead of 0.2s.
+  assertTrue("diff_main: Timeout max.", dmp.Diff_Timeout * CLOCKS_PER_SEC * 2 > endTime - startTime);
   dmp.Diff_Timeout = 0;
 
   // Test the linemode speedup.

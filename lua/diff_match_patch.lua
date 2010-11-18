@@ -229,9 +229,22 @@ local _diff_compute,
 * @param {boolean} opt_checklines Optional speedup flag.  If present and false,
 *    then don't run a line-level diff first to identify the changed areas.
 *    Defaults to true, which does a faster, slightly less optimal diff
+* @param {number} opt_deadline: Optional time when the diff should be complete
+*     by.  Used internally for recursive calls.  Users should set DiffTimeout
+*     instead.
 * @return {Array.<Array.<number|string>>} Array of diff tuples.
 --]]
-function diff_main(text1, text2, opt_checklines)
+function diff_main(text1, text2, opt_checklines, opt_deadline)
+  -- Set a deadline by which time the diff must be complete.
+  if opt_deadline == nil then
+    if Diff_Timeout <= 0 then
+      opt_deadline = 2 ^ 31
+    else
+      opt_deadline = clock() + Diff_Timeout
+    end
+  end
+  local deadline = opt_deadline
+
   -- Check for null inputs.
   if text1 == nil or text1 == nil then
     error('Null inputs. (diff_main)')
@@ -269,7 +282,7 @@ function diff_main(text1, text2, opt_checklines)
   end
 
   -- Compute the diff on the middle block.
-  local diffs = _diff_compute(text1, text2, checklines)
+  local diffs = _diff_compute(text1, text2, checklines, deadline)
 
   -- Restore the prefix and suffix.
   if commonprefix then
@@ -522,10 +535,11 @@ end
 * @param {boolean} checklines Speedup flag.  If false, then don't run a
 *    line-level diff first to identify the changed areas.
 *    If true, then run a faster, slightly less optimal diff
+* @param {number} deadline Time when the diff should be complete by.
 * @return {Array.<Array.<number|string>>} Array of diff tuples.
 * @private
 --]]
-function _diff_compute(text1, text2, checklines)
+function _diff_compute(text1, text2, checklines, deadline)
   if #text1 == 0 then
     -- Just add some text (speedup).
     return {{DIFF_INSERT, text2}}
@@ -579,6 +593,7 @@ function _diff_compute(text1, text2, checklines)
       return diffs
     end
   end
+
   -- Perform a real diff.
   if checklines and (#text1 < 100 or #text2 < 100) then
     -- Too trivial for the overhead.
@@ -589,11 +604,9 @@ function _diff_compute(text1, text2, checklines)
     -- Scan the text on a line-by-line basis first.
     text1, text2, linearray = _diff_toLines(text1, text2)
   end
-  diffs = _diff_map(text1, text2)
-  if diffs == nil then
-    -- No acceptable result.
-    diffs = {{DIFF_DELETE, text1}, {DIFF_INSERT, text2}}
-  end
+
+  diffs = _diff_map(text1, text2, deadline)
+
   if checklines then
     -- Convert the diff back to original text.
     _diff_fromLines(diffs, linearray)
@@ -619,7 +632,7 @@ function _diff_compute(text1, text2, checklines)
         -- Upon reaching an equality, check for prior redundancies.
         if (count_delete >= 1) and (count_insert >= 1) then
           -- Delete the offending records and add the merged ones.
-          local a = diff_main(text_delete, text_insert, false)
+          local a = diff_main(text_delete, text_insert, false, deadline)
           pointer = pointer - count_delete - count_insert
           for i = 1, count_delete + count_insert do
             tremove(diffs, pointer)
@@ -717,13 +730,11 @@ end
 * Explore the intersection points between the two texts.
 * @param {string} text1 Old string to be diffed.
 * @param {string} text2 New string to be diffed.
-* @return {?Array.<Array.<number|string>>} Array of diff tuples or nil if no
-*    diff available.
+* @param {number} deadline Time at which to bail if not yet complete.
+* @return {Array.<Array.<number|string>>} Array of diff tuples.
 * @private
 --]]
-function _diff_map(text1, text2)
-  -- Don't run for too long.
-  local s_end = clock() + Diff_Timeout
+function _diff_map(text1, text2, deadline)
   -- Cache the text lengths to prevent multiple calls.
   local text1_length = #text1
   local text2_length = #text2
@@ -751,9 +762,9 @@ function _diff_map(text1, text2)
   -- the front path will collide with the reverse path.
   local front = (((text1_length + text2_length) % 2) == 1)
   for d = 0, max_d - 1 do
-    -- Bail out if timeout reached.
-    if (Diff_Timeout > 0) and (clock() > s_end) then
-      return nil
+    -- Bail out if deadline is reached.
+    if clock() > deadline then
+      break
     end
 
     -- Walk the front path one step.
@@ -867,8 +878,9 @@ function _diff_map(text1, text2)
       end
     end
   end
-  -- Number of diffs equals number of characters, no commonality at all.
-  return nil
+  -- Diff took too long and hit the deadline or
+  -- number of diffs equals number of characters, no commonality at all.
+  return {{DIFF_DELETE, text1}, {DIFF_INSERT, text2}}
 end
 
 

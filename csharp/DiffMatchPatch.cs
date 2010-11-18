@@ -218,7 +218,7 @@ namespace DiffMatchPatch {
 
     /**
      * Find the differences between two texts.
-     * Run a faster slightly less optimal diff
+     * Run a faster, slightly less optimal diff.
      * This method allows the 'checklines' of diff_main() to be optional.
      * Most of the time checklines is wanted, so default to true.
      * @param text1 Old string to be diffed.
@@ -230,16 +230,41 @@ namespace DiffMatchPatch {
     }
 
     /**
+     * Find the differences between two texts.
+     * @param text1 Old string to be diffed.
+     * @param text2 New string to be diffed.
+     * @param checklines Speedup flag.  If false, then don't run a
+     *     line-level diff first to identify the changed areas.
+     *     If true, then run a faster slightly less optimal diff.
+     * @return List of Diff objects.
+     */
+    public List<Diff> diff_main(string text1, string text2, bool checklines) {
+      // Set a deadline by which time the diff must be complete.
+      DateTime deadline;
+      if (this.Diff_Timeout <= 0) {
+        deadline = DateTime.MaxValue;
+      } else {
+        deadline = DateTime.Now +
+            new TimeSpan(((long)(Diff_Timeout * 1000)) * 10000);
+      }
+      return diff_main(text1, text2, checklines, deadline);
+    }
+
+    /**
      * Find the differences between two texts.  Simplifies the problem by
      * stripping any common prefix or suffix off the texts before diffing.
      * @param text1 Old string to be diffed.
      * @param text2 New string to be diffed.
      * @param checklines Speedup flag.  If false, then don't run a
      *     line-level diff first to identify the changed areas.
-     *     If true, then run a faster slightly less optimal diff
+     *     If true, then run a faster slightly less optimal diff.
+     * @param deadline: Time when the diff should be complete by.  Used
+     *     internally for recursive calls.  Users should set DiffTimeout
+     *     instead.
      * @return List of Diff objects.
      */
-    public List<Diff> diff_main(string text1, string text2, bool checklines) {
+    private List<Diff> diff_main(string text1, string text2, bool checklines,
+        DateTime deadline) {
       // Check for null inputs not needed since null can't be passed in C#.
 
       // Check for equality (speedup).
@@ -265,7 +290,7 @@ namespace DiffMatchPatch {
       text2 = text2.Substring(0, text2.Length - commonlength);
 
       // Compute the diff on the middle block.
-      diffs = diff_compute(text1, text2, checklines);
+      diffs = diff_compute(text1, text2, checklines, deadline);
 
       // Restore the prefix and suffix.
       if (commonprefix.Length != 0) {
@@ -286,11 +311,12 @@ namespace DiffMatchPatch {
      * @param text2 New string to be diffed.
      * @param checklines Speedup flag.  If false, then don't run a
      *     line-level diff first to identify the changed areas.
-     *     If true, then run a faster slightly less optimal diff
+     *     If true, then run a faster slightly less optimal diff.
+     * @param deadline Time when the diff should be complete by.
      * @return List of Diff objects.
      */
-    protected List<Diff> diff_compute(string text1, string text2,
-                                      bool checklines) {
+    private List<Diff> diff_compute(string text1, string text2,
+                                    bool checklines, DateTime deadline) {
       List<Diff> diffs = new List<Diff>();
 
       if (text1.Length == 0) {
@@ -354,13 +380,7 @@ namespace DiffMatchPatch {
         linearray = (List<string>)b[2];
       }
 
-      diffs = diff_map(text1, text2);
-      if (diffs == null) {
-        // No acceptable result.
-        diffs = new List<Diff>();
-        diffs.Add(new Diff(Operation.DELETE, text1));
-        diffs.Add(new Diff(Operation.INSERT, text2));
-      }
+      diffs = diff_map(text1, text2, deadline);
 
       if (checklines) {
         // Convert the diff back to original text.
@@ -390,7 +410,8 @@ namespace DiffMatchPatch {
               // Upon reaching an equality, check for prior redundancies.
               if (count_delete >= 1 && count_insert >= 1) {
                 // Delete the offending records and add the merged ones.
-                List<Diff> a = this.diff_main(text_delete, text_insert, false);
+                List<Diff> a =
+                    this.diff_main(text_delete, text_insert, false, deadline);
                 diffs.RemoveRange(pointer - count_delete - count_insert,
                     count_delete + count_insert);
                 pointer = pointer - count_delete - count_insert;
@@ -492,10 +513,11 @@ namespace DiffMatchPatch {
      * Explore the intersection points between the two texts.
      * @param text1 Old string to be diffed.
      * @param text2 New string to be diffed.
-     * @return List of Diff objects or null if no diff available.
+     * @param deadline Time at which to bail if not yet complete.
+     * @return List of Diff objects.
      */
-    protected List<Diff> diff_map(string text1, string text2) {
-      DateTime ms_end = DateTime.Now + new TimeSpan(0, 0, (int)Diff_Timeout);
+    protected List<Diff> diff_map(string text1, string text2,
+        DateTime deadline) {
       // Cache the text lengths to prevent multiple calls.
       int text1_length = text1.Length;
       int text2_length = text2.Length;
@@ -515,9 +537,9 @@ namespace DiffMatchPatch {
       // collide with the reverse path.
       bool front = ((text1_length + text2_length) % 2 == 1);
       for (int d = 0; d < max_d; d++) {
-        // Bail out if timeout reached.
-        if (Diff_Timeout > 0 && DateTime.Now > ms_end) {
-          return null;
+        // Bail out if deadline is reached.
+        if (DateTime.Now > deadline) {
+          break;
         }
 
         // Walk the front path one step.
@@ -621,8 +643,12 @@ namespace DiffMatchPatch {
           }
         }
       }
-      // Number of diffs equals number of characters, no commonality at all.
-      return null;
+      // Diff took too long and hit the deadline or
+      // number of diffs equals number of characters, no commonality at all.
+      List<Diff> diffs = new List<Diff>();
+      diffs.Add(new Diff(Operation.DELETE, text1));
+      diffs.Add(new Diff(Operation.INSERT, text2));
+      return diffs;
     }
 
     /**

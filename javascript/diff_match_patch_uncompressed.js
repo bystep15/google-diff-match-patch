@@ -95,12 +95,26 @@ diff_match_patch.Diff;
  * any common prefix or suffix off the texts before diffing.
  * @param {string} text1 Old string to be diffed.
  * @param {string} text2 New string to be diffed.
- * @param {boolean=} opt_checklines Optional speedup flag.  If present and false,
+ * @param {boolean=} opt_checklines Optional speedup flag. If present and false,
  *     then don't run a line-level diff first to identify the changed areas.
- *     Defaults to true, which does a faster, slightly less optimal diff
+ *     Defaults to true, which does a faster, slightly less optimal diff.
+ * @param {number} opt_deadline: Optional time when the diff should be complete
+ *     by.  Used internally for recursive calls.  Users should set DiffTimeout
+ *     instead.
  * @return {!Array.<!diff_match_patch.Diff>} Array of diff tuples.
  */
-diff_match_patch.prototype.diff_main = function(text1, text2, opt_checklines) {
+diff_match_patch.prototype.diff_main = function(text1, text2, opt_checklines,
+    opt_deadline) {
+  // Set a deadline by which time the diff must be complete.
+  if (typeof opt_deadline == 'undefined') {
+    if (this.Diff_Timeout <= 0) {
+      opt_deadline = Number.MAX_VALUE;
+    } else {
+      opt_deadline = (new Date).getTime() + this.Diff_Timeout * 1000;
+    }
+  }
+  var deadline = opt_deadline;
+
   // Check for null inputs.
   if (text1 == null || text2 == null) {
     throw new Error('Null input. (diff_main)');
@@ -132,7 +146,7 @@ diff_match_patch.prototype.diff_main = function(text1, text2, opt_checklines) {
   text2 = text2.substring(0, text2.length - commonlength);
 
   // Compute the diff on the middle block.
-  var diffs = this.diff_compute(text1, text2, checklines);
+  var diffs = this.diff_compute(text1, text2, checklines, deadline);
 
   // Restore the prefix and suffix.
   if (commonprefix) {
@@ -153,11 +167,13 @@ diff_match_patch.prototype.diff_main = function(text1, text2, opt_checklines) {
  * @param {string} text2 New string to be diffed.
  * @param {boolean} checklines Speedup flag.  If false, then don't run a
  *     line-level diff first to identify the changed areas.
- *     If true, then run a faster, slightly less optimal diff
+ *     If true, then run a faster, slightly less optimal diff.
+ * @param {number} deadline Time when the diff should be complete by.
  * @return {!Array.<!diff_match_patch.Diff>} Array of diff tuples.
  * @private
  */
-diff_match_patch.prototype.diff_compute = function(text1, text2, checklines) {
+diff_match_patch.prototype.diff_compute = function(text1, text2, checklines,
+    deadline) {
   var diffs;
 
   if (!text1) {
@@ -216,11 +232,9 @@ diff_match_patch.prototype.diff_compute = function(text1, text2, checklines) {
     text2 = /** @type {string} */(a[1]);
     linearray = /** @type {!Array.<string>} */(a[2]);
   }
-  diffs = this.diff_map(text1, text2);
-  if (!diffs) {
-    // No acceptable result.
-    diffs = [[DIFF_DELETE, text1], [DIFF_INSERT, text2]];
-  }
+
+  diffs = this.diff_map(text1, text2, deadline);
+
   if (checklines) {
     // Convert the diff back to original text.
     this.diff_charsToLines(diffs, linearray);
@@ -249,7 +263,7 @@ diff_match_patch.prototype.diff_compute = function(text1, text2, checklines) {
           // Upon reaching an equality, check for prior redundancies.
           if (count_delete >= 1 && count_insert >= 1) {
             // Delete the offending records and add the merged ones.
-            var a = this.diff_main(text_delete, text_insert, false);
+            var a = this.diff_main(text_delete, text_insert, false, deadline);
             diffs.splice(pointer - count_delete - count_insert,
                          count_delete + count_insert);
             pointer = pointer - count_delete - count_insert;
@@ -356,13 +370,11 @@ diff_match_patch.prototype.diff_charsToLines = function(diffs, lineArray) {
  * Explore the intersection points between the two texts.
  * @param {string} text1 Old string to be diffed.
  * @param {string} text2 New string to be diffed.
- * @return {Array.<!diff_match_patch.Diff>} Array of diff tuples or null if no
- *     diff available.
+ * @param {number} deadline Time at which to bail if not yet complete.
+ * @return {!Array.<!diff_match_patch.Diff>} Array of diff tuples.
  * @private
  */
-diff_match_patch.prototype.diff_map = function(text1, text2) {
-  // Don't run for too long.
-  var ms_end = (new Date()).getTime() + this.Diff_Timeout * 1000;
+diff_match_patch.prototype.diff_map = function(text1, text2, deadline) {
   // Cache the text lengths to prevent multiple calls.
   var text1_length = text1.length;
   var text2_length = text2.length;
@@ -384,9 +396,9 @@ diff_match_patch.prototype.diff_map = function(text1, text2) {
   // with the reverse path.
   var front = (text1_length + text2_length) % 2;
   for (var d = 0; d < max_d; d++) {
-    // Bail out if timeout reached.
-    if (this.Diff_Timeout > 0 && (new Date()).getTime() > ms_end) {
-      return null;
+    // Bail out if deadline is reached.
+    if ((new Date()).getTime() > deadline) {
+      break;
     }
 
     // Walk the front path one step.
@@ -480,8 +492,9 @@ diff_match_patch.prototype.diff_map = function(text1, text2) {
       }
     }
   }
-  // Number of diffs equals number of characters, no commonality at all.
-  return null;
+  // Diff took too long and hit the deadline or
+  // number of diffs equals number of characters, no commonality at all.
+  return [[DIFF_DELETE, text1], [DIFF_INSERT, text2]];
 };
 
 

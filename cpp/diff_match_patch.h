@@ -157,7 +157,7 @@ class diff_match_patch {
 
   /**
    * Find the differences between two texts.
-   * Run a faster slightly less optimal diff
+   * Run a faster slightly less optimal diff.
    * This method allows the 'checklines' of diff_main() to be optional.
    * Most of the time checklines is wanted, so default to true.
    * @param text1 Old string to be diffed.
@@ -167,16 +167,30 @@ class diff_match_patch {
   QList<Diff> diff_main(const QString &text1, const QString &text2);
 
   /**
+   * Find the differences between two texts.
+   * @param text1 Old string to be diffed.
+   * @param text2 New string to be diffed.
+   * @param checklines Speedup flag.  If false, then don't run a
+   *     line-level diff first to identify the changed areas.
+   *     If true, then run a faster slightly less optimal diff.
+   * @return Linked List of Diff objects.
+   */
+  QList<Diff> diff_main(const QString &text1, const QString &text2, bool checklines);
+
+  /**
    * Find the differences between two texts.  Simplifies the problem by
    * stripping any common prefix or suffix off the texts before diffing.
    * @param text1 Old string to be diffed.
    * @param text2 New string to be diffed.
    * @param checklines Speedup flag.  If false, then don't run a
    *     line-level diff first to identify the changed areas.
-   *     If true, then run a faster slightly less optimal diff
+   *     If true, then run a faster slightly less optimal diff.
+   * @param deadline: Time when the diff should be complete by.  Used
+   *     internally for recursive calls.  Users should set DiffTimeout instead.
    * @return Linked List of Diff objects.
    */
-  QList<Diff> diff_main(const QString &text1, const QString &text2, bool checklines);
+ private:
+  QList<Diff> diff_main(const QString &text1, const QString &text2, bool checklines, clock_t deadline);
 
   /**
    * Find the differences between two texts.  Assumes that the texts do not
@@ -185,11 +199,12 @@ class diff_match_patch {
    * @param text2 New string to be diffed.
    * @param checklines Speedup flag.  If false, then don't run a
    *     line-level diff first to identify the changed areas.
-   *     If true, then run a faster slightly less optimal diff
+   *     If true, then run a faster slightly less optimal diff.
+   * @param deadline Time when the diff should be complete by.
    * @return Linked List of Diff objects.
    */
- protected:
-  QList<Diff> diff_compute(QString text1, QString text2, bool checklines);
+ private:
+  QList<Diff> diff_compute(QString text1, QString text2, bool checklines, clock_t deadline);
 
   /**
    * Split two texts into a list of strings.  Reduce the texts to a string of
@@ -231,13 +246,14 @@ class diff_match_patch {
    * @return LinkedList of Diff objects or null if no diff available.
    */
  protected:
-  QList<Diff> diff_map(const QString &text1, const QString &text2);
+  QList<Diff> diff_map(const QString &text1, const QString &text2, clock_t deadline);
 
   /**
    * Work from the middle back to the start to determine the path.
    * @param v_map List of path sets.
    * @param text1 Old string fragment to be diffed.
    * @param text2 New string fragment to be diffed.
+   * @param deadline Time at which to bail if not yet complete.
    * @return LinkedList of Diff objects.
    */
  protected:

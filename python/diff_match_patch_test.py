@@ -18,6 +18,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import sys
+import time
 import unittest
 import diff_match_patch as dmp_module
 # Force a module reload.  Allows one to edit the DMP module and rerun the tests
@@ -478,6 +480,18 @@ class DiffTest(DiffMatchPatchTest):
                   diff_footprint(4, 4):True})
     self.assertEquals([(self.dmp.DIFF_DELETE, "CD"), (self.dmp.DIFF_EQUAL, "34"), (self.dmp.DIFF_INSERT, "YZ")], self.dmp.diff_path2(v_map, "CD34", "34YZ"))
 
+  def testDiffMap(self):
+    # Normal.
+    a = "cat"
+    b = "map"
+    # Since the resulting diff hasn't been normalized, it would be ok if
+    # the insertion and deletion pairs are swapped.
+    # If the order changes, tweak this test as required.
+    self.assertEquals([(self.dmp.DIFF_INSERT, "m"), (self.dmp.DIFF_DELETE, "c"), (self.dmp.DIFF_EQUAL, "a"), (self.dmp.DIFF_INSERT, "p"), (self.dmp.DIFF_DELETE, "t")], self.dmp.diff_map(a, b, sys.maxint))
+
+    # Timeout.
+    self.assertEquals([(self.dmp.DIFF_DELETE, "cat"), (self.dmp.DIFF_INSERT, "map")], self.dmp.diff_map(a, b, 0))
+
   def testDiffMain(self):
     # Perform a trivial diff.
     # Null case.
@@ -520,14 +534,22 @@ class DiffTest(DiffMatchPatchTest):
     self.dmp.Diff_DualThreshold = 32
 
     # Timeout.
-    self.dmp.Diff_Timeout = 0.001  # 1ms
+    self.dmp.Diff_Timeout = 0.1  # 100ms
     a = "`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n"
     b = "I am the very model of a modern major general,\nI've information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical.\n"
     # Increase the text lengths by 1024 times to ensure a timeout.
     for x in xrange(10):
       a = a + a
       b = b + b
-    self.assertEquals(None, self.dmp.diff_map(a, b))
+    startTime = time.time()
+    self.dmp.diff_main(a, b)
+    endTime = time.time()
+    # Test that we took at least the timeout period.
+    self.assertTrue(self.dmp.Diff_Timeout <= endTime - startTime)
+    # Test that we didn't take forever (be forgiving).
+    # Theoretically this test could fail very occasionally if the
+    # OS task swaps or locks up for a second at the wrong moment.
+    self.assertTrue(self.dmp.Diff_Timeout * 2 > endTime - startTime)
     self.dmp.Diff_Timeout = 0
 
     # Test the linemode speedup.

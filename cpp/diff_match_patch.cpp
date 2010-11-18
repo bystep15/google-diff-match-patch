@@ -21,6 +21,7 @@
 
 // Code known to compile and run with Qt 4.3.3 and Qt 4.4.0.
 #include <QtCore>
+#include <time.h>
 #include "diff_match_patch.h"
 
 
@@ -180,9 +181,20 @@ QList<Diff> diff_match_patch::diff_main(const QString &text1,
   return diff_main(text1, text2, true);
 }
 
+QList<Diff> diff_match_patch::diff_main(const QString &text1,
+    const QString &text2, bool checklines) {
+  // Set a deadline by which time the diff must be complete.
+  clock_t deadline;
+  if (Diff_Timeout <= 0) {
+    deadline = std::numeric_limits<clock_t>::max();
+  } else {
+    deadline = clock() + (clock_t)(Diff_Timeout * CLOCKS_PER_SEC);
+  }
+  return diff_main(text1, text2, checklines, deadline);
+}
 
-QList<Diff> diff_match_patch::diff_main(const QString &text1, const QString &text2,
-                                        bool checklines) {
+ QList<Diff> diff_match_patch::diff_main(const QString &text1,
+   const QString &text2, bool checklines, clock_t deadline) {
   // Check for null inputs.
   if (text1.isNull() || text2.isNull()) {
     throw "Null inputs. (diff_main)";
@@ -210,7 +222,7 @@ QList<Diff> diff_match_patch::diff_main(const QString &text1, const QString &tex
   textChopped2 = textChopped2.left(textChopped2.length() - commonlength);
 
   // Compute the diff on the middle block.
-  diffs = diff_compute(textChopped1, textChopped2, checklines);
+  diffs = diff_compute(textChopped1, textChopped2, checklines, deadline);
 
   // Restore the prefix and suffix.
   if (!commonprefix.isEmpty()) {
@@ -226,7 +238,8 @@ QList<Diff> diff_match_patch::diff_main(const QString &text1, const QString &tex
 }
 
 
-QList<Diff> diff_match_patch::diff_compute(QString text1, QString text2, bool checklines) {
+QList<Diff> diff_match_patch::diff_compute(QString text1, QString text2,
+    bool checklines, clock_t deadline) {
   QList<Diff> diffs;
 
   if (text1.isEmpty()) {
@@ -288,13 +301,7 @@ QList<Diff> diff_match_patch::diff_compute(QString text1, QString text2, bool ch
     linearray = b[2].toStringList();
   }
 
-  diffs = diff_map(text1, text2);
-  if (diffs.isEmpty()) {
-    // No acceptable result.
-    diffs = QList<Diff>();
-    diffs.append(Diff(DELETE, text1));
-    diffs.append(Diff(INSERT, text2));
-  }
+  diffs = diff_map(text1, text2, deadline);
 
   if (checklines) {
     // Convert the diff back to original text.
@@ -331,7 +338,8 @@ QList<Diff> diff_match_patch::diff_compute(QString text1, QString text2, bool ch
               pointer.previous();
               pointer.remove();
             }
-            foreach(Diff newDiff, diff_main(text_delete, text_insert, false)) {
+            foreach(Diff newDiff,
+                diff_main(text_delete, text_insert, false, deadline)) {
               pointer.insert(newDiff);
             }
           }
@@ -418,9 +426,7 @@ void diff_match_patch::diff_charsToLines(QList<Diff> &diffs,
 
 
 QList<Diff> diff_match_patch::diff_map(const QString &text1,
-                                       const QString &text2) {
-  QTime ms_end = QTime::currentTime()
-      .addMSecs(static_cast<int> (Diff_Timeout * 1000));
+    const QString &text2, clock_t deadline) {
   // Cache the text lengths to prevent multiple calls.
   const int text1_length = text1.length();
   const int text2_length = text2.length();
@@ -440,9 +446,9 @@ QList<Diff> diff_match_patch::diff_map(const QString &text1,
   // collide with the reverse path.
   const bool front = ((text1_length + text2_length) % 2 == 1);
   for (int d = 0; d < max_d; d++) {
-    // Bail out if timeout reached.
-    if (Diff_Timeout > 0 && QTime::currentTime() > ms_end) {
-      return QList<Diff>();
+    // Bail out if deadline is reached.
+    if (clock() > deadline) {
+      break;
     }
 
     // Walk the front path one step.
@@ -535,8 +541,12 @@ QList<Diff> diff_match_patch::diff_map(const QString &text1,
       }
     }
   }
-  // Number of diffs equals number of characters, no commonality at all.
-  return QList<Diff>();
+  // Diff took too long and hit the deadline or
+  // number of diffs equals number of characters, no commonality at all.
+  QList<Diff> diffs;
+  diffs.append(Diff(DELETE, text1));
+  diffs.append(Diff(INSERT, text2));
+  return diffs;
 }
 
 

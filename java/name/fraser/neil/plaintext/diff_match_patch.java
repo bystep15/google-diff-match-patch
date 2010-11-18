@@ -127,7 +127,7 @@ public class diff_match_patch {
 
   /**
    * Find the differences between two texts.
-   * Run a faster slightly less optimal diff
+   * Run a faster, slightly less optimal diff.
    * This method allows the 'checklines' of diff_main() to be optional.
    * Most of the time checklines is wanted, so default to true.
    * @param text1 Old string to be diffed.
@@ -139,17 +139,40 @@ public class diff_match_patch {
   }
 
   /**
+   * Find the differences between two texts.
+   * @param text1 Old string to be diffed.
+   * @param text2 New string to be diffed.
+   * @param checklines Speedup flag.  If false, then don't run a
+   *     line-level diff first to identify the changed areas.
+   *     If true, then run a faster slightly less optimal diff.
+   * @return Linked List of Diff objects.
+   */
+  public LinkedList<Diff> diff_main(String text1, String text2,
+                                    boolean checklines) {
+    // Set a deadline by which time the diff must be complete.
+    long deadline;
+    if (Diff_Timeout <= 0) {
+      deadline = Long.MAX_VALUE;
+    } else {
+      deadline = System.currentTimeMillis() + (long) (Diff_Timeout * 1000);
+    }
+    return diff_main(text1, text2, checklines, deadline);
+  }
+
+  /**
    * Find the differences between two texts.  Simplifies the problem by
    * stripping any common prefix or suffix off the texts before diffing.
    * @param text1 Old string to be diffed.
    * @param text2 New string to be diffed.
    * @param checklines Speedup flag.  If false, then don't run a
    *     line-level diff first to identify the changed areas.
-   *     If true, then run a faster slightly less optimal diff
+   *     If true, then run a faster slightly less optimal diff.
+   * @param deadline: Time when the diff should be complete by.  Used
+   *     internally for recursive calls.  Users should set DiffTimeout instead.
    * @return Linked List of Diff objects.
    */
-  public LinkedList<Diff> diff_main(String text1, String text2,
-                                    boolean checklines) {
+  private LinkedList<Diff> diff_main(String text1, String text2,
+                                     boolean checklines, long deadline) {
     // Check for null inputs.
     if (text1 == null || text2 == null) {
       throw new IllegalArgumentException("Null inputs. (diff_main)");
@@ -178,7 +201,7 @@ public class diff_match_patch {
     text2 = text2.substring(0, text2.length() - commonlength);
 
     // Compute the diff on the middle block.
-    diffs = diff_compute(text1, text2, checklines);
+    diffs = diff_compute(text1, text2, checklines, deadline);
 
     // Restore the prefix and suffix.
     if (commonprefix.length() != 0) {
@@ -200,11 +223,12 @@ public class diff_match_patch {
    * @param text2 New string to be diffed.
    * @param checklines Speedup flag.  If false, then don't run a
    *     line-level diff first to identify the changed areas.
-   *     If true, then run a faster slightly less optimal diff
+   *     If true, then run a faster slightly less optimal diff.
+   * @param deadline Time when the diff should be complete by.
    * @return Linked List of Diff objects.
    */
-  protected LinkedList<Diff> diff_compute(String text1, String text2,
-                                          boolean checklines) {
+  private LinkedList<Diff> diff_compute(String text1, String text2,
+                                        boolean checklines, long deadline) {
     LinkedList<Diff> diffs = new LinkedList<Diff>();
 
     if (text1.length() == 0) {
@@ -265,13 +289,7 @@ public class diff_match_patch {
       linearray = b.lineArray;
     }
 
-    diffs = diff_map(text1, text2);
-    if (diffs == null) {
-      // No acceptable result.
-      diffs = new LinkedList<Diff>();
-      diffs.add(new Diff(Operation.DELETE, text1));
-      diffs.add(new Diff(Operation.INSERT, text2));
-    }
+    diffs = diff_map(text1, text2, deadline);
 
     if (checklines) {
       // Convert the diff back to original text.
@@ -307,7 +325,8 @@ public class diff_match_patch {
               pointer.previous();
               pointer.remove();
             }
-            for (Diff newDiff : diff_main(text_delete, text_insert, false)) {
+            for (Diff newDiff : diff_main(text_delete, text_insert, false,
+                deadline)) {
               pointer.add(newDiff);
             }
           }
@@ -410,10 +429,11 @@ public class diff_match_patch {
    * Explore the intersection points between the two texts.
    * @param text1 Old string to be diffed.
    * @param text2 New string to be diffed.
-   * @return LinkedList of Diff objects or null if no diff available.
+   * @param deadline Time at which to bail if not yet complete.
+   * @return LinkedList of Diff objects.
    */
-  protected LinkedList<Diff> diff_map(String text1, String text2) {
-    long ms_end = System.currentTimeMillis() + (long) (Diff_Timeout * 1000);
+  protected LinkedList<Diff> diff_map(String text1, String text2,
+      long deadline) {
     // Cache the text lengths to prevent multiple calls.
     int text1_length = text1.length();
     int text2_length = text2.length();
@@ -433,9 +453,9 @@ public class diff_match_patch {
     // collide with the reverse path.
     boolean front = ((text1_length + text2_length) % 2 == 1);
     for (int d = 0; d < max_d; d++) {
-      // Bail out if timeout reached.
-      if (Diff_Timeout > 0 && System.currentTimeMillis() > ms_end) {
-        return null;
+      // Bail out if deadline is reached.
+      if (System.currentTimeMillis() > deadline) {
+        break;
       }
 
       // Walk the front path one step.
@@ -530,8 +550,12 @@ public class diff_match_patch {
         }
       }
     }
-    // Number of diffs equals number of characters, no commonality at all.
-    return null;
+    // Diff took too long and hit the deadline or
+    // number of diffs equals number of characters, no commonality at all.
+    LinkedList<Diff> diffs = new LinkedList<Diff>();
+    diffs.add(new Diff(Operation.DELETE, text1));
+    diffs.add(new Diff(Operation.INSERT, text2));
+    return diffs;
   }
 
 

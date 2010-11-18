@@ -531,6 +531,21 @@ public class diff_match_patch_test extends TestCase {
     assertEquals("diff_path2: Double letters.", diffs, dmp.diff_path2(v_map, "CD34", "34YZ"));
   }
 
+  public void testDiffMap() {
+    // Normal.
+    String a = "cat";
+    String b = "map";
+    // Since the resulting diff hasn't been normalized, it would be ok if
+    // the insertion and deletion pairs are swapped.
+    // If the order changes, tweak this test as required.
+    LinkedList<Diff> diffs = diffList(new Diff(INSERT, "m"), new Diff(DELETE, "c"), new Diff(EQUAL, "a"), new Diff(INSERT, "p"), new Diff(DELETE, "t"));
+    assertEquals("diff_map: Normal.", diffs, dmp.diff_map(a, b, Long.MAX_VALUE));
+
+    // Timeout.
+    diffs = diffList(new Diff(DELETE, "cat"), new Diff(INSERT, "map"));
+    assertEquals("diff_map: Timeout.", diffs, dmp.diff_map(a, b, 0));
+  }
+
   public void testDiffMain() {
     // Perform a trivial diff.
     LinkedList<Diff> diffs = diffList();
@@ -576,7 +591,7 @@ public class diff_match_patch_test extends TestCase {
     assertEquals("diff_main: Overlap #3.", diffs, dmp.diff_main("abcy", "xaxcxabc", false));
 
     dmp.Diff_DualThreshold = 32;
-    dmp.Diff_Timeout = 0.001f;  // 1ms
+    dmp.Diff_Timeout = 0.1f;  // 100ms
     String a = "`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n";
     String b = "I am the very model of a modern major general,\nI've information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical.\n";
     // Increase the text lengths by 1024 times to ensure a timeout.
@@ -584,7 +599,17 @@ public class diff_match_patch_test extends TestCase {
       a = a + a;
       b = b + b;
     }
-    assertNull("diff_main: Timeout.", dmp.diff_map(a, b));
+    long startTime = System.currentTimeMillis();
+    dmp.diff_main(a, b);
+    long endTime = System.currentTimeMillis();
+    // Test that we took at least the timeout period.
+    assertTrue("diff_main: Timeout min.", dmp.Diff_Timeout * 1000 <= endTime - startTime);
+    // Test that we didn't take forever (be forgiving).
+    // Theoretically this test could fail very occasionally if the
+    // OS task swaps or locks up for a second at the wrong moment.
+    // Some JVMs seem to overrun by ~80% (compared with 10% for other languages).
+    // Therefore use an upper limit of 0.5s instead of 0.2s.
+    assertTrue("diff_main: Timeout max.", dmp.Diff_Timeout * 1000 * 5 > endTime - startTime);
     dmp.Diff_Timeout = 0;
 
     // Test the linemode speedup.

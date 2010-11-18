@@ -494,6 +494,19 @@ function testDiffPath() {
   assertEquivalent([[DIFF_DELETE, 'CD'], [DIFF_EQUAL, '34'], [DIFF_INSERT, 'YZ']], dmp.diff_path2(v_map, 'CD34', '34YZ'));
 }
 
+function testDiffMap() {
+  // Normal.
+  var a = 'cat';
+  var b = 'map';
+  // Since the resulting diff hasn't been normalized, it would be ok if
+  // the insertion and deletion pairs are swapped.
+  // If the order changes, tweak this test as required.
+  assertEquivalent([[DIFF_INSERT, 'm'], [DIFF_DELETE, 'c'], [DIFF_EQUAL, 'a'], [DIFF_INSERT, 'p'], [DIFF_DELETE, 't']], dmp.diff_map(a, b, Number.MAX_VALUE));
+
+  // Timeout.
+  assertEquivalent([[DIFF_DELETE, 'cat'], [DIFF_INSERT, 'map']], dmp.diff_map(a, b, 0));
+}
+
 function testDiffMain() {
   // Perform a trivial diff.
   // Null case.
@@ -536,7 +549,7 @@ function testDiffMain() {
   dmp.Diff_DualThreshold = 32;
 
   // Timeout.
-  dmp.Diff_Timeout = 0.001;  // 1ms
+  dmp.Diff_Timeout = 0.1;  // 100ms
   var a = '`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n';
   var b = 'I am the very model of a modern major general,\nI\'ve information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical.\n';
   // Increase the text lengths by 1024 times to ensure a timeout.
@@ -544,7 +557,15 @@ function testDiffMain() {
     a = a + a;
     b = b + b;
   }
-  assertEquals(null, dmp.diff_map(a, b));
+  var startTime = (new Date()).getTime();
+  dmp.diff_main(a, b);
+  var endTime = (new Date()).getTime();
+  // Test that we took at least the timeout period.
+  assertTrue(dmp.Diff_Timeout * 1000 <= endTime - startTime);
+  // Test that we didn't take forever (be forgiving).
+  // Theoretically this test could fail very occasionally if the
+  // OS task swaps or locks up for a second at the wrong moment.
+  assertTrue(dmp.Diff_Timeout * 1000 * 2 > endTime - startTime);
   dmp.Diff_Timeout = 0;
 
   // Test the linemode speedup.

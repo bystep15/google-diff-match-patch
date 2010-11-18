@@ -781,6 +781,23 @@ namespace nicTest {
     }
 
     [Test()]
+    public void diff_mapTest() {
+      diff_match_patchTest dmp = new diff_match_patchTest();
+      // Normal.
+      string a = "cat";
+      string b = "map";
+      // Since the resulting diff hasn't been normalized, it would be ok if
+      // the insertion and deletion pairs are swapped.
+      // If the order changes, tweak this test as required.
+      List<Diff> diffs = new List<Diff> {new Diff(Operation.INSERT, "m"), new Diff(Operation.DELETE, "c"), new Diff(Operation.EQUAL, "a"), new Diff(Operation.INSERT, "p"), new Diff(Operation.DELETE, "t")};
+      Assert.AreEqual(diffs, dmp.diff_map(a, b, DateTime.MaxValue));
+
+      // Timeout.
+      diffs = new List<Diff> {new Diff(Operation.DELETE, "cat"), new Diff(Operation.INSERT, "map")};
+      Assert.AreEqual(diffs, dmp.diff_map(a, b, DateTime.MinValue));
+    }
+
+    [Test()]
     public void diff_mainTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Perform a trivial diff.
@@ -827,7 +844,7 @@ namespace nicTest {
       CollectionAssert.AreEqual(diffs, dmp.diff_main("abcy", "xaxcxabc", false), "diff_main: Overlap #3.");
 
       dmp.Diff_DualThreshold = 32;
-      dmp.Diff_Timeout = 0.001f;  // 1ms
+      dmp.Diff_Timeout = 0.1f;  // 100ms
       string a = "`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n";
       string b = "I am the very model of a modern major general,\nI've information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical.\n";
       // Increase the text lengths by 1024 times to ensure a timeout.
@@ -835,7 +852,15 @@ namespace nicTest {
         a = a + a;
         b = b + b;
       }
-      Assert.IsNull(dmp.diff_map(a, b), "diff_main: Timeout.");
+      DateTime startTime = DateTime.Now;
+      dmp.diff_main(a, b);
+      DateTime endTime = DateTime.Now;
+      // Test that we took at least the timeout period.
+      Assert.IsTrue(new TimeSpan(((long)(dmp.Diff_Timeout * 1000)) * 10000) <= endTime - startTime);
+      // Test that we didn't take forever (be forgiving).
+      // Theoretically this test could fail very occasionally if the
+      // OS task swaps or locks up for a second at the wrong moment.
+      Assert.IsTrue(new TimeSpan(((long)(dmp.Diff_Timeout * 1000)) * 10000 * 2) > endTime - startTime);
       dmp.Diff_Timeout = 0;
 
       // Test the linemode speedup.

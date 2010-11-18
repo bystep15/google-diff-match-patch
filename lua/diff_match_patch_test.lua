@@ -1,4 +1,3 @@
-
 --[[
 * Test Harness for Diff Match and Patch
 *
@@ -59,6 +58,28 @@ function assertEquals(...)
     msg, expected, actual = ...
   end
   assert(expected == actual, msg)
+end
+
+function assertTrue(...)
+  local msg, actual
+  if (select('#', ...) == 1) then
+    actual = ...
+    assertEquals(true, actual)
+  else
+    msg, actual = ...
+    assertEquals(msg, true, actual)
+  end
+end
+
+function assertFalse(...)
+  local msg, actual
+  if (select('#', ...) == 1) then
+    actual = ...
+    assertEquals(flase, actual)
+  else
+    msg, actual = ...
+    assertEquals(msg, false, actual)
+  end
 end
 
 -- If expected and actual are the equivalent, pass the test.
@@ -635,6 +656,28 @@ function testDiffPath()
     }, dmp.diff_path2(v_map, 'CD34', '34YZ'))
 end
 
+function testDiffMap()
+  -- Normal.
+  local a = 'cat'
+  local b = 'map'
+  -- Since the resulting diff hasn't been normalized, it would be ok if
+  -- the insertion and deletion pairs are swapped.
+  -- If the order changes, tweak this test as required.
+  assertEquivalent({
+        {DIFF_INSERT, 'm'},
+        {DIFF_DELETE, 'c'},
+        {DIFF_EQUAL, 'a'},
+        {DIFF_INSERT, 'p'},
+        {DIFF_DELETE, 't'}
+      }, dmp.diff_map(a, b, 2 ^ 31))
+
+  -- Timeout.
+  assertEquivalent({
+        {DIFF_DELETE, 'cat'},
+        {DIFF_INSERT, 'map'}
+      }, dmp.diff_map(a, b, 0))
+end
+
 function testDiffMain()
   -- Perform a trivial diff.
   local a,b
@@ -734,7 +777,7 @@ function testDiffMain()
   dmp.settings{Diff_DualThreshold = 32}
 
   -- Timeout.
-  dmp.settings{Diff_Timeout = 0.001}  -- 1ms
+  dmp.settings{Diff_Timeout = 0.1}  -- 100ms
   -- Increase the text lengths by 1024 times to ensure a timeout.
   a = string.rep([[
 `Twas brillig, and the slithy toves
@@ -748,7 +791,15 @@ I've information vegetable, animal, and mineral,
 I know the kings of England, and I quote the fights historical,
 From Marathon to Waterloo, in order categorical.
 ]], 1024)
-  assertEquals(nil, dmp.diff_map(a, b))
+  local startTime = os.clock()
+  dmp.diff_main(a, b)
+  local endTime = os.clock()
+  -- Test that we took at least the timeout period.
+  assertTrue(0.1 <= endTime - startTime)
+  -- Test that we didn't take forever (be forgiving).
+  -- Theoretically this test could fail very occasionally if the
+  -- OS task swaps or locks up for a second at the wrong moment.
+  assertTrue(0.1 * 2 > endTime - startTime)
   dmp.settings{Diff_Timeout = 0}
 
   -- Test the linemode speedup.
