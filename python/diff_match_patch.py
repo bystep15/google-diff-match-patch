@@ -1716,17 +1716,17 @@ class diff_match_patch:
     Args:
       patches: Array of patch objects.
     """
-    if self.Match_MaxBits == 0:
+    patch_size = self.Match_MaxBits
+    if patch_size == 0:
       # Python has the option of not splitting strings due to its ability
       # to handle integers of arbitrary precision.
       return
     for x in xrange(len(patches)):
-      if patches[x].length1 > self.Match_MaxBits:
+      if patches[x].length1 > patch_size:
         bigpatch = patches[x]
         # Remove the big old patch.
         del patches[x]
         x -= 1
-        patch_size = self.Match_MaxBits
         start1 = bigpatch.start1
         start2 = bigpatch.start2
         precontext = ''

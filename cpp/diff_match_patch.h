@@ -129,7 +129,7 @@ class diff_match_patch {
   short Diff_EditCost;
   // The size beyond which the double-ended diff activates.
   // Double-ending is twice as fast, but less accurate.
-  short Diff_DualThreshold;
+  int Diff_DualThreshold;
   // At what point is no match declared (0.0 = perfection, 1.0 = very loose).
   float Match_Threshold;
   // How far to search for a match (0 = exact location, 1000+ = broad match).
@@ -145,7 +145,7 @@ class diff_match_patch {
   short Patch_Margin;
 
   // The number of bits in an int.
-  int Match_MaxBits;
+  short Match_MaxBits;
 
 
  public:

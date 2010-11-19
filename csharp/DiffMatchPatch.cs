@@ -194,7 +194,7 @@ namespace DiffMatchPatch {
     public short Diff_EditCost = 4;
     // The size beyond which the double-ended diff activates.
     // Double-ending is twice as fast, but less accurate.
-    public short Diff_DualThreshold = 32;
+    public int Diff_DualThreshold = 32;
     // At what point is no match declared (0.0 = perfection, 1.0 = very loose).
     public float Match_Threshold = 0.5f;
     // How far to search for a match (0 = exact location, 1000+ = broad match).
@@ -210,7 +210,7 @@ namespace DiffMatchPatch {
     public short Patch_Margin = 4;
 
     // The number of bits in an int.
-    private int Match_MaxBits = 32;
+    private short Match_MaxBits = 32;
 
 
     //  DIFF FUNCTIONS
@@ -1000,9 +1000,9 @@ namespace DiffMatchPatch {
       while (pointer < diffs.Count) {
         if (diffs[pointer - 1].operation == Operation.DELETE &&
             diffs[pointer].operation == Operation.INSERT) {
-          var deletion = diffs[pointer - 1].text;
-          var insertion = diffs[pointer].text;
-          var overlap_length = diff_commonOverlap(deletion, insertion);
+          string deletion = diffs[pointer - 1].text;
+          string insertion = diffs[pointer].text;
+          int overlap_length = diff_commonOverlap(deletion, insertion);
           if (overlap_length != 0) {
             // Overlap found.
             // Insert an equality and trim the surrounding edits.
@@ -2089,9 +2089,9 @@ namespace DiffMatchPatch {
      * @return The padding string added to each side.
      */
     public string patch_addPadding(List<Patch> patches) {
-      int paddingLength = this.Patch_Margin;
+      short paddingLength = this.Patch_Margin;
       string nullPadding = string.Empty;
-      for (int x = 1; x <= paddingLength; x++) {
+      for (short x = 1; x <= paddingLength; x++) {
         nullPadding += (char)x;
       }
 
@@ -2149,12 +2149,12 @@ namespace DiffMatchPatch {
      * @param patches List of Patch objects.
      */
     public void patch_splitMax(List<Patch> patches) {
-      for (var x = 0; x < patches.Count; x++) {
-        if (patches[x].length1 > this.Match_MaxBits) {
+      short patch_size = this.Match_MaxBits;
+      for (int x = 0; x < patches.Count; x++) {
+        if (patches[x].length1 > patch_size) {
           Patch bigpatch = patches[x];
           // Remove the big old patch.
           patches.Splice(x--, 1);
-          int patch_size = this.Match_MaxBits;
           int start1 = bigpatch.start1;
           int start2 = bigpatch.start2;
           string precontext = string.Empty;

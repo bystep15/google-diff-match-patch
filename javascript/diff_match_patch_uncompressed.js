@@ -1990,12 +1990,12 @@ diff_match_patch.prototype.patch_addPadding = function(patches) {
  * @param {!Array.<!patch_obj>} patches Array of patch objects.
  */
 diff_match_patch.prototype.patch_splitMax = function(patches) {
+  var patch_size = this.Match_MaxBits;
   for (var x = 0; x < patches.length; x++) {
-    if (patches[x].length1 > this.Match_MaxBits) {
+    if (patches[x].length1 > patch_size) {
       var bigpatch = patches[x];
       // Remove the big old patch.
       patches.splice(x--, 1);
-      var patch_size = this.Match_MaxBits;
       var start1 = bigpatch.start1;
       var start2 = bigpatch.start2;
       var precontext = '';

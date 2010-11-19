@@ -1895,9 +1895,9 @@ QPair<QString, QVector<bool> > diff_match_patch::patch_apply(
 
 
 QString diff_match_patch::patch_addPadding(QList<Patch> &patches) {
-  int paddingLength = Patch_Margin;
+  short paddingLength = Patch_Margin;
   QString nullPadding = "";
-  for (int x = 1; x <= paddingLength; x++) {
+  for (short x = 1; x <= paddingLength; x++) {
     nullPadding += QChar((ushort)x);
   }
 
@@ -1953,7 +1953,7 @@ QString diff_match_patch::patch_addPadding(QList<Patch> &patches) {
 
 
 void diff_match_patch::patch_splitMax(QList<Patch> &patches) {
-  int patch_size;
+  short patch_size = Match_MaxBits;
   QString precontext, postcontext;
   Patch patch;
   int start1, start2;
@@ -1968,13 +1968,12 @@ void diff_match_patch::patch_splitMax(QList<Patch> &patches) {
   }
 
   while (!bigpatch.isNull()) {
-    if (bigpatch.length1 <= Match_MaxBits) {
+    if (bigpatch.length1 <= patch_size) {
       bigpatch = pointer.hasNext() ? pointer.next() : Patch();
       continue;
     }
     // Remove the big old patch.
     pointer.remove();
-    patch_size = Match_MaxBits;
     start1 = bigpatch.start1;
     start2 = bigpatch.start2;
     precontext = "";

@@ -2304,18 +2304,18 @@ end
 * @param {Array.<_new_patch_obj>} patches Array of patch objects.
 --]]
 function _patch_splitMax(patches)
+  local patch_size = Match_MaxBits
   local x = 1
   while true do
     local patch = patches[x]
     if (patch == nil) then
       return
     end
-    if (patch.length1 > Match_MaxBits) then
+    if (patch.length1 > patch_size) then
       local bigpatch = patch
       -- Remove the big old patch.
       tremove(patches, x)
       x = x - 1
-      local patch_size = Match_MaxBits
       local start1 = bigpatch.start1
       local start2 = bigpatch.start2
       local precontext = ''

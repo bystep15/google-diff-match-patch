@@ -549,7 +549,7 @@ class DiffTest(DiffMatchPatchTest):
     # Test that we didn't take forever (be forgiving).
     # Theoretically this test could fail very occasionally if the
     # OS task swaps or locks up for a second at the wrong moment.
-    self.assertTrue(self.dmp.Diff_Timeout * 2 > endTime - startTime)
+    self.assertTrue(self.dmp.Diff_Timeout * 5 > endTime - startTime)
     self.dmp.Diff_Timeout = 0
 
     # Test the linemode speedup.

@@ -65,7 +65,7 @@ public class diff_match_patch {
    * The size beyond which the double-ended diff activates.
    * Double-ending is twice as fast, but less accurate.
    */
-  public short Diff_DualThreshold = 32;
+  public int Diff_DualThreshold = 32;
   /**
    * At what point is no match declared (0.0 = perfection, 1.0 = very loose).
    */
@@ -91,7 +91,7 @@ public class diff_match_patch {
   /**
    * The number of bits in an int.
    */
-  private int Match_MaxBits = 32;
+  private short Match_MaxBits = 32;
 
   /**
    * Internal class for returning results from diff_linesToChars().
@@ -2115,9 +2115,9 @@ public class diff_match_patch {
    * @return The padding string added to each side.
    */
   public String patch_addPadding(LinkedList<Patch> patches) {
-    int paddingLength = this.Patch_Margin;
+    short paddingLength = this.Patch_Margin;
     String nullPadding = "";
-    for (int x = 1; x <= paddingLength; x++) {
+    for (short x = 1; x <= paddingLength; x++) {
       nullPadding += String.valueOf((char) x);
     }
 
@@ -2176,7 +2176,7 @@ public class diff_match_patch {
    * @param patches LinkedList of Patch objects.
    */
   public void patch_splitMax(LinkedList<Patch> patches) {
-    int patch_size;
+    short patch_size = Match_MaxBits;
     String precontext, postcontext;
     Patch patch;
     int start1, start2;
@@ -2192,7 +2192,6 @@ public class diff_match_patch {
       }
       // Remove the big old patch.
       pointer.remove();
-      patch_size = Match_MaxBits;
       start1 = bigpatch.start1;
       start2 = bigpatch.start2;
       precontext = "";
@@ -2528,3 +2527,4 @@ public class diff_match_patch {
         .replace("%2C", ",").replace("%23", "#");
   }
 }
+
