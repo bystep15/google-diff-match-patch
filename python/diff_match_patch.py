@@ -700,18 +700,24 @@ class diff_match_patch:
     equalities = []  # Stack of indices where equalities are found.
     lastequality = None  # Always equal to equalities[-1][1]
     pointer = 0  # Index of current position.
-    length_changes1 = 0  # Number of chars that changed prior to the equality.
-    length_changes2 = 0  # Number of chars that changed after the equality.
+    # Number of chars that changed prior to the equality.
+    length_insertions1, length_deletions1 = 0, 0
+    # Number of chars that changed after the equality.
+    length_insertions2, length_deletions2 = 0, 0
     while pointer < len(diffs):
       if diffs[pointer][0] == self.DIFF_EQUAL:  # Equality found.
         equalities.append(pointer)
-        length_changes1 = length_changes2
-        length_changes2 = 0
+        length_insertions1, length_insertions2 = length_insertions2, 0
+        length_deletions1, length_deletions2 = length_deletions2, 0
         lastequality = diffs[pointer][1]
       else:  # An insertion or deletion.
-        length_changes2 += len(diffs[pointer][1])
-        if (lastequality != None and (len(lastequality) <= length_changes1) and
-            (len(lastequality) <= length_changes2)):
+        if diffs[pointer][0] == self.DIFF_INSERT:
+          length_insertions2 += len(diffs[pointer][1])
+        else:
+          length_deletions2 += len(diffs[pointer][1])
+        if (lastequality != None and (len(lastequality) <=
+            max(length_insertions1, length_deletions1)) and
+            (len(lastequality) <= max(length_insertions2, length_deletions2))):
           # Duplicate record.
           diffs.insert(equalities[-1], (self.DIFF_DELETE, lastequality))
           # Change second copy to insert.
@@ -726,8 +732,9 @@ class diff_match_patch:
             pointer = equalities[-1]
           else:
             pointer = -1
-          length_changes1 = 0  # Reset the counters.
-          length_changes2 = 0
+          # Reset the counters.
+          length_insertions1, length_deletions1 = 0, 0
+          length_insertions2, length_deletions2 = 0, 0
           lastequality = None
           changes = True
       pointer += 1

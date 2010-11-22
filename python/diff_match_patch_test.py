@@ -255,10 +255,15 @@ class DiffTest(DiffMatchPatchTest):
     self.dmp.diff_cleanupSemantic(diffs)
     self.assertEquals([], diffs)
 
-    # No elimination.
-    diffs = [(self.dmp.DIFF_DELETE, "a"), (self.dmp.DIFF_INSERT, "b"), (self.dmp.DIFF_EQUAL, "cd"), (self.dmp.DIFF_DELETE, "e")]
+    # No elimination #1.
+    diffs = [(self.dmp.DIFF_DELETE, "ab"), (self.dmp.DIFF_INSERT, "cd"), (self.dmp.DIFF_EQUAL, "12"), (self.dmp.DIFF_DELETE, "e")]
     self.dmp.diff_cleanupSemantic(diffs)
-    self.assertEquals([(self.dmp.DIFF_DELETE, "a"), (self.dmp.DIFF_INSERT, "b"), (self.dmp.DIFF_EQUAL, "cd"), (self.dmp.DIFF_DELETE, "e")], diffs)
+    self.assertEquals([(self.dmp.DIFF_DELETE, "ab"), (self.dmp.DIFF_INSERT, "cd"), (self.dmp.DIFF_EQUAL, "12"), (self.dmp.DIFF_DELETE, "e")], diffs)
+
+    # No elimination #2.
+    diffs = [(self.dmp.DIFF_DELETE, "abc"), (self.dmp.DIFF_INSERT, "ABC"), (self.dmp.DIFF_EQUAL, "1234"), (self.dmp.DIFF_DELETE, "wxyz")]
+    self.dmp.diff_cleanupSemantic(diffs)
+    self.assertEquals([(self.dmp.DIFF_DELETE, "abc"), (self.dmp.DIFF_INSERT, "ABC"), (self.dmp.DIFF_EQUAL, "1234"), (self.dmp.DIFF_DELETE, "wxyz")], diffs)
 
     # Simple elimination.
     diffs = [(self.dmp.DIFF_DELETE, "a"), (self.dmp.DIFF_EQUAL, "b"), (self.dmp.DIFF_DELETE, "c")]

@@ -337,18 +337,31 @@ namespace nicTest {
       dmp.diff_cleanupSemantic(diffs);
       CollectionAssert.AreEqual(new List<Diff>(), diffs);
 
-      // No elimination.
+      // No elimination #1.
       diffs = new List<Diff> {
-          new Diff(Operation.DELETE, "a"),
-          new Diff(Operation.INSERT, "b"),
-          new Diff(Operation.EQUAL, "cd"),
+          new Diff(Operation.DELETE, "ab"),
+          new Diff(Operation.INSERT, "cd"),
+          new Diff(Operation.EQUAL, "12"),
           new Diff(Operation.DELETE, "e")};
       dmp.diff_cleanupSemantic(diffs);
       CollectionAssert.AreEqual(new List<Diff> {
-          new Diff(Operation.DELETE, "a"),
-          new Diff(Operation.INSERT, "b"),
-          new Diff(Operation.EQUAL, "cd"),
+          new Diff(Operation.DELETE, "ab"),
+          new Diff(Operation.INSERT, "cd"),
+          new Diff(Operation.EQUAL, "12"),
           new Diff(Operation.DELETE, "e")}, diffs);
+
+      // No elimination #2.
+      diffs = new List<Diff> {
+          new Diff(Operation.DELETE, "abc"),
+          new Diff(Operation.INSERT, "ABC"),
+          new Diff(Operation.EQUAL, "1234"),
+          new Diff(Operation.DELETE, "wxyz")};
+      dmp.diff_cleanupSemantic(diffs);
+      CollectionAssert.AreEqual(new List<Diff> {
+          new Diff(Operation.DELETE, "abc"),
+          new Diff(Operation.INSERT, "ABC"),
+          new Diff(Operation.EQUAL, "1234"),
+          new Diff(Operation.DELETE, "wxyz")}, diffs);
 
       // Simple elimination.
       diffs = new List<Diff> {

@@ -307,22 +307,30 @@ function diff_cleanupSemantic(diffs)
   local lastequality = nil  -- Always equal to equalities[equalitiesLength][2]
   local pointer = 1  -- Index of current position.
   -- Number of characters that changed prior to the equality.
-  local length_changes1 = 0
+  local length_insertions1 = 0
+  local length_deletions1 = 0
   -- Number of characters that changed after the equality.
-  local length_changes2 = 0
+  local length_insertions2 = 0
+  local length_deletions2 = 0
 
   while diffs[pointer] do
     if diffs[pointer][1] == DIFF_EQUAL then  -- Equality found.
       equalitiesLength = equalitiesLength + 1
       equalities[equalitiesLength] = pointer
-      length_changes1 = length_changes2
-      length_changes2 = 0
+      length_insertions1 = length_insertions2
+      length_deletions1 = length_deletions2
+      length_insertions2 = 0
+      length_deletions2 = 0
       lastequality = diffs[pointer][2]
     else  -- An insertion or deletion.
-      length_changes2 = length_changes2 + #(diffs[pointer][2])
-      if lastequality and (#lastequality > 0)
-         and (#lastequality <= length_changes1)
-         and (#lastequality <= length_changes2) then
+      if diffs[pointer][1] == DIFF_INSERT then
+        length_insertions2 = length_insertions2 + #(diffs[pointer][2])
+      else
+        length_deletions2 = length_deletions2 + #(diffs[pointer][2])
+      end
+      if lastequality
+         and (#lastequality <= max(length_insertions1, length_deletions1))
+         and (#lastequality <= max(length_insertions2, length_deletions2)) then
         -- Duplicate record.
         tinsert(diffs, equalities[equalitiesLength],
          {DIFF_DELETE, lastequality})
@@ -333,7 +341,8 @@ function diff_cleanupSemantic(diffs)
         -- Throw away the previous equality (it needs to be reevaluated).
         equalitiesLength = equalitiesLength - 1
         pointer = (equalitiesLength > 0) and equalities[equalitiesLength] or 0
-        length_changes1, length_changes2 = 0, 0  -- Reset the counters.
+        length_insertions1, length_deletions1 = 0, 0  -- Reset the counters.
+        length_insertions2, length_deletions2 = 0, 0
         lastequality = nil
         changes = true
       end

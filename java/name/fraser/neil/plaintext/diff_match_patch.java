@@ -861,22 +861,32 @@ public class diff_match_patch {
     String lastequality = null; // Always equal to equalities.lastElement().text
     ListIterator<Diff> pointer = diffs.listIterator();
     // Number of characters that changed prior to the equality.
-    int length_changes1 = 0;
+    int length_insertions1 = 0;
+    int length_deletions1 = 0;
     // Number of characters that changed after the equality.
-    int length_changes2 = 0;
+    int length_insertions2 = 0;
+    int length_deletions2 = 0;
     Diff thisDiff = pointer.next();
     while (thisDiff != null) {
       if (thisDiff.operation == Operation.EQUAL) {
         // Equality found.
         equalities.push(thisDiff);
-        length_changes1 = length_changes2;
-        length_changes2 = 0;
+        length_insertions1 = length_insertions2;
+        length_deletions1 = length_deletions2;
+        length_insertions2 = 0;
+        length_deletions2 = 0;
         lastequality = thisDiff.text;
       } else {
         // An insertion or deletion.
-        length_changes2 += thisDiff.text.length();
-        if (lastequality != null && (lastequality.length() <= length_changes1)
-            && (lastequality.length() <= length_changes2)) {
+        if (thisDiff.operation == Operation.INSERT) {
+          length_insertions2 += thisDiff.text.length();
+        } else {
+          length_deletions2 += thisDiff.text.length();
+        }
+        if (lastequality != null && (lastequality.length()
+            <= Math.max(length_insertions1, length_deletions1))
+            && (lastequality.length()
+                <= Math.max(length_insertions2, length_deletions2))) {
           //System.out.println("Splitting: '" + lastequality + "'");
           // Walk back to offending equality.
           while (thisDiff != equalities.lastElement()) {
@@ -907,8 +917,10 @@ public class diff_match_patch {
             }
           }
 
-          length_changes1 = 0;  // Reset the counters.
-          length_changes2 = 0;
+          length_insertions1 = 0;  // Reset the counters.
+          length_insertions2 = 0;
+          length_deletions1 = 0;
+          length_deletions2 = 0;
           lastequality = null;
           changes = true;
         }

@@ -299,10 +299,15 @@ function testDiffCleanupSemantic() {
   dmp.diff_cleanupSemantic(diffs);
   assertEquivalent([], diffs);
 
-  // No elimination.
-  diffs = [[DIFF_DELETE, 'a'], [DIFF_INSERT, 'b'], [DIFF_EQUAL, 'cd'], [DIFF_DELETE, 'e']];
+  // No elimination #1.
+  diffs = [[DIFF_DELETE, 'ab'], [DIFF_INSERT, 'cd'], [DIFF_EQUAL, '12'], [DIFF_DELETE, 'e']];
   dmp.diff_cleanupSemantic(diffs);
-  assertEquivalent([[DIFF_DELETE, 'a'], [DIFF_INSERT, 'b'], [DIFF_EQUAL, 'cd'], [DIFF_DELETE, 'e']], diffs);
+  assertEquivalent([[DIFF_DELETE, 'ab'], [DIFF_INSERT, 'cd'], [DIFF_EQUAL, '12'], [DIFF_DELETE, 'e']], diffs);
+
+  // No elimination #2.
+  diffs = [[DIFF_DELETE, 'abc'], [DIFF_INSERT, 'ABC'], [DIFF_EQUAL, '1234'], [DIFF_DELETE, 'wxyz']];
+  dmp.diff_cleanupSemantic(diffs);
+  assertEquivalent([[DIFF_DELETE, 'abc'], [DIFF_INSERT, 'ABC'], [DIFF_EQUAL, '1234'], [DIFF_DELETE, 'wxyz']], diffs);
 
   // Simple elimination.
   diffs = [[DIFF_DELETE, 'a'], [DIFF_EQUAL, 'b'], [DIFF_DELETE, 'c']];

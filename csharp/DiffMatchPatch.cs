@@ -954,19 +954,29 @@ namespace DiffMatchPatch {
       string lastequality = null;
       int pointer = 0;  // Index of current position.
       // Number of characters that changed prior to the equality.
-      int length_changes1 = 0;
+      int length_insertions1 = 0;
+      int length_deletions1 = 0;
       // Number of characters that changed after the equality.
-      int length_changes2 = 0;
+      int length_insertions2 = 0;
+      int length_deletions2 = 0;
       while (pointer < diffs.Count) {
         if (diffs[pointer].operation == Operation.EQUAL) {  // Equality found.
           equalities.Push(pointer);
-          length_changes1 = length_changes2;
-          length_changes2 = 0;
+          length_insertions1 = length_insertions2;
+          length_deletions1 = length_deletions2;
+          length_insertions2 = 0;
+          length_deletions2 = 0;
           lastequality = diffs[pointer].text;
         } else {  // an insertion or deletion
-          length_changes2 += diffs[pointer].text.Length;
-          if (lastequality != null && (lastequality.Length <= length_changes1)
-              && (lastequality.Length <= length_changes2)) {
+          if (diffs[pointer].operation == Operation.INSERT) {
+            length_insertions2 += diffs[pointer].text.Length;
+          } else {
+            length_deletions2 += diffs[pointer].text.Length;
+          }
+          if (lastequality != null && (lastequality.Length
+              <= Math.Max(length_insertions1, length_deletions1))
+              && (lastequality.Length
+                  <= Math.Max(length_insertions2, length_deletions2))) {
             // Duplicate record.
             diffs.Insert(equalities.Peek(),
                          new Diff(Operation.DELETE, lastequality));
@@ -978,8 +988,10 @@ namespace DiffMatchPatch {
               equalities.Pop();
             }
             pointer = equalities.Count > 0 ? equalities.Peek() : -1;
-            length_changes1 = 0;  // Reset the counters.
-            length_changes2 = 0;
+            length_insertions1 = 0;  // Reset the counters.
+            length_deletions1 = 0;
+            length_insertions2 = 0;
+            length_deletions2 = 0;
             lastequality = null;
             changes = true;
           }

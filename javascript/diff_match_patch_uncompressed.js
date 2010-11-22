@@ -826,19 +826,29 @@ diff_match_patch.prototype.diff_cleanupSemantic = function(diffs) {
   var lastequality = null;  // Always equal to equalities[equalitiesLength-1][1]
   var pointer = 0;  // Index of current position.
   // Number of characters that changed prior to the equality.
-  var length_changes1 = 0;
+  var length_insertions1 = 0;
+  var length_deletions1 = 0;
   // Number of characters that changed after the equality.
-  var length_changes2 = 0;
+  var length_insertions2 = 0;
+  var length_deletions2 = 0;
   while (pointer < diffs.length) {
     if (diffs[pointer][0] == DIFF_EQUAL) {  // Equality found.
       equalities[equalitiesLength++] = pointer;
-      length_changes1 = length_changes2;
-      length_changes2 = 0;
+      length_insertions1 = length_insertions2;
+      length_deletions1 = length_deletions2;
+      length_insertions2 = 0;
+      length_deletions2 = 0;
       lastequality = /** @type {string} */(diffs[pointer][1]);
     } else {  // An insertion or deletion.
-      length_changes2 += diffs[pointer][1].length;
-      if (lastequality !== null && (lastequality.length <= length_changes1) &&
-          (lastequality.length <= length_changes2)) {
+      if (diffs[pointer][0] == DIFF_INSERT) {
+        length_insertions2 += diffs[pointer][1].length;
+      } else {
+        length_deletions2 += diffs[pointer][1].length;
+      }
+      if (lastequality !== null && (lastequality.length <=
+          Math.max(length_insertions1, length_deletions1)) &&
+          (lastequality.length <= Math.max(length_insertions2,
+           length_deletions2))) {
         // Duplicate record.
         diffs.splice(equalities[equalitiesLength - 1], 0,
                      [DIFF_DELETE, lastequality]);
@@ -849,8 +859,10 @@ diff_match_patch.prototype.diff_cleanupSemantic = function(diffs) {
         // Throw away the previous equality (it needs to be reevaluated).
         equalitiesLength--;
         pointer = equalitiesLength > 0 ? equalities[equalitiesLength - 1] : -1;
-        length_changes1 = 0;  // Reset the counters.
-        length_changes2 = 0;
+        length_insertions1 = 0;  // Reset the counters.
+        length_deletions1 = 0;
+        length_insertions2 = 0;
+        length_deletions2 = 0;
         lastequality = null;
         changes = true;
       }

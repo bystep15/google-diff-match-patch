@@ -308,9 +308,13 @@ void diff_match_patch_test::testDiffCleanupSemantic() {
   dmp.diff_cleanupSemantic(diffs);
   assertEquals("diff_cleanupSemantic: Null case.", diffList(), diffs);
 
-  diffs = diffList(Diff(DELETE, "a"), Diff(INSERT, "b"), Diff(EQUAL, "cd"), Diff(DELETE, "e"));
+  diffs = diffList(Diff(DELETE, "ab"), Diff(INSERT, "cd"), Diff(EQUAL, "12"), Diff(DELETE, "e"));
   dmp.diff_cleanupSemantic(diffs);
-  assertEquals("diff_cleanupSemantic: No elimination.", diffList(Diff(DELETE, "a"), Diff(INSERT, "b"), Diff(EQUAL, "cd"), Diff(DELETE, "e")), diffs);
+  assertEquals("diff_cleanupSemantic: No elimination #1.", diffList(Diff(DELETE, "ab"), Diff(INSERT, "cd"), Diff(EQUAL, "12"), Diff(DELETE, "e")), diffs);
+
+  diffs = diffList(Diff(DELETE, "abc"), Diff(INSERT, "ABC"), Diff(EQUAL, "1234"), Diff(DELETE, "wxyz"));
+  dmp.diff_cleanupSemantic(diffs);
+  assertEquals("diff_cleanupSemantic: No elimination #2.", diffList(Diff(DELETE, "abc"), Diff(INSERT, "ABC"), Diff(EQUAL, "1234"), Diff(DELETE, "wxyz")), diffs);
 
   diffs = diffList(Diff(DELETE, "a"), Diff(EQUAL, "b"), Diff(DELETE, "c"));
   dmp.diff_cleanupSemantic(diffs);

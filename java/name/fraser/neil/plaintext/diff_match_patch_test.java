@@ -262,9 +262,13 @@ public class diff_match_patch_test extends TestCase {
     dmp.diff_cleanupSemantic(diffs);
     assertEquals("diff_cleanupSemantic: Null case.", diffList(), diffs);
 
-    diffs = diffList(new Diff(DELETE, "a"), new Diff(INSERT, "b"), new Diff(EQUAL, "cd"), new Diff(DELETE, "e"));
+    diffs = diffList(new Diff(DELETE, "ab"), new Diff(INSERT, "cd"), new Diff(EQUAL, "12"), new Diff(DELETE, "e"));
     dmp.diff_cleanupSemantic(diffs);
-    assertEquals("diff_cleanupSemantic: No elimination.", diffList(new Diff(DELETE, "a"), new Diff(INSERT, "b"), new Diff(EQUAL, "cd"), new Diff(DELETE, "e")), diffs);
+    assertEquals("diff_cleanupSemantic: No elimination #1.", diffList(new Diff(DELETE, "ab"), new Diff(INSERT, "cd"), new Diff(EQUAL, "12"), new Diff(DELETE, "e")), diffs);
+
+    diffs = diffList(new Diff(DELETE, "abc"), new Diff(INSERT, "ABC"), new Diff(EQUAL, "1234"), new Diff(DELETE, "wxyz"));
+    dmp.diff_cleanupSemantic(diffs);
+    assertEquals("diff_cleanupSemantic: No elimination #2.", diffList(new Diff(DELETE, "abc"), new Diff(INSERT, "ABC"), new Diff(EQUAL, "1234"), new Diff(DELETE, "wxyz")), diffs);
 
     diffs = diffList(new Diff(DELETE, "a"), new Diff(EQUAL, "b"), new Diff(DELETE, "c"));
     dmp.diff_cleanupSemantic(diffs);
