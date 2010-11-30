@@ -380,15 +380,15 @@ diff_match_patch.prototype.diff_map = function(text1, text2, deadline) {
   var text2_length = text2.length;
   var max_d = text1_length + text2_length - 1;
   var doubleEnd = this.Diff_DualThreshold * 2 < max_d;
-  // JavaScript efficiency note: (x << 32) + y doesn't work since numbers are
-  // only 32 bit.  Use x + ',' + y to create a hash instead.
   var v_map1 = [];
   var v_map2 = [];
-  var v1 = {};
-  var v2 = {};
-  v1[1] = 0;
-  v2[1] = 0;
+  /** @type {!Object} */
+  var v_map_d;
+  var v1 = {1:0};
+  var v2 = {1:0};
   var x, y;
+  // JavaScript efficiency note: (x << 32) + y doesn't work since numbers are
+  // only 32 bit.  Use x + ',' + y to create a hash instead.
   var footstep;  // Used to track overlapping paths.
   var footsteps = {};
   var done = false;
@@ -402,7 +402,8 @@ diff_match_patch.prototype.diff_map = function(text1, text2, deadline) {
     }
 
     // Walk the front path one step.
-    v_map1[d] = {};
+    v_map_d = {};
+    v_map1[d] = v_map_d;
     for (var k = -d; k <= d; k += 2) {
       if (k == -d || k != d && v1[k - 1] < v1[k + 1]) {
         x = v1[k + 1];
@@ -434,7 +435,7 @@ diff_match_patch.prototype.diff_map = function(text1, text2, deadline) {
         }
       }
       v1[k] = x;
-      v_map1[d][x + ',' + y] = true;
+      v_map_d[k] = x;
       if (x == text1_length && y == text2_length) {
         // Reached the end in single-path mode.
         return this.diff_path1(v_map1, text1, text2);
@@ -450,7 +451,8 @@ diff_match_patch.prototype.diff_map = function(text1, text2, deadline) {
 
     if (doubleEnd) {
       // Walk the reverse path one step.
-      v_map2[d] = {};
+      v_map_d = {}
+      v_map2[d] = v_map_d;
       for (var k = -d; k <= d; k += 2) {
         if (k == -d || k != d && v2[k - 1] < v2[k + 1]) {
           x = v2[k + 1];
@@ -479,7 +481,7 @@ diff_match_patch.prototype.diff_map = function(text1, text2, deadline) {
           }
         }
         v2[k] = x;
-        v_map2[d][x + ',' + y] = true;
+        v_map_d[k] = x;
         if (done) {
           // Reverse path ran over front path.
           v_map1 = v_map1.slice(0, footsteps[footstep] + 1);
@@ -513,24 +515,26 @@ diff_match_patch.prototype.diff_path1 = function(v_map, text1, text2) {
   /** @type {?number} */
   var last_op = null;
   for (var d = v_map.length - 2; d >= 0; d--) {
+    var k = x - y;
+    var v_map_d = v_map[d];
     while (true) {
-      if (v_map[d][(x - 1) + ',' + y] !== undefined) {
+      if (v_map_d[k - 1] === x - 1) {
         x--;
         if (last_op === DIFF_DELETE) {
           path[0][1] = text1.charAt(x) + path[0][1];
         } else {
           path.unshift([DIFF_DELETE, text1.charAt(x)]);
+          last_op = DIFF_DELETE;
         }
-        last_op = DIFF_DELETE;
         break;
-      } else if (v_map[d][x + ',' + (y - 1)] !== undefined) {
+      } else if (v_map_d[k + 1] === x) {
         y--;
         if (last_op === DIFF_INSERT) {
           path[0][1] = text2.charAt(y) + path[0][1];
         } else {
           path.unshift([DIFF_INSERT, text2.charAt(y)]);
+          last_op = DIFF_INSERT;
         }
-        last_op = DIFF_INSERT;
         break;
       } else {
         x--;
@@ -542,8 +546,8 @@ diff_match_patch.prototype.diff_path1 = function(v_map, text1, text2) {
           path[0][1] = text1.charAt(x) + path[0][1];
         } else {
           path.unshift([DIFF_EQUAL, text1.charAt(x)]);
+          last_op = DIFF_EQUAL;
         }
-        last_op = DIFF_EQUAL;
       }
     }
   }
@@ -567,26 +571,28 @@ diff_match_patch.prototype.diff_path2 = function(v_map, text1, text2) {
   /** @type {?number} */
   var last_op = null;
   for (var d = v_map.length - 2; d >= 0; d--) {
+    var k = x - y;
+    var v_map_d = v_map[d];
     while (true) {
-      if (v_map[d][(x - 1) + ',' + y] !== undefined) {
+      if (v_map_d[k - 1] === x - 1) {
         x--;
         if (last_op === DIFF_DELETE) {
           path[pathLength - 1][1] += text1.charAt(text1.length - x - 1);
         } else {
           path[pathLength++] =
               [DIFF_DELETE, text1.charAt(text1.length - x - 1)];
+          last_op = DIFF_DELETE;
         }
-        last_op = DIFF_DELETE;
         break;
-      } else if (v_map[d][x + ',' + (y - 1)] !== undefined) {
+      } else if (v_map_d[k + 1] === x) {
         y--;
         if (last_op === DIFF_INSERT) {
           path[pathLength - 1][1] += text2.charAt(text2.length - y - 1);
         } else {
           path[pathLength++] =
               [DIFF_INSERT, text2.charAt(text2.length - y - 1)];
+          last_op = DIFF_INSERT;
         }
-        last_op = DIFF_INSERT;
         break;
       } else {
         x--;
@@ -600,8 +606,8 @@ diff_match_patch.prototype.diff_path2 = function(v_map, text1, text2) {
         } else {
           path[pathLength++] =
               [DIFF_EQUAL, text1.charAt(text1.length - x - 1)];
+          last_op = DIFF_EQUAL;
         }
-        last_op = DIFF_EQUAL;
       }
     }
   }

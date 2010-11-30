@@ -257,7 +257,7 @@ class diff_match_patch {
    * @return LinkedList of Diff objects.
    */
  protected:
-  QList<Diff> diff_path1(const QList<QSet<QPair<int, int> > > &v_map,
+  QList<Diff> diff_path1(const QList<QMap<int, int> > &v_map,
                          const QString &text1, const QString &text2);
 
   /**
@@ -268,7 +268,7 @@ class diff_match_patch {
    * @return LinkedList of Diff objects.
    */
  protected:
-  QList<Diff> diff_path2(const QList<QSet<QPair<int, int> > > &v_map,
+  QList<Diff> diff_path2(const QList<QMap<int, int> > &v_map,
                          const QString &text1, const QString &text2);
 
   /**

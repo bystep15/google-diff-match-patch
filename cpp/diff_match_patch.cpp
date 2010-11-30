@@ -433,8 +433,8 @@ QList<Diff> diff_match_patch::diff_map(const QString &text1,
   const int text2_length = text2.length();
   const int max_d = text1_length + text2_length - 1;
   const bool doubleEnd = Diff_DualThreshold * 2 < max_d;
-  QList<QSet<QPair<int, int> > > v_map1;
-  QList<QSet<QPair<int, int> > > v_map2;
+  QList<QMap<int, int> > v_map1;
+  QList<QMap<int, int> > v_map2;
   QMap<int, int> v1;
   QMap<int, int> v2;
   v1.insert(1, 0);
@@ -453,7 +453,7 @@ QList<Diff> diff_match_patch::diff_map(const QString &text1,
     }
 
     // Walk the front path one step.
-    v_map1.append(QSet<QPair<int, int> >());  // Adds at index 'd'.
+    v_map1.append(QMap<int, int>());  // Adds at index 'd'.
     for (int k = -d; k <= d; k += 2) {
       if (k == -d || (k != d && v1.value(k - 1) < v1.value(k + 1))) {
         x = v1.value(k + 1);
@@ -485,7 +485,7 @@ QList<Diff> diff_match_patch::diff_map(const QString &text1,
         }
       }
       v1.insert(k, x);
-      v_map1[d].insert(QPair<int, int>(x, y));
+      v_map1[d].insert(k, x);
       if (x == text1_length && y == text2_length) {
         // Reached the end in single-path mode.
         return diff_path1(v_map1, text1, text2);
@@ -500,7 +500,7 @@ QList<Diff> diff_match_patch::diff_map(const QString &text1,
 
     if (doubleEnd) {
       // Walk the reverse path one step.
-      v_map2.append(QSet<QPair<int, int> >());  // Adds at index 'd'.
+      v_map2.append(QMap<int, int>());  // Adds at index 'd'.
       for (int k = -d; k <= d; k += 2) {
         if (k == -d || (k != d && v2.value(k - 1) < v2.value(k + 1))) {
           x = v2.value(k + 1);
@@ -529,7 +529,7 @@ QList<Diff> diff_match_patch::diff_map(const QString &text1,
           }
         }
         v2.insert(k, x);
-        v_map2[d].insert(QPair<int, int>(x, y));
+        v_map2[d].insert(k, x);
         if (done) {
           // Reverse path ran over front path.
           v_map1 = v_map1.mid(0, footsteps.value(footstep) + 1);
@@ -552,7 +552,7 @@ QList<Diff> diff_match_patch::diff_map(const QString &text1,
 
 
 QList<Diff> diff_match_patch::diff_path1(
-    const QList<QSet<QPair<int, int> > > &v_map,
+    const QList<QMap<int, int> > &v_map,
     const QString &text1, const QString &text2) {
   QList<Diff> path;
   int x = text1.length();
@@ -560,24 +560,26 @@ QList<Diff> diff_match_patch::diff_path1(
   Operation last_op = EQUAL;
   bool first = true;
   for (int d = v_map.size() - 2; d >= 0; d--) {
+    int k = x - y;
+    QMap<int, int> v_map_d = v_map.value(d);
     while (true) {
-      if (v_map.value(d).contains(QPair<int, int>(x - 1, y))) {
+      if (v_map_d.value(k - 1, INT_MIN) == x - 1) {
         x--;
         if (last_op == DELETE) {
           path.front().text = text1[x] + path.front().text;
         } else {
           path.prepend(Diff(DELETE, text1.mid(x, 1)));
+          last_op = DELETE;
         }
-        last_op = DELETE;
         break;
-      } else if (v_map.value(d).contains(QPair<int, int>(x, y - 1))) {
+      } else if (v_map_d.value(k + 1, INT_MIN) == x) {
         y--;
         if (last_op == INSERT) {
           path.front().text = text2[y] + path.front().text;
         } else {
           path.prepend(Diff(INSERT, text2.mid(y, 1)));
+          last_op = INSERT;
         }
-        last_op = INSERT;
         break;
       } else {
         x--;
@@ -589,18 +591,19 @@ QList<Diff> diff_match_patch::diff_path1(
           path.front().text = text1[x] + path.front().text;
         } else {
           path.prepend(Diff(EQUAL, text1.mid(x, 1)));
+          last_op = EQUAL;
+          first = false;
         }
-        last_op = EQUAL;
       }
-      first = false;
     }
+    first = false;
   }
   return path;
 }
 
 
 QList<Diff> diff_match_patch::diff_path2(
-    const QList<QSet<QPair<int, int> > > &v_map,
+    const QList<QMap<int, int> > &v_map,
     const QString &text1, const QString &text2) {
   QList<Diff> path;
   int x = text1.length();
@@ -608,24 +611,26 @@ QList<Diff> diff_match_patch::diff_path2(
   Operation last_op = EQUAL;
   bool first = true;
   for (int d = v_map.size() - 2; d >= 0; d--) {
+    int k = x - y;
+    QMap<int, int> v_map_d = v_map.value(d);
     while (true) {
-      if (v_map.value(d).contains(QPair<int, int>(x - 1, y))) {
+      if (v_map_d.value(k - 1, INT_MIN) == x - 1) {
         x--;
         if (last_op == DELETE) {
           path.back().text += text1[text1.length() - x - 1];
         } else {
           path.append(Diff(DELETE, text1.mid(text1.length() - x - 1, 1)));
+          last_op = DELETE;
         }
-        last_op = DELETE;
         break;
-      } else if (v_map.value(d).contains(QPair<int, int>(x, y - 1))) {
+      } else if (v_map_d.value(k + 1, INT_MIN) == x) {
         y--;
         if (last_op == INSERT) {
           path.back().text += text2[text2.length() - y - 1];
         } else {
           path.append(Diff(INSERT, text2.mid(text2.length() - y - 1, 1)));
+          last_op = INSERT;
         }
-        last_op = INSERT;
         break;
       } else {
         x--;
@@ -638,8 +643,9 @@ QList<Diff> diff_match_patch::diff_path2(
           path.back().text += text1[text1.length() - x - 1];
         } else {
           path.append(Diff(EQUAL, text1.mid(text1.length() - x - 1, 1)));
+          last_op = EQUAL;
+          first = false;
         }
-        last_op = EQUAL;
       }
     }
     first = false;

@@ -325,14 +325,10 @@ class diff_match_patch:
     doubleEnd = self.Diff_DualThreshold * 2 < max_d
     # Python efficiency note: (x << 32) + y is the fastest way to combine
     # x and y into a single hashable value.  Tested in Python 2.5.
-    # It is unclear why it is faster for v_map[d] to be indexed with an
-    # integer whereas footsteps is indexed with a string.
     v_map1 = []
     v_map2 = []
-    v1 = {}
-    v2 = {}
-    v1[1] = 0
-    v2[1] = 0
+    v1 = {1:0}
+    v2 = {1:0}
     footsteps = {}
     done = False
     # If the total number of characters is odd, then the front path will
@@ -344,7 +340,8 @@ class diff_match_patch:
         break
 
       # Walk the front path one step.
-      v_map1.append({})
+      v_map_d = {}
+      v_map1.append(v_map_d)
       for k in xrange(-d, d + 1, 2):
         if k == -d or k != d and v1[k - 1] < v1[k + 1]:
           x = v1[k + 1]
@@ -370,7 +367,7 @@ class diff_match_patch:
               footsteps[footstep] = d
 
         v1[k] = x
-        v_map1[d][(x << 32) + y] = True
+        v_map_d[k] = x
         if x == text1_length and y == text2_length:
           # Reached the end in single-path mode.
           return self.diff_path1(v_map1, text1, text2)
@@ -383,7 +380,8 @@ class diff_match_patch:
 
       if doubleEnd:
         # Walk the reverse path one step.
-        v_map2.append({})
+        v_map_d = {}
+        v_map2.append(v_map_d)
         for k in xrange(-d, d + 1, 2):
           if k == -d or k != d and v2[k - 1] < v2[k + 1]:
             x = v2[k + 1]
@@ -406,7 +404,7 @@ class diff_match_patch:
               footsteps[footstep] = d
 
           v2[k] = x
-          v_map2[d][(x << 32) + y] = True
+          v_map_d[k] = x
           if done:
             # Reverse path ran over front path.
             v_map1 = v_map1[:footsteps[footstep] + 1]
@@ -436,22 +434,24 @@ class diff_match_patch:
     y = len(text2)
     last_op = None
     for d in xrange(len(v_map) - 2, -1, -1):
+      k = x - y
+      v_map_d = v_map[d]
       while True:
-        if (x - 1 << 32) + y in v_map[d]:
+        if v_map_d.get(k - 1) == x - 1:
           x -= 1
           if last_op == self.DIFF_DELETE:
             path[0] = (self.DIFF_DELETE, text1[x] + path[0][1])
           else:
             path[:0] = [(self.DIFF_DELETE, text1[x])]
-          last_op = self.DIFF_DELETE
+            last_op = self.DIFF_DELETE
           break
-        elif (x << 32) + y - 1 in v_map[d]:
+        elif v_map_d.get(k + 1) == x:
           y -= 1
           if last_op == self.DIFF_INSERT:
             path[0] = (self.DIFF_INSERT, text2[y] + path[0][1])
           else:
             path[:0] = [(self.DIFF_INSERT, text2[y])]
-          last_op = self.DIFF_INSERT
+            last_op = self.DIFF_INSERT
           break
         else:
           x -= 1
@@ -462,7 +462,7 @@ class diff_match_patch:
             path[0] = (self.DIFF_EQUAL, text1[x] + path[0][1])
           else:
             path[:0] = [(self.DIFF_EQUAL, text1[x])]
-          last_op = self.DIFF_EQUAL
+            last_op = self.DIFF_EQUAL
     return path
 
   def diff_path2(self, v_map, text1, text2):
@@ -481,22 +481,24 @@ class diff_match_patch:
     y = len(text2)
     last_op = None
     for d in xrange(len(v_map) - 2, -1, -1):
+      k = x - y
+      v_map_d = v_map[d]
       while True:
-        if (x - 1 << 32) + y in v_map[d]:
+        if v_map_d.get(k - 1) == x - 1:
           x -= 1
           if last_op == self.DIFF_DELETE:
             path[-1] = (self.DIFF_DELETE, path[-1][1] + text1[-x - 1])
           else:
             path.append((self.DIFF_DELETE, text1[-x - 1]))
-          last_op = self.DIFF_DELETE
+            last_op = self.DIFF_DELETE
           break
-        elif (x << 32) + y - 1 in v_map[d]:
+        elif v_map_d.get(k + 1) == x:
           y -= 1
           if last_op == self.DIFF_INSERT:
             path[-1] = (self.DIFF_INSERT, path[-1][1] + text2[-y - 1])
           else:
             path.append((self.DIFF_INSERT, text2[-y - 1]))
-          last_op = self.DIFF_INSERT
+            last_op = self.DIFF_INSERT
           break
         else:
           x -= 1
@@ -507,7 +509,7 @@ class diff_match_patch:
             path[-1] = (self.DIFF_EQUAL, path[-1][1] + text1[-x - 1])
           else:
             path.append((self.DIFF_EQUAL, text1[-x - 1]))
-          last_op = self.DIFF_EQUAL
+            last_op = self.DIFF_EQUAL
     return path
 
   def diff_commonPrefix(self, text1, text2):

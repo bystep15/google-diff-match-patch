@@ -56,6 +56,7 @@ void diff_match_patch_test::run_all_tests() {
     testDiffText();
     testDiffDelta();
     testDiffXIndex();
+    testDiffLevenshtein();
     testDiffPath();
     testDiffMap();
     testDiffMain();
@@ -451,61 +452,61 @@ void diff_match_patch_test::testDiffXIndex() {
 
 void diff_match_patch_test::testDiffLevenshtein() {
   QList<Diff> diffs = diffList(Diff(DELETE, "abc"), Diff(INSERT, "1234"), Diff(EQUAL, "xyz"));
-  assertEquals("Levenshtein with trailing equality.", 4, dmp.diff_levenshtein(diffs));
+  assertEquals("diff_levenshtein: Trailing equality.", 4, dmp.diff_levenshtein(diffs));
 
   diffs = diffList(Diff(EQUAL, "xyz"), Diff(DELETE, "abc"), Diff(INSERT, "1234"));
-  assertEquals("Levenshtein with leading equality.", 4, dmp.diff_levenshtein(diffs));
+  assertEquals("diff_levenshtein: Leading equality.", 4, dmp.diff_levenshtein(diffs));
 
   diffs = diffList(Diff(DELETE, "abc"), Diff(EQUAL, "xyz"), Diff(INSERT, "1234"));
-  assertEquals("Levenshtein with middle equality.", 7, dmp.diff_levenshtein(diffs));
+  assertEquals("diff_levenshtein: Middle equality.", 7, dmp.diff_levenshtein(diffs));
 }
 
 void diff_match_patch_test::testDiffPath() {
   // Single letters.
   // Trace a path from back to front.
-  QList<QSet<QPair<int, int> > > v_map;
-  QSet<QPair<int, int> > row_set;
+  QList<QMap<int, int> > v_map;
+  QMap<int, int> row_map;
   {
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(0, 0));
-    v_map.append(row_set);
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(0, 1));
-    row_set.insert(QPair<int, int>(1, 0));
-    v_map.append(row_set);
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(0, 2));
-    row_set.insert(QPair<int, int>(2, 0));
-    row_set.insert(QPair<int, int>(2, 2));
-    v_map.append(row_set);
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(0, 3));
-    row_set.insert(QPair<int, int>(2, 3));
-    row_set.insert(QPair<int, int>(3, 0));
-    row_set.insert(QPair<int, int>(4, 3));
-    v_map.append(row_set);
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(0, 4));
-    row_set.insert(QPair<int, int>(2, 4));
-    row_set.insert(QPair<int, int>(4, 0));
-    row_set.insert(QPair<int, int>(4, 4));
-    row_set.insert(QPair<int, int>(5, 3));
-    v_map.append(row_set);
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(0, 5));
-    row_set.insert(QPair<int, int>(2, 5));
-    row_set.insert(QPair<int, int>(4, 5));
-    row_set.insert(QPair<int, int>(5, 0));
-    row_set.insert(QPair<int, int>(6, 3));
-    row_set.insert(QPair<int, int>(6, 5));
-    v_map.append(row_set);
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(0, 6));
-    row_set.insert(QPair<int, int>(2, 6));
-    row_set.insert(QPair<int, int>(4, 6));
-    row_set.insert(QPair<int, int>(6, 6));
-    row_set.insert(QPair<int, int>(7, 5));
-    v_map.append(row_set);
+    row_map = QMap<int, int>();
+    row_map.insert(0, 0);
+    v_map.append(row_map);
+    row_map = QMap<int, int>();
+    row_map.insert(-1, 0);
+    row_map.insert(1, 1);
+    v_map.append(row_map);
+    row_map = QMap<int, int>();
+    row_map.insert(-2, 0);
+    row_map.insert(2, 2);
+    row_map.insert(0, 2);
+    v_map.append(row_map);
+    row_map = QMap<int, int>();
+    row_map.insert(-3, 0);
+    row_map.insert(-1, 2);
+    row_map.insert(3, 3);
+    row_map.insert(1, 4);
+    v_map.append(row_map);
+    row_map = QMap<int, int>();
+    row_map.insert(-4, 0);
+    row_map.insert(-2, 2);
+    row_map.insert(4, 4);
+    row_map.insert(0, 4);
+    row_map.insert(2, 5);
+    v_map.append(row_map);
+    row_map = QMap<int, int>();
+    row_map.insert(-5, 0);
+    row_map.insert(-3, 2);
+    row_map.insert(-1, 4);
+    row_map.insert(5, 5);
+    row_map.insert(3, 6);
+    row_map.insert(1, 6);
+    v_map.append(row_map);
+    row_map = QMap<int, int>();
+    row_map.insert(-6, 0);
+    row_map.insert(-4, 2);
+    row_map.insert(-2, 4);
+    row_map.insert(0, 6);
+    row_map.insert(2, 7);
+    v_map.append(row_map);
   }
   QList<Diff> diffs = diffList(Diff(INSERT, "W"), Diff(DELETE, "A"), Diff(EQUAL, "1"), Diff(DELETE, "B"), Diff(EQUAL, "2"), Diff(INSERT, "X"), Diff(DELETE, "C"), Diff(EQUAL, "3"), Diff(DELETE, "D"));
   assertEquals("diff_path1: Single letters.", diffs, dmp.diff_path1(v_map, "A1B2C3D", "W12X3"));
@@ -517,63 +518,63 @@ void diff_match_patch_test::testDiffPath() {
 
   // Double letters.
   // Trace a path from back to front.
-  v_map = QList<QSet<QPair<int, int> > >();
+  v_map = QList<QMap<int, int> >();
   {
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(0, 0));
-    v_map.append(row_set);
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(0, 1));
-    row_set.insert(QPair<int, int>(1, 0));
-    v_map.append(row_set);
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(0, 2));
-    row_set.insert(QPair<int, int>(1, 1));
-    row_set.insert(QPair<int, int>(2, 0));
-    v_map.append(row_set);
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(0, 3));
-    row_set.insert(QPair<int, int>(1, 2));
-    row_set.insert(QPair<int, int>(2, 1));
-    row_set.insert(QPair<int, int>(3, 0));
-    v_map.append(row_set);
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(0, 4));
-    row_set.insert(QPair<int, int>(1, 3));
-    row_set.insert(QPair<int, int>(3, 1));
-    row_set.insert(QPair<int, int>(4, 0));
-    row_set.insert(QPair<int, int>(4, 4));
-    v_map.append(row_set);
+    row_map = QMap<int, int>();
+    row_map.insert(0, 0);
+    v_map.append(row_map);
+    row_map = QMap<int, int>();
+    row_map.insert(-1, 0);
+    row_map.insert(1, 1);
+    v_map.append(row_map);
+    row_map = QMap<int, int>();
+    row_map.insert(-2, 0);
+    row_map.insert(0, 1);
+    row_map.insert(2, 2);
+    v_map.append(row_map);
+    row_map = QMap<int, int>();
+    row_map.insert(-3, 0);
+    row_map.insert(-1, 1);
+    row_map.insert(1, 2);
+    row_map.insert(3, 3);
+    v_map.append(row_map);
+    row_map = QMap<int, int>();
+    row_map.insert(-4, 0);
+    row_map.insert(-2, 1);
+    row_map.insert(2, 3);
+    row_map.insert(4, 4);
+    row_map.insert(0, 4);
+    v_map.append(row_map);
   }
   diffs = diffList(Diff(INSERT, "WX"), Diff(DELETE, "AB"), Diff(EQUAL, "12"));
   assertEquals("diff_path1: Double letters.", diffs, dmp.diff_path1(v_map, "AB12", "WX12"));
 
   // Trace a path from front to back.
-  v_map = QList<QSet<QPair<int, int> > >();
+  v_map = QList<QMap<int, int> >();
   {
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(0, 0));
-    v_map.append(row_set);
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(0, 1));
-    row_set.insert(QPair<int, int>(1, 0));
-    v_map.append(row_set);
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(1, 1));
-    row_set.insert(QPair<int, int>(2, 0));
-    row_set.insert(QPair<int, int>(2, 4));
-    v_map.append(row_set);
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(2, 1));
-    row_set.insert(QPair<int, int>(2, 5));
-    row_set.insert(QPair<int, int>(3, 0));
-    row_set.insert(QPair<int, int>(3, 4));
-    v_map.append(row_set);
-    row_set = QSet<QPair<int, int> >();
-    row_set.insert(QPair<int, int>(2, 6));
-    row_set.insert(QPair<int, int>(3, 5));
-    row_set.insert(QPair<int, int>(4, 4));
-    v_map.append(row_set);
+    row_map = QMap<int, int>();
+    row_map.insert(0, 0);
+    v_map.append(row_map);
+    row_map = QMap<int, int>();
+    row_map.insert(-1, 0);
+    row_map.insert(1, 1);
+    v_map.append(row_map);
+    row_map = QMap<int, int>();
+    row_map.insert(0, 1);
+    row_map.insert(2, 2);
+    row_map.insert(-2, 2);
+    v_map.append(row_map);
+    row_map = QMap<int, int>();
+    row_map.insert(1, 2);
+    row_map.insert(-3, 2);
+    row_map.insert(3, 3);
+    row_map.insert(-1, 3);
+    v_map.append(row_map);
+    row_map = QMap<int, int>();
+    row_map.insert(-4, 2);
+    row_map.insert(-2, 3);
+    row_map.insert(0, 4);
+    v_map.append(row_map);
   }
   diffs = diffList(Diff(DELETE, "CD"), Diff(EQUAL, "34"), Diff(INSERT, "YZ"));
   assertEquals("diff_path2: Double letters.", diffs, dmp.diff_path2(v_map, "CD34", "34YZ"));

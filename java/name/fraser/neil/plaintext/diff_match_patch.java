@@ -439,8 +439,9 @@ public class diff_match_patch {
     int text2_length = text2.length();
     int max_d = text1_length + text2_length - 1;
     boolean doubleEnd = Diff_DualThreshold * 2 < max_d;
-    List<Set<String>> v_map1 = new ArrayList<Set<String>>();
-    List<Set<String>> v_map2 = new ArrayList<Set<String>>();
+    List<Map<Integer, Integer>> v_map1 = new ArrayList<Map<Integer, Integer>>();
+    List<Map<Integer, Integer>> v_map2 = new ArrayList<Map<Integer, Integer>>();
+    Map<Integer, Integer> v_map_d;
     Map<Integer, Integer> v1 = new HashMap<Integer, Integer>();
     Map<Integer, Integer> v2 = new HashMap<Integer, Integer>();
     v1.put(1, 0);
@@ -459,7 +460,8 @@ public class diff_match_patch {
       }
 
       // Walk the front path one step.
-      v_map1.add(new HashSet<String>());  // Adds at index 'd'.
+      v_map_d = new HashMap<Integer, Integer>();
+      v_map1.add(v_map_d);  // Adds at index 'd'.
       for (int k = -d; k <= d; k += 2) {
         if (k == -d || k != d && v1.get(k - 1) < v1.get(k + 1)) {
           x = v1.get(k + 1);
@@ -491,7 +493,7 @@ public class diff_match_patch {
           }
         }
         v1.put(k, x);
-        v_map1.get(d).add(diff_footprint(x, y));
+        v_map_d.put(k, x);
         if (x == text1_length && y == text2_length) {
           // Reached the end in single-path mode.
           return diff_path1(v_map1, text1, text2);
@@ -507,7 +509,8 @@ public class diff_match_patch {
 
       if (doubleEnd) {
         // Walk the reverse path one step.
-        v_map2.add(new HashSet<String>());  // Adds at index 'd'.
+        v_map_d = new HashMap<Integer, Integer>();
+        v_map2.add(v_map_d);  // Adds at index 'd'.
         for (int k = -d; k <= d; k += 2) {
           if (k == -d || k != d && v2.get(k - 1) < v2.get(k + 1)) {
             x = v2.get(k + 1);
@@ -536,7 +539,7 @@ public class diff_match_patch {
             }
           }
           v2.put(k, x);
-          v_map2.get(d).add(diff_footprint(x, y));
+          v_map_d.put(k, x);
           if (done) {
             // Reverse path ran over front path.
             v_map1 = v_map1.subList(0, footsteps.get(footstep) + 1);
@@ -566,33 +569,37 @@ public class diff_match_patch {
    * @param text2 New string fragment to be diffed.
    * @return LinkedList of Diff objects.
    */
-  protected LinkedList<Diff> diff_path1(List<Set<String>> v_map,
+  protected LinkedList<Diff> diff_path1(List<Map<Integer, Integer>> v_map,
                                         String text1, String text2) {
     LinkedList<Diff> path = new LinkedList<Diff>();
     int x = text1.length();
     int y = text2.length();
     Operation last_op = null;
     for (int d = v_map.size() - 2; d >= 0; d--) {
+      int k = x - y;
+      Map<Integer, Integer> v_map_d = v_map.get(d);
       while (true) {
-        if (v_map.get(d).contains(diff_footprint(x - 1, y))) {
+        if (v_map_d.containsKey(k - 1)
+            && v_map_d.get(k - 1) == x - 1) {
           x--;
           if (last_op == Operation.DELETE) {
             path.getFirst().text = text1.charAt(x) + path.getFirst().text;
           } else {
             path.addFirst(new Diff(Operation.DELETE,
                                    text1.substring(x, x + 1)));
+            last_op = Operation.DELETE;
           }
-          last_op = Operation.DELETE;
           break;
-        } else if (v_map.get(d).contains(diff_footprint(x, y - 1))) {
+        } else if (v_map_d.containsKey(k + 1)
+            && v_map_d.get(k + 1) == x) {
           y--;
           if (last_op == Operation.INSERT) {
             path.getFirst().text = text2.charAt(y) + path.getFirst().text;
           } else {
             path.addFirst(new Diff(Operation.INSERT,
                                    text2.substring(y, y + 1)));
+            last_op = Operation.INSERT;
           }
-          last_op = Operation.INSERT;
           break;
         } else {
           x--;
@@ -603,8 +610,8 @@ public class diff_match_patch {
             path.getFirst().text = text1.charAt(x) + path.getFirst().text;
           } else {
             path.addFirst(new Diff(Operation.EQUAL, text1.substring(x, x + 1)));
+            last_op = Operation.EQUAL;
           }
-          last_op = Operation.EQUAL;
         }
       }
     }
@@ -619,33 +626,37 @@ public class diff_match_patch {
    * @param text2 New string fragment to be diffed.
    * @return LinkedList of Diff objects.
    */
-  protected LinkedList<Diff> diff_path2(List<Set<String>> v_map,
+  protected LinkedList<Diff> diff_path2(List<Map<Integer, Integer>> v_map,
                                         String text1, String text2) {
     LinkedList<Diff> path = new LinkedList<Diff>();
     int x = text1.length();
     int y = text2.length();
     Operation last_op = null;
     for (int d = v_map.size() - 2; d >= 0; d--) {
+      int k = x - y;
+      Map<Integer, Integer> v_map_d = v_map.get(d);
       while (true) {
-        if (v_map.get(d).contains(diff_footprint(x - 1, y))) {
+        if (v_map_d.containsKey(k - 1)
+            && v_map_d.get(k - 1) == x - 1) {
           x--;
           if (last_op == Operation.DELETE) {
             path.getLast().text += text1.charAt(text1.length() - x - 1);
           } else {
             path.addLast(new Diff(Operation.DELETE,
                 text1.substring(text1.length() - x - 1, text1.length() - x)));
+            last_op = Operation.DELETE;
           }
-          last_op = Operation.DELETE;
           break;
-        } else if (v_map.get(d).contains(diff_footprint(x, y - 1))) {
+        } else if (v_map_d.containsKey(k + 1)
+            && v_map_d.get(k + 1) == x) {
           y--;
           if (last_op == Operation.INSERT) {
             path.getLast().text += text2.charAt(text2.length() - y - 1);
           } else {
             path.addLast(new Diff(Operation.INSERT,
                 text2.substring(text2.length() - y - 1, text2.length() - y)));
+            last_op = Operation.INSERT;
           }
-          last_op = Operation.INSERT;
           break;
         } else {
           x--;
@@ -658,8 +669,8 @@ public class diff_match_patch {
           } else {
             path.addLast(new Diff(Operation.EQUAL,
                 text1.substring(text1.length() - x - 1, text1.length() - x)));
+            last_op = Operation.EQUAL;
           }
-          last_op = Operation.EQUAL;
         }
       }
     }

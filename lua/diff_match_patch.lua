@@ -759,10 +759,9 @@ function _diff_map(text1, text2, deadline)
   local doubleEnd = (Diff_DualThreshold * 2 < max_d)
   local v_map1 = {}
   local v_map2 = {}
-  local v1 = {}
-  local v2 = {}
-  v1[1] = 1
-  v2[1] = 1
+  local v_map_d
+  local v1 = {[1]=1}
+  local v2 = {[1]=1}
   local x, y
   local footstep  -- Used to track overlapping paths.
   local footsteps = {}
@@ -777,7 +776,8 @@ function _diff_map(text1, text2, deadline)
     end
 
     -- Walk the front path one step.
-    v_map1[d + 1] = {}
+    v_map_d = {}
+    v_map1[d + 1] = v_map_d
     for k = -d, d, 2 do
       if (k == -d) or ((k ~= d) and (v1[k - 1] < v1[k + 1])) then
         x = v1[k + 1]
@@ -811,7 +811,7 @@ function _diff_map(text1, text2, deadline)
       end
 
       v1[k] = x
-      v_map1[d + 1][x .. ',' .. y] = true
+      v_map_d[k] = x
       if (x == text1_length + 1) and (y == text2_length + 1) then
         -- Reached the end in single-path mode.
         return _diff_path1(v_map1, text1, text2)
@@ -838,7 +838,8 @@ function _diff_map(text1, text2, deadline)
 
     if doubleEnd then
       -- Walk the reverse path one step.
-      v_map2[d + 1] = {}
+      v_map_d = {}
+      v_map2[d + 1] = v_map_d
       for k = -d, d, 2 do
         if (k == -d) or ((k ~= d) and (v2[k - 1] < v2[k + 1])) then
           x = v2[k + 1]
@@ -867,7 +868,7 @@ function _diff_map(text1, text2, deadline)
         end
 
         v2[k] = x
-        v_map2[d + 1][x .. ',' .. y] = true
+        v_map_d[k] = x
         if done then
           -- Reverse path ran over front path.
           for i = footsteps[footstep] + 2, #v_map1 do
@@ -916,24 +917,26 @@ function _diff_path1(v_map, text1, text2)
   --[[ @type {?number} ]]
   local last_op = nil
   for d = #v_map - 1, 1, -1 do
+    local k = x - y
+    local v_map_d = v_map[d]
     while true do
-      if v_map[d][(x - 1) .. ',' .. y] then
+      if v_map_d[k - 1] == x - 1 then
         x = x - 1
         if (last_op == DIFF_DELETE) then
           path[1][2] = _prepend(path[1][2], _element(text1, x))
         else
           tinsert(path, 1, {DIFF_DELETE, _sub(text1, x, x)})
+          last_op = DIFF_DELETE
         end
-        last_op = DIFF_DELETE
         break
-      elseif v_map[d][x .. ',' .. (y - 1)] then
+      elseif v_map_d[k + 1] == x then
         y = y - 1
         if (last_op == DIFF_INSERT) then
           path[1][2] = _prepend(path[1][2], _element(text2, y))
         else
           tinsert(path, 1, {DIFF_INSERT, _sub(text2, y, y)})
+          last_op = DIFF_INSERT
         end
-        last_op = DIFF_INSERT
         break
       else
         x = x - 1
@@ -945,8 +948,8 @@ function _diff_path1(v_map, text1, text2)
           path[1][2] = _prepend(path[1][2], _element(text1, x))
         else
           tinsert(path, 1, {DIFF_EQUAL, _sub(text1, x, x)})
+          last_op = DIFF_EQUAL
         end
-        last_op = DIFF_EQUAL
       end
     end
   end
@@ -978,8 +981,10 @@ function _diff_path2(v_map, text1, text2)
   --[[ @type {?number} ]]
   local last_op = nil
   for d = #v_map - 1, 1, -1 do
+    local k = x - y
+    local v_map_d = v_map[d]
     while true do
-      if v_map[d][(x - 1) .. ',' .. y] then
+      if v_map_d[k - 1] == x - 1 then
         x = x - 1
         if (last_op == DIFF_DELETE) then
           path[pathLength][2]
@@ -987,10 +992,10 @@ function _diff_path2(v_map, text1, text2)
         else
           pathLength = pathLength + 1
           path[pathLength] = {DIFF_DELETE, _sub(text1, -x, -x)}
+          last_op = DIFF_DELETE
         end
-        last_op = DIFF_DELETE
         break
-      elseif v_map[d][x .. ',' .. (y - 1)] then
+      elseif v_map_d[k + 1] == x then
         y = y - 1
         if (last_op == DIFF_INSERT) then
           path[pathLength][2]
@@ -998,8 +1003,8 @@ function _diff_path2(v_map, text1, text2)
         else
           pathLength = pathLength + 1
           path[pathLength] = {DIFF_INSERT, _sub(text2, -y, -y)}
+          last_op = DIFF_INSERT
         end
-        last_op = DIFF_INSERT
         break
       else
         x = x - 1
@@ -1013,8 +1018,8 @@ function _diff_path2(v_map, text1, text2)
         else
           pathLength = pathLength + 1
           path[pathLength] = {DIFF_EQUAL, _sub(text1, -x, -x)}
+          last_op = DIFF_EQUAL
         end
-        last_op = DIFF_EQUAL
       end
     end
   end

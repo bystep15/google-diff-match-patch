@@ -466,13 +466,13 @@ function testDiffPath() {
   // Single letters.
   // Trace a path from back to front.
   var v_map = [];
-  v_map.push({'0,0':true});
-  v_map.push({'0,1':true, '1,0':true});
-  v_map.push({'0,2':true, '2,0':true, '2,2':true});
-  v_map.push({'0,3':true, '2,3':true, '3,0':true, '4,3':true});
-  v_map.push({'0,4':true, '2,4':true, '4,0':true, '4,4':true, '5,3':true});
-  v_map.push({'0,5':true, '2,5':true, '4,5':true, '5,0':true, '6,3':true, '6,5':true});
-  v_map.push({'0,6':true, '2,6':true, '4,6':true, '6,6':true, '7,5':true});
+  v_map.push({ '0':0});
+  v_map.push({'-1':0,  '1':1});
+  v_map.push({'-2':0,  '2':2,  '0':2});
+  v_map.push({'-3':0, '-1':2,  '3':3, '1':4});
+  v_map.push({'-4':0, '-2':2,  '4':4, '0':4, '2':5});
+  v_map.push({'-5':0, '-3':2, '-1':4, '5':5, '3':6, '1':6});
+  v_map.push({'-6':0, '-4':2, '-2':4, '0':6, '2':7});
   assertEquivalent([[DIFF_INSERT, 'W'], [DIFF_DELETE, 'A'], [DIFF_EQUAL, '1'], [DIFF_DELETE, 'B'], [DIFF_EQUAL, '2'], [DIFF_INSERT, 'X'], [DIFF_DELETE, 'C'], [DIFF_EQUAL, '3'], [DIFF_DELETE, 'D']], dmp.diff_path1(v_map, 'A1B2C3D', 'W12X3'));
 
   // Trace a path from front to back.
@@ -482,20 +482,20 @@ function testDiffPath() {
   // Double letters
   // Trace a path from back to front.
   v_map = [];
-  v_map.push({'0,0':true});
-  v_map.push({'0,1':true, '1,0':true});
-  v_map.push({'0,2':true, '1,1':true, '2,0':true});
-  v_map.push({'0,3':true, '1,2':true, '2,1':true, '3,0':true});
-  v_map.push({'0,4':true, '1,3':true, '3,1':true, '4,0':true, '4,4':true});
+  v_map.push({ '0':0});
+  v_map.push({'-1':0,  '1':1});
+  v_map.push({'-2':0,  '0':1, '2':2});
+  v_map.push({'-3':0, '-1':1, '1':2, '3':3});
+  v_map.push({'-4':0, '-2':1, '2':3, '4':4, '0':4});
   assertEquivalent([[DIFF_INSERT, 'WX'], [DIFF_DELETE, 'AB'], [DIFF_EQUAL, '12']], dmp.diff_path1(v_map, 'AB12', 'WX12'));
 
   // Trace a path from front to back.
   v_map = [];
-  v_map.push({'0,0':true});
-  v_map.push({'0,1':true, '1,0':true});
-  v_map.push({'1,1':true, '2,0':true, '2,4':true});
-  v_map.push({'2,1':true, '2,5':true, '3,0':true, '3,4':true});
-  v_map.push({'2,6':true, '3,5':true, '4,4':true});
+  v_map.push({ '0':0});
+  v_map.push({'-1':0,  '1':1});
+  v_map.push({ '0':1,  '2':2, '-2':2});
+  v_map.push({ '1':2, '-3':2,  '3':3, '-1':3});
+  v_map.push({'-4':2, '-2':3,  '0':4});
   assertEquivalent([[DIFF_DELETE, 'CD'], [DIFF_EQUAL, '34'], [DIFF_INSERT, 'YZ']], dmp.diff_path2(v_map, 'CD34', '34YZ'));
 }
 

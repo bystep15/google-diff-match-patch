@@ -523,8 +523,9 @@ namespace DiffMatchPatch {
       int text2_length = text2.Length;
       int max_d = text1_length + text2_length - 1;
       bool doubleEnd = Diff_DualThreshold * 2 < max_d;
-      List<HashSet<string>> v_map1 = new List<HashSet<string>>();
-      List<HashSet<string>> v_map2 = new List<HashSet<string>>();
+      List<Dictionary<int, int>> v_map1 = new List<Dictionary<int, int>>();
+      List<Dictionary<int, int>> v_map2 = new List<Dictionary<int, int>>();
+      Dictionary<int, int> v_map_d;
       Dictionary<int, int> v1 = new Dictionary<int, int>();
       Dictionary<int, int> v2 = new Dictionary<int, int>();
       v1.Add(1, 0);
@@ -543,7 +544,8 @@ namespace DiffMatchPatch {
         }
 
         // Walk the front path one step.
-        v_map1.Add(new HashSet<string>());  // Adds at index 'd'.
+        v_map_d = new Dictionary<int, int>();
+        v_map1.Add(v_map_d);  // Adds at index 'd'.
         for (int k = -d; k <= d; k += 2) {
           if (k == -d || k != d && v1[k - 1] < v1[k + 1]) {
             x = v1[k + 1];
@@ -579,7 +581,11 @@ namespace DiffMatchPatch {
           } else {
             v1.Add(k, x);
           }
-          v_map1[d].Add(diff_footprint(x, y));
+          if (v_map_d.ContainsKey(k)) {
+            v_map_d[k] = x;
+          } else {
+            v_map_d.Add(k, x);
+          }
           if (x == text1_length && y == text2_length) {
             // Reached the end in single-path mode.
             return diff_path1(v_map1, text1, text2);
@@ -596,7 +602,8 @@ namespace DiffMatchPatch {
 
         if (doubleEnd) {
           // Walk the reverse path one step.
-          v_map2.Add(new HashSet<string>());  // Adds at index 'd'.
+          v_map_d = new Dictionary<int, int>();
+          v_map2.Add(v_map_d);  // Adds at index 'd'.
           for (int k = -d; k <= d; k += 2) {
             if (k == -d || k != d && v2[k - 1] < v2[k + 1]) {
               x = v2[k + 1];
@@ -629,7 +636,11 @@ namespace DiffMatchPatch {
             } else {
               v2.Add(k, x);
             }
-            v_map2[d].Add(diff_footprint(x, y));
+            if (v_map_d.ContainsKey(k)) {
+              v_map_d[k] = x;
+            } else {
+              v_map_d.Add(k, x);
+            }
             if (done) {
               // Reverse path ran over front path.
               v_map1 = v_map1.GetRange(0, footsteps[footstep] + 1);
@@ -658,7 +669,7 @@ namespace DiffMatchPatch {
      * @param text2 New string fragment to be diffed.
      * @return List of Diff objects.
      */
-    protected List<Diff> diff_path1(List<HashSet<string>> v_map,
+    protected List<Diff> diff_path1(List<Dictionary<int, int>> v_map,
                                     string text1, string text2) {
       List<Diff> path = new List<Diff>();
       int pathLast = -1;
@@ -666,26 +677,28 @@ namespace DiffMatchPatch {
       int y = text2.Length;
       Operation? last_op = null;
       for (int d = v_map.Count - 2; d >= 0; d--) {
+        int k = x - y;
+        Dictionary<int, int> v_map_d = v_map[d];
         while (true) {
-          if (v_map[d].Contains(diff_footprint(x - 1, y))) {
+          if (v_map_d.ContainsKey(k - 1) && v_map_d[k - 1] == x - 1) {
             x--;
             if (last_op == Operation.DELETE) {
               path[pathLast].text = text1[x] + path[pathLast].text;
             } else {
               path.Add(new Diff(Operation.DELETE, text1.Substring(x, 1)));
               pathLast++;
+              last_op = Operation.DELETE;
             }
-            last_op = Operation.DELETE;
             break;
-          } else if (v_map[d].Contains(diff_footprint(x, y - 1))) {
+          } else if (v_map_d.ContainsKey(k + 1) && v_map_d[k + 1] == x) {
             y--;
             if (last_op == Operation.INSERT) {
               path[pathLast].text = text2[y] + path[pathLast].text;
             } else {
               path.Add(new Diff(Operation.INSERT, text2.Substring(y, 1)));
               pathLast++;
+              last_op = Operation.INSERT;
             }
-            last_op = Operation.INSERT;
             break;
           } else {
             x--;
@@ -697,8 +710,8 @@ namespace DiffMatchPatch {
             } else {
               path.Add(new Diff(Operation.EQUAL, text1.Substring(x, 1)));
               pathLast++;
+              last_op = Operation.EQUAL;
             }
-            last_op = Operation.EQUAL;
           }
         }
       }
@@ -713,7 +726,7 @@ namespace DiffMatchPatch {
      * @param text2 New string fragment to be diffed.
      * @return List of Diff objects.
      */
-    protected List<Diff> diff_path2(List<HashSet<string>> v_map,
+    protected List<Diff> diff_path2(List<Dictionary<int, int>> v_map,
                                     string text1, string text2) {
       List<Diff> path = new List<Diff>();
       int pathLast = -1;
@@ -721,8 +734,10 @@ namespace DiffMatchPatch {
       int y = text2.Length;
       Operation? last_op = null;
       for (int d = v_map.Count - 2; d >= 0; d--) {
+        int k = x - y;
+        Dictionary<int, int> v_map_d = v_map[d];
         while (true) {
-          if (v_map[d].Contains(diff_footprint(x - 1, y))) {
+          if (v_map_d.ContainsKey(k - 1) && v_map_d[k - 1] == x - 1) {
             x--;
             if (last_op == Operation.DELETE) {
               path[pathLast].text += text1[text1.Length - x - 1];
@@ -730,10 +745,10 @@ namespace DiffMatchPatch {
               path.Add(new Diff(Operation.DELETE,
                   text1.Substring(text1.Length - x - 1, 1)));
               pathLast++;
+              last_op = Operation.DELETE;
             }
-            last_op = Operation.DELETE;
             break;
-          } else if (v_map[d].Contains(diff_footprint(x, y - 1))) {
+          } else if (v_map_d.ContainsKey(k + 1) && v_map_d[k + 1] == x) {
             y--;
             if (last_op == Operation.INSERT) {
               path[pathLast].text += text2[text2.Length - y - 1];
@@ -741,8 +756,8 @@ namespace DiffMatchPatch {
               path.Add(new Diff(Operation.INSERT,
                   text2.Substring(text2.Length - y - 1, 1)));
               pathLast++;
+              last_op = Operation.INSERT;
             }
-            last_op = Operation.INSERT;
             break;
           } else {
             x--;
@@ -756,8 +771,8 @@ namespace DiffMatchPatch {
               path.Add(new Diff(Operation.EQUAL,
                   text1.Substring(text1.Length - x - 1, 1)));
               pathLast++;
+              last_op = Operation.EQUAL;
             }
-            last_op = Operation.EQUAL;
           }
         }
       }

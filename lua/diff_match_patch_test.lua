@@ -598,14 +598,13 @@ function testDiffPath()
   -- Single letters.
   -- Trace a path from back to front.
   local v_map = {
-      {['1,1'] = true};
-      {['1,2'] = true, ['2,1'] = true};
-      {['1,3'] = true, ['3,1'] = true, ['3,3'] = true};
-      {['1,4'] = true, ['3,4'] = true, ['4,1'] = true, ['5,4'] = true};
-      {['1,5'] = true, ['3,5'] = true, ['5,1'] = true, ['5,5'] = true, ['6,4'] = true},
-      {['1,6'] = true, ['3,6'] = true, ['5,6'] = true, ['6,1'] = true, ['7,4'] = true,
-        ['7,6'] = true};
-      {['1,7'] = true, ['3,7'] = true, ['5,7'] = true, ['7,7'] = true, ['8,6'] = true};
+      { [0]=1},
+      {[-1]=1,  [1]=2},
+      {[-2]=1,  [2]=3,  [0]=3},
+      {[-3]=1, [-1]=3,  [3]=4, [1]=5},
+      {[-4]=1, [-2]=3,  [4]=5, [0]=5, [2]=6},
+      {[-5]=1, [-3]=3, [-1]=5, [5]=6, [3]=7, [1]=7},
+      {[-6]=1, [-4]=3, [-2]=5, [0]=7, [2]=8}
   }
   assertEquivalent({
         {DIFF_INSERT, 'W'},
@@ -635,11 +634,11 @@ function testDiffPath()
   -- Double letters
   -- Trace a path from back to front.
   v_map = {
-    {['1,1'] = true};
-    {['1,2'] = true, ['2,1'] = true};
-    {['1,3'] = true, ['2,2'] = true, ['3,1'] = true};
-    {['1,4'] = true, ['2,3'] = true, ['3,2'] = true, ['4,1'] = true};
-    {['1,5'] = true, ['2,4'] = true, ['4,2'] = true, ['5,1'] = true, ['5,5'] = true};
+    { [0]=1},
+    {[-1]=1,  [1]=2},
+    {[-2]=1,  [0]=2, [2]=3},
+    {[-3]=1, [-1]=2, [1]=3, [3]=4},
+    {[-4]=1, [-2]=2, [2]=4, [4]=5, [0]=5}
   }
   assertEquivalent({
         {DIFF_INSERT, 'WX'},
@@ -649,11 +648,11 @@ function testDiffPath()
 
   -- Trace a path from front to back.
   v_map = {
-    {['1,1'] = true};
-    {['1,2'] = true, ['2,1'] = true};
-    {['2,2'] = true, ['3,1'] = true, ['3,5'] = true};
-    {['3,2'] = true, ['3,6'] = true, ['4,1'] = true, ['4,5'] = true};
-    {['3,7'] = true, ['4,6'] = true, ['5,5'] = true};
+    { [0]=1},
+    {[-1]=1,  [1]=2},
+    { [0]=2,  [2]=3, [-2]=3},
+    { [1]=3, [-3]=3,  [3]=4, [-1]=4},
+    {[-4]=3, [-2]=4,  [0]=5}
   }
   assertEquivalent({
         {DIFF_DELETE, 'CD'},
