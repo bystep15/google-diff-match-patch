@@ -374,7 +374,7 @@ function testDiffCleanupEfficiency() {
 function testDiffPrettyHtml() {
   // Pretty print.
   var diffs = [[DIFF_EQUAL, 'a\n'], [DIFF_DELETE, '<B>b</B>'], [DIFF_INSERT, 'c&d']];
-  assertEquals('<SPAN TITLE="i=0">a&para;<BR></SPAN><DEL STYLE="background:#FFE6E6;" TITLE="i=2">&lt;B&gt;b&lt;/B&gt;</DEL><INS STYLE="background:#E6FFE6;" TITLE="i=2">c&amp;d</INS>', dmp.diff_prettyHtml(diffs));
+  assertEquals('<span>a&para;<br></span><del style="background:#FFE6E6;">&lt;B&gt;b&lt;/B&gt;</del><ins style="background:#E6FFE6;">c&amp;d</ins>', dmp.diff_prettyHtml(diffs));
 }
 
 function testDiffText() {
@@ -462,54 +462,17 @@ function testDiffLevenshtein() {
   assertEquals(7, dmp.diff_levenshtein([[DIFF_DELETE, 'abc'], [DIFF_EQUAL, 'xyz'], [DIFF_INSERT, '1234']]));
 }
 
-function testDiffPath() {
-  // Single letters.
-  // Trace a path from back to front.
-  var v_map = [];
-  v_map.push({ '0':0});
-  v_map.push({'-1':0,  '1':1});
-  v_map.push({'-2':0,  '2':2,  '0':2});
-  v_map.push({'-3':0, '-1':2,  '3':3, '1':4});
-  v_map.push({'-4':0, '-2':2,  '4':4, '0':4, '2':5});
-  v_map.push({'-5':0, '-3':2, '-1':4, '5':5, '3':6, '1':6});
-  v_map.push({'-6':0, '-4':2, '-2':4, '0':6, '2':7});
-  assertEquivalent([[DIFF_INSERT, 'W'], [DIFF_DELETE, 'A'], [DIFF_EQUAL, '1'], [DIFF_DELETE, 'B'], [DIFF_EQUAL, '2'], [DIFF_INSERT, 'X'], [DIFF_DELETE, 'C'], [DIFF_EQUAL, '3'], [DIFF_DELETE, 'D']], dmp.diff_path1(v_map, 'A1B2C3D', 'W12X3'));
-
-  // Trace a path from front to back.
-  v_map.pop();
-  assertEquivalent([[DIFF_EQUAL, '4'], [DIFF_DELETE, 'E'], [DIFF_INSERT, 'Y'], [DIFF_EQUAL, '5'], [DIFF_DELETE, 'F'], [DIFF_EQUAL, '6'], [DIFF_DELETE, 'G'], [DIFF_INSERT, 'Z']], dmp.diff_path2(v_map, '4E5F6G', '4Y56Z'));
-
-  // Double letters
-  // Trace a path from back to front.
-  v_map = [];
-  v_map.push({ '0':0});
-  v_map.push({'-1':0,  '1':1});
-  v_map.push({'-2':0,  '0':1, '2':2});
-  v_map.push({'-3':0, '-1':1, '1':2, '3':3});
-  v_map.push({'-4':0, '-2':1, '2':3, '4':4, '0':4});
-  assertEquivalent([[DIFF_INSERT, 'WX'], [DIFF_DELETE, 'AB'], [DIFF_EQUAL, '12']], dmp.diff_path1(v_map, 'AB12', 'WX12'));
-
-  // Trace a path from front to back.
-  v_map = [];
-  v_map.push({ '0':0});
-  v_map.push({'-1':0,  '1':1});
-  v_map.push({ '0':1,  '2':2, '-2':2});
-  v_map.push({ '1':2, '-3':2,  '3':3, '-1':3});
-  v_map.push({'-4':2, '-2':3,  '0':4});
-  assertEquivalent([[DIFF_DELETE, 'CD'], [DIFF_EQUAL, '34'], [DIFF_INSERT, 'YZ']], dmp.diff_path2(v_map, 'CD34', '34YZ'));
-}
-
-function testDiffMap() {
+function testDiffBisect() {
   // Normal.
   var a = 'cat';
   var b = 'map';
   // Since the resulting diff hasn't been normalized, it would be ok if
   // the insertion and deletion pairs are swapped.
   // If the order changes, tweak this test as required.
-  assertEquivalent([[DIFF_INSERT, 'm'], [DIFF_DELETE, 'c'], [DIFF_EQUAL, 'a'], [DIFF_INSERT, 'p'], [DIFF_DELETE, 't']], dmp.diff_map(a, b, Number.MAX_VALUE));
+  assertEquivalent([[DIFF_DELETE, 'c'], [DIFF_INSERT, 'm'], [DIFF_EQUAL, 'a'], [DIFF_DELETE, 't'], [DIFF_INSERT, 'p']], dmp.diff_bisect(a, b, Number.MAX_VALUE));
 
   // Timeout.
-  assertEquivalent([[DIFF_DELETE, 'cat'], [DIFF_INSERT, 'map']], dmp.diff_map(a, b, 0));
+  assertEquivalent([[DIFF_DELETE, 'cat'], [DIFF_INSERT, 'map']], dmp.diff_bisect(a, b, 0));
 }
 
 function testDiffMain() {
@@ -535,7 +498,6 @@ function testDiffMain() {
   // Perform a real diff.
   // Switch off the timeout.
   dmp.Diff_Timeout = 0;
-  dmp.Diff_DualThreshold = 32;
   // Simple cases.
   assertEquivalent([[DIFF_DELETE, 'a'], [DIFF_INSERT, 'b']], dmp.diff_main('a', 'b', false));
 
@@ -548,10 +510,7 @@ function testDiffMain() {
 
   assertEquivalent([[DIFF_INSERT, 'xaxcx'], [DIFF_EQUAL, 'abc'], [DIFF_DELETE, 'y']], dmp.diff_main('abcy', 'xaxcxabc', false));
 
-  // Sub-optimal double-ended diff.
-  dmp.Diff_DualThreshold = 2;
-  assertEquivalent([[DIFF_INSERT, 'x'], [DIFF_EQUAL, 'a'], [DIFF_DELETE, 'b'], [DIFF_INSERT, 'x'], [DIFF_EQUAL, 'c'], [DIFF_DELETE, 'y'], [DIFF_INSERT, 'xabc']], dmp.diff_main('abcy', 'xaxcxabc', false));
-  dmp.Diff_DualThreshold = 32;
+  assertEquivalent([[DIFF_DELETE, 'ABCD'], [DIFF_EQUAL, 'a'], [DIFF_DELETE, '='], [DIFF_INSERT, '-'], [DIFF_EQUAL, 'bcd'], [DIFF_DELETE, '='], [DIFF_INSERT, '-'], [DIFF_EQUAL, 'efghijklmnopqrs'], [DIFF_DELETE, 'EFGHIJKLMNOefg']], dmp.diff_main('ABCDa=bcd=efghijklmnopqrsEFGHIJKLMNOefg', 'a-bcd-efghijklmnopqrs', false));
 
   // Timeout.
   dmp.Diff_Timeout = 0.1;  // 100ms

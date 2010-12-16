@@ -192,9 +192,6 @@ namespace DiffMatchPatch {
     public float Diff_Timeout = 1.0f;
     // Cost of an empty edit operation in terms of edit characters.
     public short Diff_EditCost = 4;
-    // The size beyond which the double-ended diff activates.
-    // Double-ending is twice as fast, but less accurate.
-    public int Diff_DualThreshold = 32;
     // At what point is no match declared (0.0 = perfection, 1.0 = very loose).
     public float Match_Threshold = 0.5f;
     // How far to search for a match (0 = exact location, 1000+ = broad match).
@@ -258,7 +255,7 @@ namespace DiffMatchPatch {
      * @param checklines Speedup flag.  If false, then don't run a
      *     line-level diff first to identify the changed areas.
      *     If true, then run a faster slightly less optimal diff.
-     * @param deadline: Time when the diff should be complete by.  Used
+     * @param deadline Time when the diff should be complete by.  Used
      *     internally for recursive calls.  Users should set DiffTimeout
      *     instead.
      * @return List of Diff objects.
@@ -343,6 +340,14 @@ namespace DiffMatchPatch {
         diffs.Add(new Diff(op, longtext.Substring(i + shorttext.Length)));
         return diffs;
       }
+
+      if (shorttext.Length == 1) {
+        // Single character string.
+        // After the previous speedup, the character can't be an equality.
+        diffs.Add(new Diff(Operation.DELETE, text1));
+        diffs.Add(new Diff(Operation.INSERT, text2));
+        return diffs;
+      }
       longtext = shorttext = null;  // Garbage collect.
 
       // Check to see if the problem can be split in two.
@@ -355,8 +360,8 @@ namespace DiffMatchPatch {
         string text2_b = hm[3];
         string mid_common = hm[4];
         // Send both pairs off for separate processing.
-        List<Diff> diffs_a = diff_main(text1_a, text2_a, checklines);
-        List<Diff> diffs_b = diff_main(text1_b, text2_b, checklines);
+        List<Diff> diffs_a = diff_main(text1_a, text2_a, checklines, deadline);
+        List<Diff> diffs_b = diff_main(text1_b, text2_b, checklines, deadline);
         // Merge the results.
         diffs = diffs_a;
         diffs.Add(new Diff(Operation.EQUAL, mid_common));
@@ -380,7 +385,7 @@ namespace DiffMatchPatch {
         linearray = (List<string>)b[2];
       }
 
-      diffs = diff_map(text1, text2, deadline);
+      diffs = diff_bisect(text1, text2, deadline);
 
       if (checklines) {
         // Convert the diff back to original text.
@@ -428,6 +433,119 @@ namespace DiffMatchPatch {
         }
         diffs.RemoveAt(diffs.Count - 1);  // Remove the dummy entry at the end.
       }
+      return diffs;
+    }
+
+    /**
+     * Find the 'middle snake' of a diff, split the problem in two
+     * and return the recursively constructed diff.
+     * See Myers 1986 paper: An O(ND) Difference Algorithm and Its Variations.
+     * @param text1 Old string to be diffed.
+     * @param text2 New string to be diffed.
+     * @param deadline Time at which to bail if not yet complete.
+     * @return List of Diff objects.
+     */
+    protected List<Diff> diff_bisect(string text1, string text2,
+        DateTime deadline) {
+      // Cache the text lengths to prevent multiple calls.
+      int text1_length = text1.Length;
+      int text2_length = text2.Length;
+      int max_d = (text1_length + text2_length + 1) / 2;
+      Dictionary<int, int> v1 = new Dictionary<int, int>();
+      Dictionary<int, int> v2 = new Dictionary<int, int>();
+      v1.Add(1, 0);
+      v2.Add(1, 0);
+      int delta = text1_length - text2_length;
+      // If the total number of characters is odd, then the front path will
+      // collide with the reverse path.
+      bool front = (delta % 2 != 0);
+      List<Diff> diffs;
+      for (int d = 0; d < max_d; d++) {
+        // Bail out if deadline is reached.
+        if (DateTime.Now > deadline) {
+          break;
+        }
+
+        // Walk the front path one step.
+        for (int k1 = -d; k1 <= d; k1 += 2) {
+          int x1;
+          if (k1 == -d || k1 != d && v1[k1 - 1] < v1[k1 + 1]) {
+            x1 = v1[k1 + 1];
+          } else {
+            x1 = v1[k1 - 1] + 1;
+          }
+          int y1 = x1 - k1;
+          while (x1 < text1_length && y1 < text2_length
+                && text1[x1] == text2[y1]) {
+            x1++;
+            y1++;
+          }
+          if (v1.ContainsKey(k1)) {
+            v1[k1] = x1;
+          } else {
+            v1.Add(k1, x1);
+          }
+          if (front) {
+            int k2 = delta - k1;
+            if (v2.ContainsKey(k2)) {
+              // Mirror x2 onto top-left coordinate system.
+              int x2 = text1_length - v2[k2];
+              if (x1 >= x2) {
+                // Overlap detected.
+                diffs = diff_main(text1.Substring(0, x1),
+                                  text2.Substring(0, y1), false, deadline);
+                diffs.AddRange(diff_main(text1.Substring(x1),
+                                         text2.Substring(y1), false, deadline));
+                return diffs;
+              }
+            }
+          }
+        }
+
+        // Walk the reverse path one step.
+        for (int k2 = -d; k2 <= d; k2 += 2) {
+          int x2;
+          if (k2 == -d || k2 != d && v2[k2 - 1] < v2[k2 + 1]) {
+            x2 = v2[k2 + 1];
+          } else {
+            x2 = v2[k2 - 1] + 1;
+          }
+          int y2 = x2 - k2;
+          while (x2 < text1_length && y2 < text2_length
+              && text1[text1_length - x2 - 1]
+              == text2[text2_length - y2 - 1]) {
+            x2++;
+            y2++;
+          }
+          if (v2.ContainsKey(k2)) {
+            v2[k2] = x2;
+          } else {
+            v2.Add(k2, x2);
+          }
+          if (!front) {
+            int k1 = delta - k2;
+            if (v1.ContainsKey(k1)) {
+              int x1 = v1[k1];
+              int y1 = x1 - k1;
+              // Mirror x2 onto top-left coordinate system.
+              x2 = text1_length - v2[k2];
+              if (x1 >= x2) {
+                // Overlap detected.
+                diffs = diff_main(text1.Substring(0, x1),
+                                  text2.Substring(0, y1), false, deadline);
+                diffs.AddRange(diff_main(text1.Substring(x1),
+                                         text2.Substring(y1), false, deadline));
+                return diffs;
+              }
+            }
+          }
+        }
+      }
+      // Diff took too long and hit the deadline or
+      // number of diffs equals number of characters, no commonality at all.
+      diffs = new List<Diff>();
+      diffs.Add(new Diff(Operation.DELETE, text1));
+      diffs.Add(new Diff(Operation.INSERT, text2));
       return diffs;
     }
 
@@ -507,286 +625,6 @@ namespace DiffMatchPatch {
         }
         diff.text = text.ToString();
       }
-    }
-
-    /**
-     * Explore the intersection points between the two texts.
-     * @param text1 Old string to be diffed.
-     * @param text2 New string to be diffed.
-     * @param deadline Time at which to bail if not yet complete.
-     * @return List of Diff objects.
-     */
-    protected List<Diff> diff_map(string text1, string text2,
-        DateTime deadline) {
-      // Cache the text lengths to prevent multiple calls.
-      int text1_length = text1.Length;
-      int text2_length = text2.Length;
-      int max_d = text1_length + text2_length - 1;
-      bool doubleEnd = Diff_DualThreshold * 2 < max_d;
-      List<Dictionary<int, int>> v_map1 = new List<Dictionary<int, int>>();
-      List<Dictionary<int, int>> v_map2 = new List<Dictionary<int, int>>();
-      Dictionary<int, int> v_map_d;
-      Dictionary<int, int> v1 = new Dictionary<int, int>();
-      Dictionary<int, int> v2 = new Dictionary<int, int>();
-      v1.Add(1, 0);
-      v2.Add(1, 0);
-      int x, y;
-      string footstep = "";  // Used to track overlapping paths.
-      Dictionary<string, int> footsteps = new Dictionary<string, int>();
-      bool done = false;
-      // If the total number of characters is odd, then the front path will
-      // collide with the reverse path.
-      bool front = ((text1_length + text2_length) % 2 == 1);
-      for (int d = 0; d < max_d; d++) {
-        // Bail out if deadline is reached.
-        if (DateTime.Now > deadline) {
-          break;
-        }
-
-        // Walk the front path one step.
-        v_map_d = new Dictionary<int, int>();
-        v_map1.Add(v_map_d);  // Adds at index 'd'.
-        for (int k = -d; k <= d; k += 2) {
-          if (k == -d || k != d && v1[k - 1] < v1[k + 1]) {
-            x = v1[k + 1];
-          } else {
-            x = v1[k - 1] + 1;
-          }
-          y = x - k;
-          if (doubleEnd) {
-            footstep = diff_footprint(x, y);
-            if (front && (footsteps.ContainsKey(footstep))) {
-              done = true;
-            }
-            if (!front) {
-              footsteps.Add(footstep, d);
-            }
-          }
-          while (!done && x < text1_length && y < text2_length
-                && text1[x] == text2[y]) {
-            x++;
-            y++;
-            if (doubleEnd) {
-              footstep = diff_footprint(x, y);
-              if (front && (footsteps.ContainsKey(footstep))) {
-                done = true;
-              }
-              if (!front) {
-                footsteps.Add(footstep, d);
-              }
-            }
-          }
-          if (v1.ContainsKey(k)) {
-            v1[k] = x;
-          } else {
-            v1.Add(k, x);
-          }
-          if (v_map_d.ContainsKey(k)) {
-            v_map_d[k] = x;
-          } else {
-            v_map_d.Add(k, x);
-          }
-          if (x == text1_length && y == text2_length) {
-            // Reached the end in single-path mode.
-            return diff_path1(v_map1, text1, text2);
-          } else if (done) {
-            // Front path ran over reverse path.
-            v_map2 = v_map2.GetRange(0, footsteps[footstep] + 1);
-            List<Diff> a = diff_path1(v_map1, text1.Substring(0, x),
-                                      text2.Substring(0, y));
-            a.AddRange(diff_path2(v_map2, text1.Substring(x),
-                                  text2.Substring(y)));
-            return a;
-          }
-        }
-
-        if (doubleEnd) {
-          // Walk the reverse path one step.
-          v_map_d = new Dictionary<int, int>();
-          v_map2.Add(v_map_d);  // Adds at index 'd'.
-          for (int k = -d; k <= d; k += 2) {
-            if (k == -d || k != d && v2[k - 1] < v2[k + 1]) {
-              x = v2[k + 1];
-            } else {
-              x = v2[k - 1] + 1;
-            }
-            y = x - k;
-            footstep = diff_footprint(text1_length - x, text2_length - y);
-            if (!front && (footsteps.ContainsKey(footstep))) {
-              done = true;
-            }
-            if (front) {
-              footsteps.Add(footstep, d);
-            }
-            while (!done && x < text1_length && y < text2_length
-                && text1[text1_length - x - 1]
-                == text2[text2_length - y - 1]) {
-              x++;
-              y++;
-              footstep = diff_footprint(text1_length - x, text2_length - y);
-              if (!front && (footsteps.ContainsKey(footstep))) {
-                done = true;
-              }
-              if (front) {
-                footsteps.Add(footstep, d);
-              }
-            }
-            if (v2.ContainsKey(k)) {
-              v2[k] = x;
-            } else {
-              v2.Add(k, x);
-            }
-            if (v_map_d.ContainsKey(k)) {
-              v_map_d[k] = x;
-            } else {
-              v_map_d.Add(k, x);
-            }
-            if (done) {
-              // Reverse path ran over front path.
-              v_map1 = v_map1.GetRange(0, footsteps[footstep] + 1);
-              List<Diff> a
-                  = diff_path1(v_map1, text1.Substring(0, text1_length - x),
-                               text2.Substring(0, text2_length - y));
-              a.AddRange(diff_path2(v_map2, text1.Substring(text1_length - x),
-                                    text2.Substring(text2_length - y)));
-              return a;
-            }
-          }
-        }
-      }
-      // Diff took too long and hit the deadline or
-      // number of diffs equals number of characters, no commonality at all.
-      List<Diff> diffs = new List<Diff>();
-      diffs.Add(new Diff(Operation.DELETE, text1));
-      diffs.Add(new Diff(Operation.INSERT, text2));
-      return diffs;
-    }
-
-    /**
-     * Work from the middle back to the start to determine the path.
-     * @param v_map List of path sets.
-     * @param text1 Old string fragment to be diffed.
-     * @param text2 New string fragment to be diffed.
-     * @return List of Diff objects.
-     */
-    protected List<Diff> diff_path1(List<Dictionary<int, int>> v_map,
-                                    string text1, string text2) {
-      List<Diff> path = new List<Diff>();
-      int pathLast = -1;
-      int x = text1.Length;
-      int y = text2.Length;
-      Operation? last_op = null;
-      for (int d = v_map.Count - 2; d >= 0; d--) {
-        int k = x - y;
-        Dictionary<int, int> v_map_d = v_map[d];
-        while (true) {
-          if (v_map_d.ContainsKey(k - 1) && v_map_d[k - 1] == x - 1) {
-            x--;
-            if (last_op == Operation.DELETE) {
-              path[pathLast].text = text1[x] + path[pathLast].text;
-            } else {
-              path.Add(new Diff(Operation.DELETE, text1.Substring(x, 1)));
-              pathLast++;
-              last_op = Operation.DELETE;
-            }
-            break;
-          } else if (v_map_d.ContainsKey(k + 1) && v_map_d[k + 1] == x) {
-            y--;
-            if (last_op == Operation.INSERT) {
-              path[pathLast].text = text2[y] + path[pathLast].text;
-            } else {
-              path.Add(new Diff(Operation.INSERT, text2.Substring(y, 1)));
-              pathLast++;
-              last_op = Operation.INSERT;
-            }
-            break;
-          } else {
-            x--;
-            y--;
-            //assert (text1[x] == text2[y])
-            //       : "No diagonal.  Can't happen. (diff_path1)";
-            if (last_op == Operation.EQUAL) {
-              path[pathLast].text = text1[x] + path[pathLast].text;
-            } else {
-              path.Add(new Diff(Operation.EQUAL, text1.Substring(x, 1)));
-              pathLast++;
-              last_op = Operation.EQUAL;
-            }
-          }
-        }
-      }
-      path.Reverse();
-      return path;
-    }
-
-    /**
-     * Work from the middle back to the end to determine the path.
-     * @param v_map List of path sets.
-     * @param text1 Old string fragment to be diffed.
-     * @param text2 New string fragment to be diffed.
-     * @return List of Diff objects.
-     */
-    protected List<Diff> diff_path2(List<Dictionary<int, int>> v_map,
-                                    string text1, string text2) {
-      List<Diff> path = new List<Diff>();
-      int pathLast = -1;
-      int x = text1.Length;
-      int y = text2.Length;
-      Operation? last_op = null;
-      for (int d = v_map.Count - 2; d >= 0; d--) {
-        int k = x - y;
-        Dictionary<int, int> v_map_d = v_map[d];
-        while (true) {
-          if (v_map_d.ContainsKey(k - 1) && v_map_d[k - 1] == x - 1) {
-            x--;
-            if (last_op == Operation.DELETE) {
-              path[pathLast].text += text1[text1.Length - x - 1];
-            } else {
-              path.Add(new Diff(Operation.DELETE,
-                  text1.Substring(text1.Length - x - 1, 1)));
-              pathLast++;
-              last_op = Operation.DELETE;
-            }
-            break;
-          } else if (v_map_d.ContainsKey(k + 1) && v_map_d[k + 1] == x) {
-            y--;
-            if (last_op == Operation.INSERT) {
-              path[pathLast].text += text2[text2.Length - y - 1];
-            } else {
-              path.Add(new Diff(Operation.INSERT,
-                  text2.Substring(text2.Length - y - 1, 1)));
-              pathLast++;
-              last_op = Operation.INSERT;
-            }
-            break;
-          } else {
-            x--;
-            y--;
-            //assert (text1[text1.Length - x - 1]
-            //        == text2[text2.Length - y - 1])
-            //      : "No diagonal.  Can't happen. (diff_path2)";
-            if (last_op == Operation.EQUAL) {
-              path[pathLast].text += text1[text1.Length - x - 1];
-            } else {
-              path.Add(new Diff(Operation.EQUAL,
-                  text1.Substring(text1.Length - x - 1, 1)));
-              pathLast++;
-              last_op = Operation.EQUAL;
-            }
-          }
-        }
-      }
-      return path;
-    }
-
-    /**
-     * Compute a good hash of two integers.
-     * @param x First int.
-     * @param y Second int.
-     * @return A string made up of both ints.
-     */
-    protected string diff_footprint(int x, int y) {
-      return Convert.ToString(((long)x << 32) + y);
     }
 
     /**
@@ -875,6 +713,7 @@ namespace DiffMatchPatch {
     /**
      * Do the two texts share a Substring which is at least half the length of
      * the longer text?
+     * This speedup can produce non-minimal diffs.
      * @param text1 First string.
      * @param text2 Second string.
      * @return Five element String array, containing the prefix of text1, the
@@ -948,7 +787,7 @@ namespace DiffMatchPatch {
           best_shorttext_b = shorttext.Substring(j + prefixLength);
         }
       }
-      if (best_common.Length >= longtext.Length / 2) {
+      if (best_common.Length * 2 >= longtext.Length) {
         return new string[]{best_longtext_a, best_longtext_b,
             best_shorttext_a, best_shorttext_b, best_common};
       } else {
@@ -1428,19 +1267,18 @@ namespace DiffMatchPatch {
       int i = 0;
       foreach (Diff aDiff in diffs) {
         string text = aDiff.text.Replace("&", "&amp;").Replace("<", "&lt;")
-          .Replace(">", "&gt;").Replace("\n", "&para;<BR>");
+          .Replace(">", "&gt;").Replace("\n", "&para;<br>");
         switch (aDiff.operation) {
           case Operation.INSERT:
-            html.Append("<INS STYLE=\"background:#E6FFE6;\" TITLE=\"i=")
-                .Append(i).Append("\">").Append(text).Append("</INS>");
+            html.Append("<ins style=\"background:#E6FFE6;\">").Append(text)
+                .Append("</ins>");
             break;
           case Operation.DELETE:
-            html.Append("<DEL STYLE=\"background:#FFE6E6;\" TITLE=\"i=")
-                .Append(i).Append("\">").Append(text).Append("</DEL>");
+            html.Append("<del style=\"background:#FFE6E6;\">").Append(text)
+                .Append("</del>");
             break;
           case Operation.EQUAL:
-            html.Append("<SPAN TITLE=\"i=").Append(i).Append("\">").Append(text)
-                .Append("</SPAN>");
+            html.Append("<span>").Append(text).Append("</span>");
             break;
         }
         if (aDiff.operation != Operation.DELETE) {

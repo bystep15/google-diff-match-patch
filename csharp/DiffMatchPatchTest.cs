@@ -508,7 +508,7 @@ namespace nicTest {
           new Diff(Operation.EQUAL, "a\n"),
           new Diff(Operation.DELETE, "<B>b</B>"),
           new Diff(Operation.INSERT, "c&d")};
-      Assert.AreEqual("<SPAN TITLE=\"i=0\">a&para;<BR></SPAN><DEL STYLE=\"background:#FFE6E6;\" TITLE=\"i=2\">&lt;B&gt;b&lt;/B&gt;</DEL><INS STYLE=\"background:#E6FFE6;\" TITLE=\"i=2\">c&amp;d</INS>",
+      Assert.AreEqual("<span>a&para;<br></span><del style=\"background:#FFE6E6;\">&lt;B&gt;b&lt;/B&gt;</del><ins style=\"background:#E6FFE6;\">c&amp;d</ins>",
           dmp.diff_prettyHtml(diffs));
     }
 
@@ -645,156 +645,7 @@ namespace nicTest {
     }
 
     [Test()]
-    public void diff_pathTest() {
-      diff_match_patchTest dmp = new diff_match_patchTest();
-      // First, check footprints are different.
-      Assert.IsTrue(dmp.diff_footprint(1, 10) != dmp.diff_footprint(10, 1), "diff_footprint:");
-
-      // Single letters.
-      // Trace a path from back to front.
-      List<Dictionary<int, int>> v_map;
-      Dictionary<int, int> row_map;
-      v_map = new List<Dictionary<int, int>>();
-      {
-        row_map = new Dictionary<int, int>();
-        row_map.Add(0, 0);
-        v_map.Add(row_map);
-        row_map = new Dictionary<int, int>();
-        row_map.Add(-1, 0);
-        row_map.Add(1, 1);
-        v_map.Add(row_map);
-        row_map = new Dictionary<int, int>();
-        row_map.Add(-2, 0);
-        row_map.Add(2, 2);
-        row_map.Add(0, 2);
-        v_map.Add(row_map);
-        row_map = new Dictionary<int, int>();
-        row_map.Add(-3, 0);
-        row_map.Add(-1, 2);
-        row_map.Add(3, 3);
-        row_map.Add(1, 4);
-        v_map.Add(row_map);
-        row_map = new Dictionary<int, int>();
-        row_map.Add(-4, 0);
-        row_map.Add(-2, 2);
-        row_map.Add(4, 4);
-        row_map.Add(0, 4);
-        row_map.Add(2, 5);
-        v_map.Add(row_map);
-        row_map = new Dictionary<int, int>();
-        row_map.Add(-5, 0);
-        row_map.Add(-3, 2);
-        row_map.Add(-1, 4);
-        row_map.Add(5, 5);
-        row_map.Add(3, 6);
-        row_map.Add(1, 6);
-        v_map.Add(row_map);
-        row_map = new Dictionary<int, int>();
-        row_map.Add(-6, 0);
-        row_map.Add(-4, 2);
-        row_map.Add(-2, 4);
-        row_map.Add(0, 6);
-        row_map.Add(2, 7);
-        v_map.Add(row_map);
-      }
-
-      List<Diff> diffs = new List<Diff> {
-          new Diff(Operation.INSERT, "W"),
-          new Diff(Operation.DELETE, "A"),
-          new Diff(Operation.EQUAL, "1"),
-          new Diff(Operation.DELETE, "B"),
-          new Diff(Operation.EQUAL, "2"),
-          new Diff(Operation.INSERT, "X"),
-          new Diff(Operation.DELETE, "C"),
-          new Diff(Operation.EQUAL, "3"),
-          new Diff(Operation.DELETE, "D")};
-      CollectionAssert.AreEqual(diffs, dmp.diff_path1(v_map, "A1B2C3D", "W12X3"), "diff_path1: Single letters.");
-
-      // Trace a path from front to back.
-      v_map.RemoveAt(v_map.Count - 1);
-      diffs = new List<Diff> {
-          new Diff(Operation.EQUAL, "4"),
-          new Diff(Operation.DELETE, "E"),
-          new Diff(Operation.INSERT, "Y"),
-          new Diff(Operation.EQUAL, "5"),
-          new Diff(Operation.DELETE, "F"),
-          new Diff(Operation.EQUAL, "6"),
-          new Diff(Operation.DELETE, "G"),
-          new Diff(Operation.INSERT, "Z")};
-      CollectionAssert.AreEqual(diffs, dmp.diff_path2(v_map, "4E5F6G", "4Y56Z"), "diff_path2: Single letters.");
-
-      // Double letters.
-      // Trace a path from back to front.
-      v_map = new List<Dictionary<int, int>>();
-      {
-        row_map = new Dictionary<int, int>();
-        row_map.Add(0, 0);
-        v_map.Add(row_map);
-        row_map = new Dictionary<int, int>();
-        row_map.Add(-1, 0);
-        row_map.Add(1, 1);
-        v_map.Add(row_map);
-        row_map = new Dictionary<int, int>();
-        row_map.Add(-2, 0);
-        row_map.Add(0, 1);
-        row_map.Add(2, 2);
-        v_map.Add(row_map);
-        row_map = new Dictionary<int, int>();
-        row_map.Add(-3, 0);
-        row_map.Add(-1, 1);
-        row_map.Add(1, 2);
-        row_map.Add(3, 3);
-        v_map.Add(row_map);
-        row_map = new Dictionary<int, int>();
-        row_map.Add(-4, 0);
-        row_map.Add(-2, 1);
-        row_map.Add(2, 3);
-        row_map.Add(4, 4);
-        row_map.Add(0, 4);
-        v_map.Add(row_map);
-      }
-      diffs = new List<Diff> {
-          new Diff(Operation.INSERT, "WX"),
-          new Diff(Operation.DELETE, "AB"),
-          new Diff(Operation.EQUAL, "12")};
-      CollectionAssert.AreEqual(diffs, dmp.diff_path1(v_map, "AB12", "WX12"), "diff_path1: Double letters.");
-
-      // Trace a path from front to back.
-      v_map = new List<Dictionary<int, int>>();
-      {
-        row_map = new Dictionary<int, int>();
-        row_map.Add(0, 0);
-        v_map.Add(row_map);
-        row_map = new Dictionary<int, int>();
-        row_map.Add(-1, 0);
-        row_map.Add(1, 1);
-        v_map.Add(row_map);
-        row_map = new Dictionary<int, int>();
-        row_map.Add(0, 1);
-        row_map.Add(2, 2);
-        row_map.Add(-2, 2);
-        v_map.Add(row_map);
-        row_map = new Dictionary<int, int>();
-        row_map.Add(1, 2);
-        row_map.Add(-3, 2);
-        row_map.Add(3, 3);
-        row_map.Add(-1, 3);
-        v_map.Add(row_map);
-        row_map = new Dictionary<int, int>();
-        row_map.Add(-4, 2);
-        row_map.Add(-2, 3);
-        row_map.Add(0, 4);
-        v_map.Add(row_map);
-      }
-      diffs = new List<Diff> {
-          new Diff(Operation.DELETE, "CD"),
-          new Diff(Operation.EQUAL, "34"),
-          new Diff(Operation.INSERT, "YZ")};
-      CollectionAssert.AreEqual(diffs, dmp.diff_path2(v_map, "CD34", "34YZ"), "diff_path2: Double letters.");
-    }
-
-    [Test()]
-    public void diff_mapTest() {
+    public void diff_bisectTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
       // Normal.
       string a = "cat";
@@ -802,12 +653,12 @@ namespace nicTest {
       // Since the resulting diff hasn't been normalized, it would be ok if
       // the insertion and deletion pairs are swapped.
       // If the order changes, tweak this test as required.
-      List<Diff> diffs = new List<Diff> {new Diff(Operation.INSERT, "m"), new Diff(Operation.DELETE, "c"), new Diff(Operation.EQUAL, "a"), new Diff(Operation.INSERT, "p"), new Diff(Operation.DELETE, "t")};
-      Assert.AreEqual(diffs, dmp.diff_map(a, b, DateTime.MaxValue));
+      List<Diff> diffs = new List<Diff> {new Diff(Operation.DELETE, "c"), new Diff(Operation.INSERT, "m"), new Diff(Operation.EQUAL, "a"), new Diff(Operation.DELETE, "t"), new Diff(Operation.INSERT, "p")};
+      Assert.AreEqual(diffs, dmp.diff_bisect(a, b, DateTime.MaxValue));
 
       // Timeout.
       diffs = new List<Diff> {new Diff(Operation.DELETE, "cat"), new Diff(Operation.INSERT, "map")};
-      Assert.AreEqual(diffs, dmp.diff_map(a, b, DateTime.MinValue));
+      Assert.AreEqual(diffs, dmp.diff_bisect(a, b, DateTime.MinValue));
     }
 
     [Test()]
@@ -835,7 +686,6 @@ namespace nicTest {
       // Perform a real diff.
       // Switch off the timeout.
       dmp.Diff_Timeout = 0;
-      dmp.Diff_DualThreshold = 32;
       diffs = new List<Diff> {new Diff(Operation.DELETE, "a"), new Diff(Operation.INSERT, "b")};
       CollectionAssert.AreEqual(diffs, dmp.diff_main("a", "b", false), "diff_main: Simple case #1.");
 
@@ -851,12 +701,9 @@ namespace nicTest {
       diffs = new List<Diff> {new Diff(Operation.INSERT, "xaxcx"), new Diff(Operation.EQUAL, "abc"), new Diff(Operation.DELETE, "y")};
       CollectionAssert.AreEqual(diffs, dmp.diff_main("abcy", "xaxcxabc", false), "diff_main: Overlap #2.");
 
-      // Sub-optimal double-ended diff.
-      dmp.Diff_DualThreshold = 2;
-      diffs = new List<Diff> {new Diff(Operation.INSERT, "x"), new Diff(Operation.EQUAL, "a"), new Diff(Operation.DELETE, "b"), new Diff(Operation.INSERT, "x"), new Diff(Operation.EQUAL, "c"), new Diff(Operation.DELETE, "y"), new Diff(Operation.INSERT, "xabc")};
-      CollectionAssert.AreEqual(diffs, dmp.diff_main("abcy", "xaxcxabc", false), "diff_main: Overlap #3.");
+      diffs = new List<Diff> {new Diff(Operation.DELETE, "ABCD"), new Diff(Operation.EQUAL, "a"), new Diff(Operation.DELETE, "="), new Diff(Operation.INSERT, "-"), new Diff(Operation.EQUAL, "bcd"), new Diff(Operation.DELETE, "="), new Diff(Operation.INSERT, "-"), new Diff(Operation.EQUAL, "efghijklmnopqrs"), new Diff(Operation.DELETE, "EFGHIJKLMNOefg")};
+      CollectionAssert.AreEqual(diffs, dmp.diff_main("ABCDa=bcd=efghijklmnopqrsEFGHIJKLMNOefg", "a-bcd-efghijklmnopqrs", false), "diff_main: Overlap #3.");
 
-      dmp.Diff_DualThreshold = 32;
       dmp.Diff_Timeout = 0.1f;  // 100ms
       string a = "`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n";
       string b = "I am the very model of a modern major general,\nI've information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical.\n";

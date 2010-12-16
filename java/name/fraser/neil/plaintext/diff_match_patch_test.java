@@ -24,11 +24,9 @@ import junit.framework.TestCase;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import name.fraser.neil.plaintext.diff_match_patch.Diff;
 import name.fraser.neil.plaintext.diff_match_patch.LinesToCharsResult;
@@ -324,7 +322,7 @@ public class diff_match_patch_test extends TestCase {
   public void testDiffPrettyHtml() {
     // Pretty print.
     LinkedList<Diff> diffs = diffList(new Diff(EQUAL, "a\n"), new Diff(DELETE, "<B>b</B>"), new Diff(INSERT, "c&d"));
-    assertEquals("diff_prettyHtml:", "<SPAN TITLE=\"i=0\">a&para;<BR></SPAN><DEL STYLE=\"background:#FFE6E6;\" TITLE=\"i=2\">&lt;B&gt;b&lt;/B&gt;</DEL><INS STYLE=\"background:#E6FFE6;\" TITLE=\"i=2\">c&amp;d</INS>", dmp.diff_prettyHtml(diffs));
+    assertEquals("diff_prettyHtml:", "<span>a&para;<br></span><del style=\"background:#FFE6E6;\">&lt;B&gt;b&lt;/B&gt;</del><ins style=\"background:#E6FFE6;\">c&amp;d</ins>", dmp.diff_prettyHtml(diffs));
   }
 
   public void testDiffText() {
@@ -412,142 +410,19 @@ public class diff_match_patch_test extends TestCase {
     assertEquals("Levenshtein with middle equality.", 7, dmp.diff_levenshtein(diffs));
   }
 
-  public void testDiffPath() {
-    // First, check footprints are different.
-    assertTrue("diff_footprint:", dmp.diff_footprint(1, 10) != dmp.diff_footprint(10, 1));
-
-    // Single letters.
-    // Trace a path from back to front.
-    List<Map<Integer, Integer>> v_map;
-    Map<Integer, Integer> row_map;
-    v_map = new ArrayList<Map<Integer, Integer>>();
-    {
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(0, 0);
-      v_map.add(row_map);
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(-1, 0);
-      row_map.put(1, 1);
-      v_map.add(row_map);
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(-2, 0);
-      row_map.put(2, 2);
-      row_map.put(0, 2);
-      v_map.add(row_map);
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(-3, 0);
-      row_map.put(-1, 2);
-      row_map.put(3, 3);
-      row_map.put(1, 4);
-      v_map.add(row_map);
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(-4, 0);
-      row_map.put(-2, 2);
-      row_map.put(4, 4);
-      row_map.put(0, 4);
-      row_map.put(2, 5);
-      v_map.add(row_map);
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(-5, 0);
-      row_map.put(-3, 2);
-      row_map.put(-1, 4);
-      row_map.put(5, 5);
-      row_map.put(3, 6);
-      row_map.put(1, 6);
-      v_map.add(row_map);
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(-6, 0);
-      row_map.put(-4, 2);
-      row_map.put(-2, 4);
-      row_map.put(0, 6);
-      row_map.put(2, 7);
-      v_map.add(row_map);
-    }
-    LinkedList<Diff> diffs = diffList(new Diff(INSERT, "W"), new Diff(DELETE, "A"), new Diff(EQUAL, "1"), new Diff(DELETE, "B"), new Diff(EQUAL, "2"), new Diff(INSERT, "X"), new Diff(DELETE, "C"), new Diff(EQUAL, "3"), new Diff(DELETE, "D"));
-    assertEquals("diff_path1: Single letters.", diffs, dmp.diff_path1(v_map, "A1B2C3D", "W12X3"));
-
-    // Trace a path from front to back.
-    v_map.remove(v_map.size() - 1);
-    diffs = diffList(new Diff(EQUAL, "4"), new Diff(DELETE, "E"), new Diff(INSERT, "Y"), new Diff(EQUAL, "5"), new Diff(DELETE, "F"), new Diff(EQUAL, "6"), new Diff(DELETE, "G"), new Diff(INSERT, "Z"));
-    assertEquals("diff_path2: Single letters.", diffs, dmp.diff_path2(v_map, "4E5F6G", "4Y56Z"));
-
-    // Double letters.
-    // Trace a path from back to front.
-    v_map = new ArrayList<Map<Integer, Integer>>();
-    {
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(0, 0);
-      v_map.add(row_map);
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(-1, 0);
-      row_map.put(1, 1);
-      v_map.add(row_map);
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(-2, 0);
-      row_map.put(0, 1);
-      row_map.put(2, 2);
-      v_map.add(row_map);
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(-3, 0);
-      row_map.put(-1, 1);
-      row_map.put(1, 2);
-      row_map.put(3, 3);
-      v_map.add(row_map);
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(-4, 0);
-      row_map.put(-2, 1);
-      row_map.put(2, 3);
-      row_map.put(4, 4);
-      row_map.put(0, 4);
-      v_map.add(row_map);
-    }
-    diffs = diffList(new Diff(INSERT, "WX"), new Diff(DELETE, "AB"), new Diff(EQUAL, "12"));
-    assertEquals("diff_path1: Double letters.", diffs, dmp.diff_path1(v_map, "AB12", "WX12"));
-
-    // Trace a path from front to back.
-    v_map = new ArrayList<Map<Integer, Integer>>();
-    {
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(0, 0);
-      v_map.add(row_map);
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(-1, 0);
-      row_map.put(1, 1);
-      v_map.add(row_map);
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(0, 1);
-      row_map.put(2, 2);
-      row_map.put(-2, 2);
-      v_map.add(row_map);
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(1, 2);
-      row_map.put(-3, 2);
-      row_map.put(3, 3);
-      row_map.put(-1, 3);
-      v_map.add(row_map);
-      row_map = new HashMap<Integer, Integer>();
-      row_map.put(-4, 2);
-      row_map.put(-2, 3);
-      row_map.put(0, 4);
-      v_map.add(row_map);
-    }
-    diffs = diffList(new Diff(DELETE, "CD"), new Diff(EQUAL, "34"), new Diff(INSERT, "YZ"));
-    assertEquals("diff_path2: Double letters.", diffs, dmp.diff_path2(v_map, "CD34", "34YZ"));
-  }
-
-  public void testDiffMap() {
+  public void testDiffBisect() {
     // Normal.
     String a = "cat";
     String b = "map";
     // Since the resulting diff hasn't been normalized, it would be ok if
     // the insertion and deletion pairs are swapped.
     // If the order changes, tweak this test as required.
-    LinkedList<Diff> diffs = diffList(new Diff(INSERT, "m"), new Diff(DELETE, "c"), new Diff(EQUAL, "a"), new Diff(INSERT, "p"), new Diff(DELETE, "t"));
-    assertEquals("diff_map: Normal.", diffs, dmp.diff_map(a, b, Long.MAX_VALUE));
+    LinkedList<Diff> diffs = diffList(new Diff(DELETE, "c"), new Diff(INSERT, "m"), new Diff(EQUAL, "a"), new Diff(DELETE, "t"), new Diff(INSERT, "p"));
+    assertEquals("diff_bisect: Normal.", diffs, dmp.diff_bisect(a, b, Long.MAX_VALUE));
 
     // Timeout.
     diffs = diffList(new Diff(DELETE, "cat"), new Diff(INSERT, "map"));
-    assertEquals("diff_map: Timeout.", diffs, dmp.diff_map(a, b, 0));
+    assertEquals("diff_bisect: Timeout.", diffs, dmp.diff_bisect(a, b, 0));
   }
 
   public void testDiffMain() {
@@ -573,7 +448,6 @@ public class diff_match_patch_test extends TestCase {
     // Perform a real diff.
     // Switch off the timeout.
     dmp.Diff_Timeout = 0;
-    dmp.Diff_DualThreshold = 32;
     diffs = diffList(new Diff(DELETE, "a"), new Diff(INSERT, "b"));
     assertEquals("diff_main: Simple case #1.", diffs, dmp.diff_main("a", "b", false));
 
@@ -589,12 +463,9 @@ public class diff_match_patch_test extends TestCase {
     diffs = diffList(new Diff(INSERT, "xaxcx"), new Diff(EQUAL, "abc"), new Diff(DELETE, "y"));
     assertEquals("diff_main: Overlap #2.", diffs, dmp.diff_main("abcy", "xaxcxabc", false));
 
-    // Sub-optimal double-ended diff.
-    dmp.Diff_DualThreshold = 2;
-    diffs = diffList(new Diff(INSERT, "x"), new Diff(EQUAL, "a"), new Diff(DELETE, "b"), new Diff(INSERT, "x"), new Diff(EQUAL, "c"), new Diff(DELETE, "y"), new Diff(INSERT, "xabc"));
-    assertEquals("diff_main: Overlap #3.", diffs, dmp.diff_main("abcy", "xaxcxabc", false));
+    diffs = diffList(new Diff(DELETE, "ABCD"), new Diff(EQUAL, "a"), new Diff(DELETE, "="), new Diff(INSERT, "-"), new Diff(EQUAL, "bcd"), new Diff(DELETE, "="), new Diff(INSERT, "-"), new Diff(EQUAL, "efghijklmnopqrs"), new Diff(DELETE, "EFGHIJKLMNOefg"));
+    assertEquals("diff_main: Overlap #3.", diffs, dmp.diff_main("ABCDa=bcd=efghijklmnopqrsEFGHIJKLMNOefg", "a-bcd-efghijklmnopqrs", false));
 
-    dmp.Diff_DualThreshold = 32;
     dmp.Diff_Timeout = 0.1f;  // 100ms
     String a = "`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n";
     String b = "I am the very model of a modern major general,\nI've information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical.\n";
@@ -611,9 +482,7 @@ public class diff_match_patch_test extends TestCase {
     // Test that we didn't take forever (be forgiving).
     // Theoretically this test could fail very occasionally if the
     // OS task swaps or locks up for a second at the wrong moment.
-    // Some JVMs seem to overrun by ~80% (compared with 10% for other languages).
-    // Therefore use an upper limit of 0.5s instead of 0.2s.
-    assertTrue("diff_main: Timeout max.", dmp.Diff_Timeout * 1000 * 5 > endTime - startTime);
+    assertTrue("diff_main: Timeout max.", dmp.Diff_Timeout * 1000 * 2 > endTime - startTime);
     dmp.Diff_Timeout = 0;
 
     // Test the linemode speedup.

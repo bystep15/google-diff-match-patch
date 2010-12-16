@@ -328,7 +328,7 @@ class DiffTest(DiffMatchPatchTest):
   def testDiffPrettyHtml(self):
     # Pretty print.
     diffs = [(self.dmp.DIFF_EQUAL, "a\n"), (self.dmp.DIFF_DELETE, "<B>b</B>"), (self.dmp.DIFF_INSERT, "c&d")]
-    self.assertEquals("<SPAN TITLE=\"i=0\">a&para;<BR></SPAN><DEL STYLE=\"background:#FFE6E6;\" TITLE=\"i=2\">&lt;B&gt;b&lt;/B&gt;</DEL><INS STYLE=\"background:#E6FFE6;\" TITLE=\"i=2\">c&amp;d</INS>", self.dmp.diff_prettyHtml(diffs))
+    self.assertEquals("<span>a&para;<br></span><del style=\"background:#FFE6E6;\">&lt;B&gt;b&lt;/B&gt;</del><ins style=\"background:#E6FFE6;\">c&amp;d</ins>", self.dmp.diff_prettyHtml(diffs))
 
   def testDiffText(self):
     # Compute the source and destination texts.
@@ -410,50 +410,17 @@ class DiffTest(DiffMatchPatchTest):
     # Levenshtein with middle equality.
     self.assertEquals(7, self.dmp.diff_levenshtein([(self.dmp.DIFF_DELETE, "abc"), (self.dmp.DIFF_EQUAL, "xyz"), (self.dmp.DIFF_INSERT, "1234")]))
 
-  def testDiffPath(self):
-    # Trace a path from back to front.
-    # Single letters.
-    v_map = []
-    v_map.append({ 0:0})
-    v_map.append({-1:0,  1:1})
-    v_map.append({-2:0,  2:2,  0:2})
-    v_map.append({-3:0, -1:2,  3:3, 1:4})
-    v_map.append({-4:0, -2:2,  4:4, 0:4, 2:5})
-    v_map.append({-5:0, -3:2, -1:4, 5:5, 3:6, 1:6})
-    v_map.append({-6:0, -4:2, -2:4, 0:6, 2:7})
-    self.assertEquals([(self.dmp.DIFF_INSERT, "W"), (self.dmp.DIFF_DELETE, "A"), (self.dmp.DIFF_EQUAL, "1"), (self.dmp.DIFF_DELETE, "B"), (self.dmp.DIFF_EQUAL, "2"), (self.dmp.DIFF_INSERT, "X"), (self.dmp.DIFF_DELETE, "C"), (self.dmp.DIFF_EQUAL, "3"), (self.dmp.DIFF_DELETE, "D")], self.dmp.diff_path1(v_map, "A1B2C3D", "W12X3"))
-
-    v_map.pop()
-    self.assertEquals([(self.dmp.DIFF_EQUAL, "4"), (self.dmp.DIFF_DELETE, "E"), (self.dmp.DIFF_INSERT, "Y"), (self.dmp.DIFF_EQUAL, "5"), (self.dmp.DIFF_DELETE, "F"), (self.dmp.DIFF_EQUAL, "6"), (self.dmp.DIFF_DELETE, "G"), (self.dmp.DIFF_INSERT, "Z")], self.dmp.diff_path2(v_map, "4E5F6G", "4Y56Z"))
-
-    # Double letters.
-    v_map = []
-    v_map.append({ 0:0})
-    v_map.append({-1:0,  1:1})
-    v_map.append({-2:0,  0:1, 2:2})
-    v_map.append({-3:0, -1:1, 1:2, 3:3})
-    v_map.append({-4:0, -2:1, 2:3, 4:4, 0:4})
-    self.assertEquals([(self.dmp.DIFF_INSERT, "WX"), (self.dmp.DIFF_DELETE, "AB"), (self.dmp.DIFF_EQUAL, "12")], self.dmp.diff_path1(v_map, "AB12", "WX12"))
-
-    v_map = []
-    v_map.append({ 0:0})
-    v_map.append({-1:0,  1:1})
-    v_map.append({ 0:1,  2:2, -2:2})
-    v_map.append({ 1:2, -3:2,  3:3, -1:3})
-    v_map.append({-4:2, -2:3,  0:4})
-    self.assertEquals([(self.dmp.DIFF_DELETE, "CD"), (self.dmp.DIFF_EQUAL, "34"), (self.dmp.DIFF_INSERT, "YZ")], self.dmp.diff_path2(v_map, "CD34", "34YZ"))
-
-  def testDiffMap(self):
+  def testDiffBisect(self):
     # Normal.
     a = "cat"
     b = "map"
     # Since the resulting diff hasn't been normalized, it would be ok if
     # the insertion and deletion pairs are swapped.
     # If the order changes, tweak this test as required.
-    self.assertEquals([(self.dmp.DIFF_INSERT, "m"), (self.dmp.DIFF_DELETE, "c"), (self.dmp.DIFF_EQUAL, "a"), (self.dmp.DIFF_INSERT, "p"), (self.dmp.DIFF_DELETE, "t")], self.dmp.diff_map(a, b, sys.maxint))
+    self.assertEquals([(self.dmp.DIFF_DELETE, "c"), (self.dmp.DIFF_INSERT, "m"), (self.dmp.DIFF_EQUAL, "a"), (self.dmp.DIFF_DELETE, "t"), (self.dmp.DIFF_INSERT, "p")], self.dmp.diff_bisect(a, b, sys.maxint))
 
     # Timeout.
-    self.assertEquals([(self.dmp.DIFF_DELETE, "cat"), (self.dmp.DIFF_INSERT, "map")], self.dmp.diff_map(a, b, 0))
+    self.assertEquals([(self.dmp.DIFF_DELETE, "cat"), (self.dmp.DIFF_INSERT, "map")], self.dmp.diff_bisect(a, b, 0))
 
   def testDiffMain(self):
     # Perform a trivial diff.
@@ -478,7 +445,6 @@ class DiffTest(DiffMatchPatchTest):
     # Perform a real diff.
     # Switch off the timeout.
     self.dmp.Diff_Timeout = 0
-    self.dmp.Diff_DualThreshold = 32
     # Simple cases.
     self.assertEquals([(self.dmp.DIFF_DELETE, "a"), (self.dmp.DIFF_INSERT, "b")], self.dmp.diff_main("a", "b", False))
 
@@ -491,10 +457,7 @@ class DiffTest(DiffMatchPatchTest):
 
     self.assertEquals([(self.dmp.DIFF_INSERT, "xaxcx"), (self.dmp.DIFF_EQUAL, "abc"), (self.dmp.DIFF_DELETE, "y")], self.dmp.diff_main("abcy", "xaxcxabc", False))
 
-    # Sub-optimal double-ended diff.
-    self.dmp.Diff_DualThreshold = 2
-    self.assertEquals([(self.dmp.DIFF_INSERT, "x"), (self.dmp.DIFF_EQUAL, "a"), (self.dmp.DIFF_DELETE, "b"), (self.dmp.DIFF_INSERT, "x"), (self.dmp.DIFF_EQUAL, "c"), (self.dmp.DIFF_DELETE, "y"), (self.dmp.DIFF_INSERT, "xabc")], self.dmp.diff_main("abcy", "xaxcxabc", False))
-    self.dmp.Diff_DualThreshold = 32
+    self.assertEquals([(self.dmp.DIFF_DELETE, "ABCD"), (self.dmp.DIFF_EQUAL, "a"), (self.dmp.DIFF_DELETE, "="), (self.dmp.DIFF_INSERT, "-"), (self.dmp.DIFF_EQUAL, "bcd"), (self.dmp.DIFF_DELETE, "="), (self.dmp.DIFF_INSERT, "-"), (self.dmp.DIFF_EQUAL, "efghijklmnopqrs"), (self.dmp.DIFF_DELETE, "EFGHIJKLMNOefg")], self.dmp.diff_main("ABCDa=bcd=efghijklmnopqrsEFGHIJKLMNOefg", "a-bcd-efghijklmnopqrs", False))
 
     # Timeout.
     self.dmp.Diff_Timeout = 0.1  # 100ms
@@ -512,7 +475,7 @@ class DiffTest(DiffMatchPatchTest):
     # Test that we didn't take forever (be forgiving).
     # Theoretically this test could fail very occasionally if the
     # OS task swaps or locks up for a second at the wrong moment.
-    self.assertTrue(self.dmp.Diff_Timeout * 5 > endTime - startTime)
+    self.assertTrue(self.dmp.Diff_Timeout * 2 > endTime - startTime)
     self.dmp.Diff_Timeout = 0
 
     # Test the linemode speedup.

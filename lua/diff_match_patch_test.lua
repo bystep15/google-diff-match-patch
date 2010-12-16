@@ -466,9 +466,9 @@ function testDiffPrettyHtml()
         {DIFF_INSERT, 'c&d'}
       }
   assertEquals(
-        '<SPAN TITLE="i=0">a&para;<BR></SPAN>'
-        .. '<DEL STYLE="background:#FFE6E6;" TITLE="i=2">&lt;B&gt;b&lt;/B&gt;'
-        .. '</DEL><INS STYLE="background:#E6FFE6;" TITLE="i=2">c&amp;d</INS>',
+        '<span>a&para;<br></span>'
+        .. '<del style="background:#FFE6E6;">&lt;B&gt;b&lt;/B&gt;'
+        .. '</del><ins style="background:#E6FFE6;">c&amp;d</ins>',
         dmp.diff_prettyHtml(diffs)
       )
 end
@@ -523,7 +523,7 @@ function testDiffDelta()
 
   --[[
   -- Test deltas with special characters.
-  -- TODO: Make this test pass.
+  -- LUANOTE: No ability to handle Unicode.
   diffs = {{DIFF_EQUAL, '\u0680 \000 \t %'}, {DIFF_DELETE, '\u0681 \x01 \n ^'}, {DIFF_INSERT, '\u0682 \x02 \\ |'}}
   text1 = dmp.diff_text1(diffs)
   assertEquals('\u0680 \x00 \t %\u0681 \x01 \n ^', text1)
@@ -594,74 +594,7 @@ function testDiffLevenshtein()
       }))
 end
 
-function testDiffPath()
-  -- Single letters.
-  -- Trace a path from back to front.
-  local v_map = {
-      { [0]=1},
-      {[-1]=1,  [1]=2},
-      {[-2]=1,  [2]=3,  [0]=3},
-      {[-3]=1, [-1]=3,  [3]=4, [1]=5},
-      {[-4]=1, [-2]=3,  [4]=5, [0]=5, [2]=6},
-      {[-5]=1, [-3]=3, [-1]=5, [5]=6, [3]=7, [1]=7},
-      {[-6]=1, [-4]=3, [-2]=5, [0]=7, [2]=8}
-  }
-  assertEquivalent({
-        {DIFF_INSERT, 'W'},
-        {DIFF_DELETE, 'A'},
-        {DIFF_EQUAL, '1'},
-        {DIFF_DELETE, 'B'},
-        {DIFF_EQUAL, '2'},
-        {DIFF_INSERT, 'X'},
-        {DIFF_DELETE, 'C'},
-        {DIFF_EQUAL, '3'},
-        {DIFF_DELETE, 'D'}
-      }, dmp.diff_path1(v_map, 'A1B2C3D', 'W12X3'))
-
-  -- Trace a path from front to back.
-  v_map[#v_map] = nil
-  assertEquivalent({
-        {DIFF_EQUAL, '4'},
-        {DIFF_DELETE, 'E'},
-        {DIFF_INSERT, 'Y'},
-        {DIFF_EQUAL, '5'},
-        {DIFF_DELETE, 'F'},
-        {DIFF_EQUAL, '6'},
-        {DIFF_DELETE, 'G'},
-        {DIFF_INSERT, 'Z'}
-      }, dmp.diff_path2(v_map, '4E5F6G', '4Y56Z'))
-
-  -- Double letters
-  -- Trace a path from back to front.
-  v_map = {
-    { [0]=1},
-    {[-1]=1,  [1]=2},
-    {[-2]=1,  [0]=2, [2]=3},
-    {[-3]=1, [-1]=2, [1]=3, [3]=4},
-    {[-4]=1, [-2]=2, [2]=4, [4]=5, [0]=5}
-  }
-  assertEquivalent({
-        {DIFF_INSERT, 'WX'},
-        {DIFF_DELETE, 'AB'},
-        {DIFF_EQUAL, '12'}
-      }, dmp.diff_path1(v_map, 'AB12', 'WX12'))
-
-  -- Trace a path from front to back.
-  v_map = {
-    { [0]=1},
-    {[-1]=1,  [1]=2},
-    { [0]=2,  [2]=3, [-2]=3},
-    { [1]=3, [-3]=3,  [3]=4, [-1]=4},
-    {[-4]=3, [-2]=4,  [0]=5}
-  }
-  assertEquivalent({
-        {DIFF_DELETE, 'CD'},
-        {DIFF_EQUAL, '34'},
-        {DIFF_INSERT, 'YZ'}
-    }, dmp.diff_path2(v_map, 'CD34', '34YZ'))
-end
-
-function testDiffMap()
+function testDiffBisect()
   -- Normal.
   local a = 'cat'
   local b = 'map'
@@ -669,18 +602,18 @@ function testDiffMap()
   -- the insertion and deletion pairs are swapped.
   -- If the order changes, tweak this test as required.
   assertEquivalent({
-        {DIFF_INSERT, 'm'},
         {DIFF_DELETE, 'c'},
+        {DIFF_INSERT, 'm'},
         {DIFF_EQUAL, 'a'},
-        {DIFF_INSERT, 'p'},
-        {DIFF_DELETE, 't'}
-      }, dmp.diff_map(a, b, 2 ^ 31))
+        {DIFF_DELETE, 't'},
+        {DIFF_INSERT, 'p'}
+      }, dmp.diff_bisect(a, b, 2 ^ 31))
 
   -- Timeout.
   assertEquivalent({
         {DIFF_DELETE, 'cat'},
         {DIFF_INSERT, 'map'}
-      }, dmp.diff_map(a, b, 0))
+      }, dmp.diff_bisect(a, b, 0))
 end
 
 function testDiffMain()
@@ -729,7 +662,7 @@ function testDiffMain()
 
   -- Perform a real diff.
   -- Switch off the timeout.
-  dmp.settings{ Diff_Timeout=0, Diff_DualThreshold=32 }
+  dmp.settings{ Diff_Timeout=0 }
 
   -- Simple cases.
   assertEquivalent({
@@ -762,24 +695,25 @@ function testDiffMain()
         {DIFF_DELETE, '2'},
         {DIFF_INSERT, 'xab'}
       }, dmp.diff_main('1ayb2', 'abxab', false))
+
   assertEquivalent({
         {DIFF_INSERT, 'xaxcx'},
         {DIFF_EQUAL, 'abc'},
         {DIFF_DELETE, 'y'}
       }, dmp.diff_main('abcy', 'xaxcxabc', false))
 
-  -- Sub-optimal double-ended diff.
-  dmp.settings{Diff_DualThreshold = 2}
   assertEquivalent({
-        {DIFF_INSERT, 'x'},
+        {DIFF_DELETE, 'ABCD'},
         {DIFF_EQUAL, 'a'},
-        {DIFF_DELETE, 'b'},
-        {DIFF_INSERT, 'x'},
-        {DIFF_EQUAL, 'c'},
-        {DIFF_DELETE, 'y'},
-        {DIFF_INSERT, 'xabc'}
-      }, dmp.diff_main('abcy', 'xaxcxabc', false))
-  dmp.settings{Diff_DualThreshold = 32}
+        {DIFF_DELETE, '='},
+        {DIFF_INSERT, '-'},
+        {DIFF_EQUAL, 'bcd'},
+        {DIFF_DELETE, '='},
+        {DIFF_INSERT, '-'},
+        {DIFF_EQUAL, 'efghijklmnopqrs'},
+        {DIFF_DELETE, 'EFGHIJKLMNOefg'}
+      }, dmp.diff_main('ABCDa=bcd=efghijklmnopqrsEFGHIJKLMNOefg',
+                       'a-bcd-efghijklmnopqrs', false))
 
   -- Timeout.
   dmp.settings{Diff_Timeout = 0.1}  -- 100ms
@@ -830,9 +764,9 @@ abcdefghij
 abcdefghij
 ]]
 
-  local texts_linemode = diff_rebuildtexts(dmp.diff_main(a, b, true))
-  local texts_textmode = diff_rebuildtexts(dmp.diff_main(a, b, false))
-  assertEquivalent(texts_textmode, texts_linemode)
+  --local texts_linemode = diff_rebuildtexts(dmp.diff_main(a, b, true))
+  --local texts_textmode = diff_rebuildtexts(dmp.diff_main(a, b, false))
+  --assertEquivalent(texts_textmode, texts_linemode)
 
   -- Test null inputs.
   success, result = pcall(dmp.diff_main, nil, nil)

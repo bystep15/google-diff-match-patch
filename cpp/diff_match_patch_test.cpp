@@ -57,8 +57,7 @@ void diff_match_patch_test::run_all_tests() {
     testDiffDelta();
     testDiffXIndex();
     testDiffLevenshtein();
-    testDiffPath();
-    testDiffMap();
+    testDiffBisect();
     testDiffMain();
 
     testMatchAlphabet();
@@ -371,7 +370,7 @@ void diff_match_patch_test::testDiffCleanupEfficiency() {
 void diff_match_patch_test::testDiffPrettyHtml() {
   // Pretty print.
   QList<Diff> diffs = diffList(Diff(EQUAL, "a\n"), Diff(DELETE, "<B>b</B>"), Diff(INSERT, "c&d"));
-  assertEquals("diff_prettyHtml:", "<SPAN TITLE=\"i=0\">a&para;<BR></SPAN><DEL STYLE=\"background:#FFE6E6;\" TITLE=\"i=2\">&lt;B&gt;b&lt;/B&gt;</DEL><INS STYLE=\"background:#E6FFE6;\" TITLE=\"i=2\">c&amp;d</INS>", dmp.diff_prettyHtml(diffs));
+  assertEquals("diff_prettyHtml:", "<span>a&para;<br></span><del style=\"background:#FFE6E6;\">&lt;B&gt;b&lt;/B&gt;</del><ins style=\"background:#E6FFE6;\">c&amp;d</ins>", dmp.diff_prettyHtml(diffs));
 }
 
 void diff_match_patch_test::testDiffText() {
@@ -461,138 +460,19 @@ void diff_match_patch_test::testDiffLevenshtein() {
   assertEquals("diff_levenshtein: Middle equality.", 7, dmp.diff_levenshtein(diffs));
 }
 
-void diff_match_patch_test::testDiffPath() {
-  // Single letters.
-  // Trace a path from back to front.
-  QList<QMap<int, int> > v_map;
-  QMap<int, int> row_map;
-  {
-    row_map = QMap<int, int>();
-    row_map.insert(0, 0);
-    v_map.append(row_map);
-    row_map = QMap<int, int>();
-    row_map.insert(-1, 0);
-    row_map.insert(1, 1);
-    v_map.append(row_map);
-    row_map = QMap<int, int>();
-    row_map.insert(-2, 0);
-    row_map.insert(2, 2);
-    row_map.insert(0, 2);
-    v_map.append(row_map);
-    row_map = QMap<int, int>();
-    row_map.insert(-3, 0);
-    row_map.insert(-1, 2);
-    row_map.insert(3, 3);
-    row_map.insert(1, 4);
-    v_map.append(row_map);
-    row_map = QMap<int, int>();
-    row_map.insert(-4, 0);
-    row_map.insert(-2, 2);
-    row_map.insert(4, 4);
-    row_map.insert(0, 4);
-    row_map.insert(2, 5);
-    v_map.append(row_map);
-    row_map = QMap<int, int>();
-    row_map.insert(-5, 0);
-    row_map.insert(-3, 2);
-    row_map.insert(-1, 4);
-    row_map.insert(5, 5);
-    row_map.insert(3, 6);
-    row_map.insert(1, 6);
-    v_map.append(row_map);
-    row_map = QMap<int, int>();
-    row_map.insert(-6, 0);
-    row_map.insert(-4, 2);
-    row_map.insert(-2, 4);
-    row_map.insert(0, 6);
-    row_map.insert(2, 7);
-    v_map.append(row_map);
-  }
-  QList<Diff> diffs = diffList(Diff(INSERT, "W"), Diff(DELETE, "A"), Diff(EQUAL, "1"), Diff(DELETE, "B"), Diff(EQUAL, "2"), Diff(INSERT, "X"), Diff(DELETE, "C"), Diff(EQUAL, "3"), Diff(DELETE, "D"));
-  assertEquals("diff_path1: Single letters.", diffs, dmp.diff_path1(v_map, "A1B2C3D", "W12X3"));
-
-  // Trace a path from front to back.
-  v_map.removeAt(v_map.size() - 1);
-  diffs = diffList(Diff(EQUAL, "4"), Diff(DELETE, "E"), Diff(INSERT, "Y"), Diff(EQUAL, "5"), Diff(DELETE, "F"), Diff(EQUAL, "6"), Diff(DELETE, "G"), Diff(INSERT, "Z"));
-  assertEquals("diff_path2: Single letters.", diffs, dmp.diff_path2(v_map, "4E5F6G", "4Y56Z"));
-
-  // Double letters.
-  // Trace a path from back to front.
-  v_map = QList<QMap<int, int> >();
-  {
-    row_map = QMap<int, int>();
-    row_map.insert(0, 0);
-    v_map.append(row_map);
-    row_map = QMap<int, int>();
-    row_map.insert(-1, 0);
-    row_map.insert(1, 1);
-    v_map.append(row_map);
-    row_map = QMap<int, int>();
-    row_map.insert(-2, 0);
-    row_map.insert(0, 1);
-    row_map.insert(2, 2);
-    v_map.append(row_map);
-    row_map = QMap<int, int>();
-    row_map.insert(-3, 0);
-    row_map.insert(-1, 1);
-    row_map.insert(1, 2);
-    row_map.insert(3, 3);
-    v_map.append(row_map);
-    row_map = QMap<int, int>();
-    row_map.insert(-4, 0);
-    row_map.insert(-2, 1);
-    row_map.insert(2, 3);
-    row_map.insert(4, 4);
-    row_map.insert(0, 4);
-    v_map.append(row_map);
-  }
-  diffs = diffList(Diff(INSERT, "WX"), Diff(DELETE, "AB"), Diff(EQUAL, "12"));
-  assertEquals("diff_path1: Double letters.", diffs, dmp.diff_path1(v_map, "AB12", "WX12"));
-
-  // Trace a path from front to back.
-  v_map = QList<QMap<int, int> >();
-  {
-    row_map = QMap<int, int>();
-    row_map.insert(0, 0);
-    v_map.append(row_map);
-    row_map = QMap<int, int>();
-    row_map.insert(-1, 0);
-    row_map.insert(1, 1);
-    v_map.append(row_map);
-    row_map = QMap<int, int>();
-    row_map.insert(0, 1);
-    row_map.insert(2, 2);
-    row_map.insert(-2, 2);
-    v_map.append(row_map);
-    row_map = QMap<int, int>();
-    row_map.insert(1, 2);
-    row_map.insert(-3, 2);
-    row_map.insert(3, 3);
-    row_map.insert(-1, 3);
-    v_map.append(row_map);
-    row_map = QMap<int, int>();
-    row_map.insert(-4, 2);
-    row_map.insert(-2, 3);
-    row_map.insert(0, 4);
-    v_map.append(row_map);
-  }
-  diffs = diffList(Diff(DELETE, "CD"), Diff(EQUAL, "34"), Diff(INSERT, "YZ"));
-  assertEquals("diff_path2: Double letters.", diffs, dmp.diff_path2(v_map, "CD34", "34YZ"));
-}
-
-void diff_match_patch_test::testDiffMap() {
+void diff_match_patch_test::testDiffBisect() {
   // Normal.
   QString a = "cat";
   QString b = "map";
   // Since the resulting diff hasn't been normalized, it would be ok if
   // the insertion and deletion pairs are swapped.
   // If the order changes, tweak this test as required.
-  QList<Diff> diffs = diffList(Diff(INSERT, "m"), Diff(DELETE, "c"), Diff(EQUAL, "a"), Diff(INSERT, "p"), Diff(DELETE, "t"));
-  assertEquals("diff_map: Normal.", diffs, dmp.diff_map(a, b, std::numeric_limits<clock_t>::max()));
+  QList<Diff> diffs = diffList(Diff(DELETE, "c"), Diff(INSERT, "m"), Diff(EQUAL, "a"), Diff(DELETE, "t"), Diff(INSERT, "p"));
+  assertEquals("diff_bisect: Normal.", diffs, dmp.diff_bisect(a, b, std::numeric_limits<clock_t>::max()));
 
   // Timeout.
   diffs = diffList(Diff(DELETE, "cat"), Diff(INSERT, "map"));
-  assertEquals("diff_map: Timeout.", diffs, dmp.diff_map(a, b, 0));
+  assertEquals("diff_bisect: Timeout.", diffs, dmp.diff_bisect(a, b, 0));
 }
 
 void diff_match_patch_test::testDiffMain() {
@@ -618,7 +498,6 @@ void diff_match_patch_test::testDiffMain() {
   // Perform a real diff.
   // Switch off the timeout.
   dmp.Diff_Timeout = 0;
-  dmp.Diff_DualThreshold = 32;
   diffs = diffList(Diff(DELETE, "a"), Diff(INSERT, "b"));
   assertEquals("diff_main: Simple case #1.", diffs, dmp.diff_main("a", "b", false));
 
@@ -634,11 +513,8 @@ void diff_match_patch_test::testDiffMain() {
   diffs = diffList(Diff(INSERT, "xaxcx"), Diff(EQUAL, "abc"), Diff(DELETE, "y"));
   assertEquals("diff_main: Overlap #2.", diffs, dmp.diff_main("abcy", "xaxcxabc", false));
 
-  // Sub-optimal double-ended diff.
-  dmp.Diff_DualThreshold = 2;
-  diffs = diffList(Diff(INSERT, "x"), Diff(EQUAL, "a"), Diff(DELETE, "b"), Diff(INSERT, "x"), Diff(EQUAL, "c"), Diff(DELETE, "y"), Diff(INSERT, "xabc"));
-  assertEquals("diff_main: Overlap #3.", diffs, dmp.diff_main("abcy", "xaxcxabc", false));
-  dmp.Diff_DualThreshold = 32;
+  diffs = diffList(Diff(DELETE, "ABCD"), Diff(EQUAL, "a"), Diff(DELETE, "="), Diff(INSERT, "-"), Diff(EQUAL, "bcd"), Diff(DELETE, "="), Diff(INSERT, "-"), Diff(EQUAL, "efghijklmnopqrs"), Diff(DELETE, "EFGHIJKLMNOefg"));
+  assertEquals("diff_main: Overlap #3.", diffs, dmp.diff_main("ABCDa=bcd=efghijklmnopqrsEFGHIJKLMNOefg", "a-bcd-efghijklmnopqrs", false));
 
   dmp.Diff_Timeout = 0.1f;  // 100ms
   // This test may 'fail' on extremely fast computers.  If so, just increase the text lengths.

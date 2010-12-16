@@ -47,9 +47,6 @@ class diff_match_patch:
     self.Diff_Timeout = 1.0
     # Cost of an empty edit operation in terms of edit characters.
     self.Diff_EditCost = 4
-    # The size beyond which the double-ended diff activates.
-    # Double-ending is twice as fast, but less accurate.
-    self.Diff_DualThreshold = 32
     # At what point is no match declared (0.0 = perfection, 1.0 = very loose).
     self.Match_Threshold = 0.5
     # How far to search for a match (0 = exact location, 1000+ = broad match).
@@ -176,6 +173,11 @@ class diff_match_patch:
         diffs[0] = (self.DIFF_DELETE, diffs[0][1])
         diffs[2] = (self.DIFF_DELETE, diffs[2][1])
       return diffs
+
+    if len(shorttext) == 1:
+      # Single character string.
+      # After the previous speedup, the character can't be an equality.
+      return [(self.DIFF_DELETE, text1), (self.DIFF_INSERT, text2)]
     longtext = shorttext = None  # Garbage collect.
 
     # Check to see if the problem can be split in two.
@@ -184,8 +186,8 @@ class diff_match_patch:
       # A half-match was found, sort out the return data.
       (text1_a, text1_b, text2_a, text2_b, mid_common) = hm
       # Send both pairs off for separate processing.
-      diffs_a = self.diff_main(text1_a, text2_a, checklines)
-      diffs_b = self.diff_main(text1_b, text2_b, checklines)
+      diffs_a = self.diff_main(text1_a, text2_a, checklines, deadline)
+      diffs_b = self.diff_main(text1_b, text2_b, checklines, deadline)
       # Merge the results.
       return diffs_a + [(self.DIFF_EQUAL, mid_common)] + diffs_b
 
@@ -196,7 +198,7 @@ class diff_match_patch:
       # Scan the text on a line-by-line basis first.
       (text1, text2, linearray) = self.diff_linesToChars(text1, text2)
 
-    diffs = self.diff_map(text1, text2, deadline)
+    diffs = self.diff_bisect(text1, text2, deadline)
 
     if checklines:
       # Convert the diff back to original text.
@@ -235,6 +237,85 @@ class diff_match_patch:
 
       diffs.pop()  # Remove the dummy entry at the end.
     return diffs
+
+  def diff_bisect(self, text1, text2, deadline):
+    """Find the 'middle snake' of a diff, split the problem in two
+      and return the recursively constructed diff.
+      See Myers 1986 paper: An O(ND) Difference Algorithm and Its Variations.
+
+    Args:
+      text1: Old string to be diffed.
+      text2: New string to be diffed.
+      deadline: Time at which to bail if not yet complete.
+
+    Returns:
+      Array of diff tuples.
+    """
+
+    # Cache the text lengths to prevent multiple calls.
+    text1_length = len(text1)
+    text2_length = len(text2)
+    max_d = (text1_length + text2_length + 1) / 2
+    v1 = {1:0}
+    v2 = {1:0}
+    delta = text1_length - text2_length
+    # If the total number of characters is odd, then the front path will
+    # collide with the reverse path.
+    front = (delta % 2 != 0)
+    for d in xrange(max_d):
+      # Bail out if deadline is reached.
+      if time.time() > deadline:
+        break
+
+      # Walk the front path one step.
+      for k1 in xrange(-d, d + 1, 2):
+        if k1 == -d or k1 != d and v1[k1 - 1] < v1[k1 + 1]:
+          x1 = v1[k1 + 1]
+        else:
+          x1 = v1[k1 - 1] + 1
+        y1 = x1 - k1
+        while (x1 < text1_length and y1 < text2_length and
+               text1[x1] == text2[y1]):
+          x1 += 1
+          y1 += 1
+        v1[k1] = x1
+        if front:
+          k2 = delta - k1
+          if k2 in v2:
+            # Mirror x2 onto top-left coordinate system.
+            x2 = text1_length - v2[k2]
+            if x1 >= x2:
+              # Overlap detected.
+              return (self.diff_main(text1[:x1], text2[:y1], False, deadline) +
+                      self.diff_main(text1[x1:], text2[y1:], False, deadline))
+
+      # Walk the reverse path one step.
+      for k2 in xrange(-d, d + 1, 2):
+        if k2 == -d or k2 != d and v2[k2 - 1] < v2[k2 + 1]:
+          x2 = v2[k2 + 1]
+        else:
+          x2 = v2[k2 - 1] + 1
+        y2 = x2 - k2
+        while (x2 < text1_length and y2 < text2_length and
+               text1[-x2 - 1] == text2[-y2 - 1]):
+          x2 += 1
+          y2 += 1
+        v2[k2] = x2
+        if not front:
+          k1 = delta - k2
+          if k1 in v1:
+            x1 = v1[k1]
+            y1 = x1 - k1
+            # Mirror x2 onto top-left coordinate system.
+            x2 = text1_length - x2
+            if x1 >= x2:
+              # Overlap detected.
+              return (self.diff_main(text1[:x1], text2[:y1], False, deadline) +
+                      self.diff_main(text1[x1:], text2[y1:], False, deadline))
+
+    # Diff took too long and hit the deadline or
+    # number of diffs equals number of characters, no commonality at all.
+    return [(self.DIFF_DELETE, text1), (self.DIFF_INSERT, text2)]
 
   def diff_linesToChars(self, text1, text2):
     """Split two texts into an array of strings.  Reduce the texts to a string
@@ -305,212 +386,6 @@ class diff_match_patch:
       for char in diffs[x][1]:
         text.append(lineArray[ord(char)])
       diffs[x] = (diffs[x][0], "".join(text))
-
-  def diff_map(self, text1, text2, deadline):
-    """Explore the intersection points between the two texts.
-
-    Args:
-      text1: Old string to be diffed.
-      text2: New string to be diffed.
-      deadline: Time at which to bail if not yet complete.
-
-    Returns:
-      Array of diff tuples.
-    """
-
-    # Cache the text lengths to prevent multiple calls.
-    text1_length = len(text1)
-    text2_length = len(text2)
-    max_d = text1_length + text2_length - 1
-    doubleEnd = self.Diff_DualThreshold * 2 < max_d
-    # Python efficiency note: (x << 32) + y is the fastest way to combine
-    # x and y into a single hashable value.  Tested in Python 2.5.
-    v_map1 = []
-    v_map2 = []
-    v1 = {1:0}
-    v2 = {1:0}
-    footsteps = {}
-    done = False
-    # If the total number of characters is odd, then the front path will
-    # collide with the reverse path.
-    front = (text1_length + text2_length) % 2
-    for d in xrange(max_d):
-      # Bail out if deadline is reached.
-      if time.time() > deadline:
-        break
-
-      # Walk the front path one step.
-      v_map_d = {}
-      v_map1.append(v_map_d)
-      for k in xrange(-d, d + 1, 2):
-        if k == -d or k != d and v1[k - 1] < v1[k + 1]:
-          x = v1[k + 1]
-        else:
-          x = v1[k - 1] + 1
-        y = x - k
-        if doubleEnd:
-          footstep = str((x << 32) + y)
-          if front and footstep in footsteps:
-            done = True
-          if not front:
-            footsteps[footstep] = d
-
-        while (not done and x < text1_length and y < text2_length and
-               text1[x] == text2[y]):
-          x += 1
-          y += 1
-          if doubleEnd:
-            footstep = str((x << 32) + y)
-            if front and footstep in footsteps:
-              done = True
-            if not front:
-              footsteps[footstep] = d
-
-        v1[k] = x
-        v_map_d[k] = x
-        if x == text1_length and y == text2_length:
-          # Reached the end in single-path mode.
-          return self.diff_path1(v_map1, text1, text2)
-        elif done:
-          # Front path ran over reverse path.
-          v_map2 = v_map2[:footsteps[footstep] + 1]
-          a = self.diff_path1(v_map1, text1[:x], text2[:y])
-          b = self.diff_path2(v_map2, text1[x:], text2[y:])
-          return a + b
-
-      if doubleEnd:
-        # Walk the reverse path one step.
-        v_map_d = {}
-        v_map2.append(v_map_d)
-        for k in xrange(-d, d + 1, 2):
-          if k == -d or k != d and v2[k - 1] < v2[k + 1]:
-            x = v2[k + 1]
-          else:
-            x = v2[k - 1] + 1
-          y = x - k
-          footstep = str((text1_length - x << 32) + text2_length - y)
-          if not front and footstep in footsteps:
-            done = True
-          if front:
-            footsteps[footstep] = d
-          while (not done and x < text1_length and y < text2_length and
-                 text1[-x - 1] == text2[-y - 1]):
-            x += 1
-            y += 1
-            footstep = str((text1_length - x << 32) + text2_length - y)
-            if not front and footstep in footsteps:
-              done = True
-            if front:
-              footsteps[footstep] = d
-
-          v2[k] = x
-          v_map_d[k] = x
-          if done:
-            # Reverse path ran over front path.
-            v_map1 = v_map1[:footsteps[footstep] + 1]
-            a = self.diff_path1(v_map1, text1[:text1_length - x],
-                                text2[:text2_length - y])
-            b = self.diff_path2(v_map2, text1[text1_length - x:],
-                                text2[text2_length - y:])
-            return a + b
-
-    # Diff took too long and hit the deadline or
-    # number of diffs equals number of characters, no commonality at all.
-    return [(self.DIFF_DELETE, text1), (self.DIFF_INSERT, text2)]
-
-  def diff_path1(self, v_map, text1, text2):
-    """Work from the middle back to the start to determine the path.
-
-    Args:
-      v_map: Array of paths.
-      text1: Old string fragment to be diffed.
-      text2: New string fragment to be diffed.
-
-    Returns:
-      Array of diff tuples.
-    """
-    path = []
-    x = len(text1)
-    y = len(text2)
-    last_op = None
-    for d in xrange(len(v_map) - 2, -1, -1):
-      k = x - y
-      v_map_d = v_map[d]
-      while True:
-        if v_map_d.get(k - 1) == x - 1:
-          x -= 1
-          if last_op == self.DIFF_DELETE:
-            path[0] = (self.DIFF_DELETE, text1[x] + path[0][1])
-          else:
-            path[:0] = [(self.DIFF_DELETE, text1[x])]
-            last_op = self.DIFF_DELETE
-          break
-        elif v_map_d.get(k + 1) == x:
-          y -= 1
-          if last_op == self.DIFF_INSERT:
-            path[0] = (self.DIFF_INSERT, text2[y] + path[0][1])
-          else:
-            path[:0] = [(self.DIFF_INSERT, text2[y])]
-            last_op = self.DIFF_INSERT
-          break
-        else:
-          x -= 1
-          y -= 1
-          assert text1[x] == text2[y], ("No diagonal.  " +
-              "Can't happen. (diff_path1)")
-          if last_op == self.DIFF_EQUAL:
-            path[0] = (self.DIFF_EQUAL, text1[x] + path[0][1])
-          else:
-            path[:0] = [(self.DIFF_EQUAL, text1[x])]
-            last_op = self.DIFF_EQUAL
-    return path
-
-  def diff_path2(self, v_map, text1, text2):
-    """Work from the middle back to the end to determine the path.
-
-    Args:
-      v_map: Array of paths.
-      text1: Old string fragment to be diffed.
-      text2: New string fragment to be diffed.
-
-    Returns:
-      Array of diff tuples.
-    """
-    path = []
-    x = len(text1)
-    y = len(text2)
-    last_op = None
-    for d in xrange(len(v_map) - 2, -1, -1):
-      k = x - y
-      v_map_d = v_map[d]
-      while True:
-        if v_map_d.get(k - 1) == x - 1:
-          x -= 1
-          if last_op == self.DIFF_DELETE:
-            path[-1] = (self.DIFF_DELETE, path[-1][1] + text1[-x - 1])
-          else:
-            path.append((self.DIFF_DELETE, text1[-x - 1]))
-            last_op = self.DIFF_DELETE
-          break
-        elif v_map_d.get(k + 1) == x:
-          y -= 1
-          if last_op == self.DIFF_INSERT:
-            path[-1] = (self.DIFF_INSERT, path[-1][1] + text2[-y - 1])
-          else:
-            path.append((self.DIFF_INSERT, text2[-y - 1]))
-            last_op = self.DIFF_INSERT
-          break
-        else:
-          x -= 1
-          y -= 1
-          assert text1[-x - 1] == text2[-y - 1], ("No diagonal.  " +
-              "Can't happen. (diff_path2)")
-          if last_op == self.DIFF_EQUAL:
-            path[-1] = (self.DIFF_EQUAL, path[-1][1] + text1[-x - 1])
-          else:
-            path.append((self.DIFF_EQUAL, text1[-x - 1]))
-            last_op = self.DIFF_EQUAL
-    return path
 
   def diff_commonPrefix(self, text1, text2):
     """Determine the common prefix of two strings.
@@ -614,6 +489,7 @@ class diff_match_patch:
   def diff_halfMatch(self, text1, text2):
     """Do the two texts share a substring which is at least half the length of
     the longer text?
+    This speedup can produce non-minimal diffs.
 
     Args:
       text1: First string.
@@ -661,7 +537,7 @@ class diff_match_patch:
           best_shorttext_b = shorttext[j + prefixLength:]
         j = shorttext.find(seed, j + 1)
 
-      if len(best_common) >= len(longtext) / 2:
+      if len(best_common) * 2 >= len(longtext):
         return (best_longtext_a, best_longtext_b,
                 best_shorttext_a, best_shorttext_b, best_common)
       else:
@@ -1093,15 +969,13 @@ class diff_match_patch:
     i = 0
     for (op, data) in diffs:
       text = (data.replace("&", "&amp;").replace("<", "&lt;")
-                 .replace(">", "&gt;").replace("\n", "&para;<BR>"))
+                 .replace(">", "&gt;").replace("\n", "&para;<br>"))
       if op == self.DIFF_INSERT:
-        html.append("<INS STYLE=\"background:#E6FFE6;\" TITLE=\"i=%i\">%s</INS>"
-            % (i, text))
+        html.append("<ins style=\"background:#E6FFE6;\">%s</ins>" % text)
       elif op == self.DIFF_DELETE:
-        html.append("<DEL STYLE=\"background:#FFE6E6;\" TITLE=\"i=%i\">%s</DEL>"
-            % (i, text))
+        html.append("<del style=\"background:#FFE6E6;\">%s</del>" % text)
       elif op == self.DIFF_EQUAL:
-        html.append("<SPAN TITLE=\"i=%i\">%s</SPAN>" % (i, text))
+        html.append("<span>%s</span>" % text)
       if op != self.DIFF_DELETE:
         i += len(data)
     return "".join(html)

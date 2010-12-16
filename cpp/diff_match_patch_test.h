@@ -43,8 +43,7 @@ class diff_match_patch_test {
   void testDiffDelta();
   void testDiffXIndex();
   void testDiffLevenshtein();
-  void testDiffPath();
-  void testDiffMap();
+  void testDiffBisect();
   void testDiffMain();
 
   //  MATCH TEST FUNCTIONS
