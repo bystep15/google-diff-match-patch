@@ -20,7 +20,8 @@
  */
 
 #include <algorithm>
-// Code known to compile and run with Qt 4.3.3 and Qt 4.4.0.
+#include <limits>
+// Code known to compile and run with Qt 4.3 through Qt 4.7.
 #include <QtCore>
 #include <time.h>
 #include "diff_match_patch.h"
@@ -67,8 +68,6 @@ QString Diff::toString() const {
   QString prettyText = text;
   // Replace linebreaks with Pilcrow signs.
   prettyText.replace('\n', L'\u00b6');
-  qDebug(qPrintable(QString("Diff(") + strOperation(operation) + QString(",\"")
-      + prettyText + QString("\")")));
   return QString("Diff(") + strOperation(operation) + QString(",\"")
       + prettyText + QString("\")");
 }
@@ -601,6 +600,10 @@ int diff_match_patch::diff_commonOverlap(const QString &text1,
 
 QStringList diff_match_patch::diff_halfMatch(const QString &text1,
                                              const QString &text2) {
+  if (Diff_Timeout <= 0) {
+    // Don't risk returning a non-optimal diff if we have unlimited time.
+    return QStringList();
+  }
   const QString longtext = text1.length() > text2.length() ? text1 : text2;
   const QString shorttext = text1.length() > text2.length() ? text2 : text1;
   if (longtext.length() < 4 || shorttext.length() * 2 < longtext.length()) {
@@ -706,7 +709,7 @@ void diff_match_patch::diff_cleanupSemantic(QList<Diff> &diffs) {
               <= std::max(length_insertions1, length_deletions1))
           && (lastequality.length()
               <= std::max(length_insertions2, length_deletions2))) {
-        // System.out.println("Splitting: '" + lastequality + "'");
+        // printf("Splitting: '%s'\n", qPrintable(lastequality));
         // Walk back to offending equality.
         while (*thisDiff != equalities.top()) {
           thisDiff = &pointer.previous();
@@ -963,7 +966,7 @@ void diff_match_patch::diff_cleanupEfficiency(QList<Diff> &diffs) {
           || ((lastequality.length() < Diff_EditCost / 2)
           && ((pre_ins ? 1 : 0) + (pre_del ? 1 : 0)
           + (post_ins ? 1 : 0) + (post_del ? 1 : 0)) == 3))) {
-        // System.out.println("Splitting: '" + lastequality + "'");
+        // printf("Splitting: '%s'\n", qPrintable(lastequality));
         // Walk back to offending equality.
         while (*thisDiff != equalities.top()) {
           thisDiff = &pointer.previous();
@@ -1106,7 +1109,6 @@ void diff_match_patch::diff_cleanupMerge(QList<Diff> &diffs) {
       }
       thisDiff = pointer.hasNext() ? &pointer.next() : NULL;
   }
-  // System.out.println(diff);
   if (diffs.back().text.isEmpty()) {
     diffs.removeLast();  // Remove the dummy entry at the end.
   }
@@ -1206,11 +1208,11 @@ QString diff_match_patch::diff_prettyHtml(const QList<Diff> &diffs) {
         .replace(">", "&gt;").replace("\n", "&para;<br>");
     switch (aDiff.operation) {
       case INSERT:
-        html += QString("<ins style=\"background:#E6FFE6;\">") + text
+        html += QString("<ins style=\"background:#e6ffe6;\">") + text
             + QString("</ins>");
         break;
       case DELETE:
-        html += QString("<del style=\"background:#FFE6E6;\">") + text
+        html += QString("<del style=\"background:#ffe6e6;\">") + text
             + QString("</del>");
         break;
       case EQUAL:

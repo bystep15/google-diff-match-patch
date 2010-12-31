@@ -79,6 +79,7 @@ public class diff_match_patch_test extends TestCase {
 
   public void testDiffHalfmatch() {
     // Detect a halfmatch.
+    dmp.Diff_Timeout = 1;
     assertNull("diff_halfMatch: No match #1.", dmp.diff_halfMatch("1234567890", "abcdef"));
 
     assertNull("diff_halfMatch: No match #2.", dmp.diff_halfMatch("12345", "23"));
@@ -96,6 +97,12 @@ public class diff_match_patch_test extends TestCase {
     assertArrayEquals("diff_halfMatch: Multiple Matches #2.", new String[]{"", "-=-=-=-=-=", "x", "", "x-=-=-=-=-=-=-="}, dmp.diff_halfMatch("x-=-=-=-=-=-=-=-=-=-=-=-=", "xx-=-=-=-=-=-=-="));
 
     assertArrayEquals("diff_halfMatch: Multiple Matches #3.", new String[]{"-=-=-=-=-=", "", "", "y", "-=-=-=-=-=-=-=y"}, dmp.diff_halfMatch("-=-=-=-=-=-=-=-=-=-=-=-=y", "-=-=-=-=-=-=-=yy"));
+
+    // Optimal diff would be -q+x=H-i+e=lloHe+Hu=llo-Hew+y not -qHillo+x=HelloHe-w+Hulloy
+    assertArrayEquals("diff_halfMatch: Non-optimal halfmatch.", new String[]{"qHillo", "w", "x", "Hulloy", "HelloHe"}, dmp.diff_halfMatch("qHilloHelloHew", "xHelloHeHulloy"));
+
+    dmp.Diff_Timeout = 0;
+    assertNull("diff_halfMatch: Optimal no halfmatch.", dmp.diff_halfMatch("qHilloHelloHew", "xHelloHeHulloy"));
   }
 
   public void testDiffLinesToChars() {
@@ -322,7 +329,7 @@ public class diff_match_patch_test extends TestCase {
   public void testDiffPrettyHtml() {
     // Pretty print.
     LinkedList<Diff> diffs = diffList(new Diff(EQUAL, "a\n"), new Diff(DELETE, "<B>b</B>"), new Diff(INSERT, "c&d"));
-    assertEquals("diff_prettyHtml:", "<span>a&para;<br></span><del style=\"background:#FFE6E6;\">&lt;B&gt;b&lt;/B&gt;</del><ins style=\"background:#E6FFE6;\">c&amp;d</ins>", dmp.diff_prettyHtml(diffs));
+    assertEquals("diff_prettyHtml:", "<span>a&para;<br></span><del style=\"background:#ffe6e6;\">&lt;B&gt;b&lt;/B&gt;</del><ins style=\"background:#e6ffe6;\">c&amp;d</ins>", dmp.diff_prettyHtml(diffs));
   }
 
   public void testDiffText() {

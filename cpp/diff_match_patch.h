@@ -31,13 +31,17 @@
  *
  * Qt/C++ port by mikeslemmer@gmail.com (Mike Slemmer):
  *
- * Code compiles and runs with Qt 4.3.3.
+ * Code known to compile and run with Qt 4.3 through Qt 4.7.
  *
  * Here is a trivial sample program which works properly when linked with this
  * library:
  *
 
  #include <QtCore>
+ #include <QString>
+ #include <QList>
+ #include <QMap>
+ #include <QVariant>
  #include "diff_match_patch.h"
  int main(int argc, char **argv) {
    diff_match_patch dmp;
@@ -566,19 +570,19 @@ class diff_match_patch {
 
   /**
    * A safer version of QString.mid(pos).  This one returns "" instead of
-   * null when the postion is greater than the string length.
+   * null when the postion equals the string length.
    * @param str String to take a substring from.
    * @param pos Position to start the substring from.
    * @return Substring.
    */
  private:
   static inline QString safeMid(const QString &str, int pos) {
-    return (pos < str.length()) ? str.mid(pos) : QString("");
+    return (pos == str.length()) ? QString("") : str.mid(pos);
   }
 
   /**
    * A safer version of QString.mid(pos, len).  This one returns "" instead of
-   * null when the postion is greater than the string length.
+   * null when the postion equals the string length.
    * @param str String to take a substring from.
    * @param pos Position to start the substring from.
    * @param len Length of substring.
@@ -586,7 +590,7 @@ class diff_match_patch {
    */
  private:
   static inline QString safeMid(const QString &str, int pos, int len) {
-    return (pos < str.length()) ? str.mid(pos, len) : QString("");
+    return (pos == str.length()) ? QString("") : str.mid(pos, len);
   }
 };
 

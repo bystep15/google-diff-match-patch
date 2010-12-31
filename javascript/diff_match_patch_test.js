@@ -121,6 +121,7 @@ function testDiffCommonOverlap() {
 
 function testDiffHalfMatch() {
   // Detect a halfmatch.
+  dmp.Diff_Timeout = 1;
   // No match.
   assertEquals(null, dmp.diff_halfMatch('1234567890', 'abcdef'));
 
@@ -141,6 +142,14 @@ function testDiffHalfMatch() {
   assertEquivalent(['', '-=-=-=-=-=', 'x', '', 'x-=-=-=-=-=-=-='], dmp.diff_halfMatch('x-=-=-=-=-=-=-=-=-=-=-=-=', 'xx-=-=-=-=-=-=-='));
 
   assertEquivalent(['-=-=-=-=-=', '', '', 'y', '-=-=-=-=-=-=-=y'], dmp.diff_halfMatch('-=-=-=-=-=-=-=-=-=-=-=-=y', '-=-=-=-=-=-=-=yy'));
+
+  // Non-optimal halfmatch.
+  // Optimal diff would be -q+x=H-i+e=lloHe+Hu=llo-Hew+y not -qHillo+x=HelloHe-w+Hulloy
+  assertEquivalent(['qHillo', 'w', 'x', 'Hulloy', 'HelloHe'], dmp.diff_halfMatch('qHilloHelloHew', 'xHelloHeHulloy'));
+
+  // Optimal no halfmatch.
+  dmp.Diff_Timeout = 0;
+  assertEquals(null, dmp.diff_halfMatch('qHilloHelloHew', 'xHelloHeHulloy'));
 }
 
 function testDiffLinesToChars() {
@@ -374,7 +383,7 @@ function testDiffCleanupEfficiency() {
 function testDiffPrettyHtml() {
   // Pretty print.
   var diffs = [[DIFF_EQUAL, 'a\n'], [DIFF_DELETE, '<B>b</B>'], [DIFF_INSERT, 'c&d']];
-  assertEquals('<span>a&para;<br></span><del style="background:#FFE6E6;">&lt;B&gt;b&lt;/B&gt;</del><ins style="background:#E6FFE6;">c&amp;d</ins>', dmp.diff_prettyHtml(diffs));
+  assertEquals('<span>a&para;<br></span><del style="background:#ffe6e6;">&lt;B&gt;b&lt;/B&gt;</del><ins style="background:#e6ffe6;">c&amp;d</ins>', dmp.diff_prettyHtml(diffs));
 }
 
 function testDiffText() {

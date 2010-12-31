@@ -76,6 +76,7 @@ namespace nicTest {
     [Test()]
     public void diff_halfmatchTest() {
       diff_match_patchTest dmp = new diff_match_patchTest();
+      dmp.Diff_Timeout = 1;
       // No match.
       Assert.IsNull(dmp.diff_halfMatch("1234567890", "abcdef"));
 
@@ -96,6 +97,14 @@ namespace nicTest {
       CollectionAssert.AreEqual(new string[] { "", "-=-=-=-=-=", "x", "", "x-=-=-=-=-=-=-=" }, dmp.diff_halfMatch("x-=-=-=-=-=-=-=-=-=-=-=-=", "xx-=-=-=-=-=-=-="));
 
       CollectionAssert.AreEqual(new string[] { "-=-=-=-=-=", "", "", "y", "-=-=-=-=-=-=-=y" }, dmp.diff_halfMatch("-=-=-=-=-=-=-=-=-=-=-=-=y", "-=-=-=-=-=-=-=yy"));
+
+      // Non-optimal halfmatch.
+      // Optimal diff would be -q+x=H-i+e=lloHe+Hu=llo-Hew+y not -qHillo+x=HelloHe-w+Hulloy
+      CollectionAssert.AreEqual(new string[] { "qHillo", "w", "x", "Hulloy", "HelloHe" }, dmp.diff_halfMatch("qHilloHelloHew", "xHelloHeHulloy"));
+
+      // Optimal no halfmatch.
+      dmp.Diff_Timeout = 0;
+      Assert.IsNull(dmp.diff_halfMatch("qHilloHelloHew", "xHelloHeHulloy"));
     }
 
     [Test()]
@@ -508,7 +517,7 @@ namespace nicTest {
           new Diff(Operation.EQUAL, "a\n"),
           new Diff(Operation.DELETE, "<B>b</B>"),
           new Diff(Operation.INSERT, "c&d")};
-      Assert.AreEqual("<span>a&para;<br></span><del style=\"background:#FFE6E6;\">&lt;B&gt;b&lt;/B&gt;</del><ins style=\"background:#E6FFE6;\">c&amp;d</ins>",
+      Assert.AreEqual("<span>a&para;<br></span><del style=\"background:#ffe6e6;\">&lt;B&gt;b&lt;/B&gt;</del><ins style=\"background:#e6ffe6;\">c&amp;d</ins>",
           dmp.diff_prettyHtml(diffs));
     }
 

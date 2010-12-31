@@ -590,6 +590,10 @@ diff_match_patch.prototype.diff_commonOverlap = function(text1, text2) {
  *     text2 and the common middle.  Or null if there was no match.
  */
 diff_match_patch.prototype.diff_halfMatch = function(text1, text2) {
+  if (this.Diff_Timeout <= 0) {
+    // Don't risk returning a non-optimal diff if we have unlimited time.
+    return null;
+  }
   var longtext = text1.length > text2.length ? text1 : text2;
   var shorttext = text1.length > text2.length ? text2 : text1;
   if (longtext.length < 4 || shorttext.length * 2 < longtext.length) {
@@ -1141,10 +1145,10 @@ diff_match_patch.prototype.diff_prettyHtml = function(diffs) {
         .replace(pattern_gt, '&gt;').replace(pattern_para, '&para;<br>');
     switch (op) {
       case DIFF_INSERT:
-        html[x] = '<ins style="background:#E6FFE6;">' + text + '</ins>';
+        html[x] = '<ins style="background:#e6ffe6;">' + text + '</ins>';
         break;
       case DIFF_DELETE:
-        html[x] = '<del style="background:#FFE6E6;">' + text + '</del>';
+        html[x] = '<del style="background:#ffe6e6;">' + text + '</del>';
         break;
       case DIFF_EQUAL:
         html[x] = '<span>' + text + '</span>';

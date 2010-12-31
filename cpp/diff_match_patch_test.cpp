@@ -19,7 +19,7 @@
  * http://code.google.com/p/google-diff-match-patch/
  */
 
-// Code known to compile and run with Qt 4.3.3 and Qt 4.4.0.
+// Code known to compile and run with Qt 4.3 through Qt 4.7.
 #include <QtCore>
 #include "diff_match_patch.h"
 #include "diff_match_patch_test.h"
@@ -74,7 +74,7 @@ void diff_match_patch_test::run_all_tests() {
     testPatchApply();
     qDebug("All tests passed.");
   } catch (QString strCase) {
-    qDebug(qPrintable(QString("Test failed: %1").arg(strCase)));
+    qDebug("Test failed: %s", qPrintable(strCase));
   }
   qDebug("Total time: %d ms", t.elapsed());
 }
@@ -112,9 +112,10 @@ void diff_match_patch_test::testDiffCommonOverlap() {
 
 void diff_match_patch_test::testDiffHalfmatch() {
   // Detect a halfmatch.
-  assertNull("diff_halfMatch: No match #1.", dmp.diff_halfMatch("1234567890", "abcdef"));
+  dmp.Diff_Timeout = 1;
+  assertEmpty("diff_halfMatch: No match #1.", dmp.diff_halfMatch("1234567890", "abcdef"));
 
-  assertNull("diff_halfMatch: No match #2.", dmp.diff_halfMatch("12345", "23"));
+  assertEmpty("diff_halfMatch: No match #2.", dmp.diff_halfMatch("12345", "23"));
 
   assertEquals("diff_halfMatch: Single Match #1.", QString("12,90,a,z,345678").split(","), dmp.diff_halfMatch("1234567890", "a345678z"));
 
@@ -129,6 +130,12 @@ void diff_match_patch_test::testDiffHalfmatch() {
   assertEquals("diff_halfMatch: Multiple Matches #2.", QString(",-=-=-=-=-=,x,,x-=-=-=-=-=-=-=").split(","), dmp.diff_halfMatch("x-=-=-=-=-=-=-=-=-=-=-=-=", "xx-=-=-=-=-=-=-="));
 
   assertEquals("diff_halfMatch: Multiple Matches #3.", QString("-=-=-=-=-=,,,y,-=-=-=-=-=-=-=y").split(","), dmp.diff_halfMatch("-=-=-=-=-=-=-=-=-=-=-=-=y", "-=-=-=-=-=-=-=yy"));
+
+  // Optimal diff would be -q+x=H-i+e=lloHe+Hu=llo-Hew+y not -qHillo+x=HelloHe-w+Hulloy
+  assertEquals("diff_halfMatch: Non-optimal halfmatch.", QString("qHillo,w,x,Hulloy,HelloHe").split(","), dmp.diff_halfMatch("qHilloHelloHew", "xHelloHeHulloy"));
+
+  dmp.Diff_Timeout = 0;
+  assertEmpty("diff_halfMatch: Optimal no halfmatch.", dmp.diff_halfMatch("qHilloHelloHew", "xHelloHeHulloy"));
 }
 
 void diff_match_patch_test::testDiffLinesToChars() {
@@ -370,7 +377,7 @@ void diff_match_patch_test::testDiffCleanupEfficiency() {
 void diff_match_patch_test::testDiffPrettyHtml() {
   // Pretty print.
   QList<Diff> diffs = diffList(Diff(EQUAL, "a\n"), Diff(DELETE, "<B>b</B>"), Diff(INSERT, "c&d"));
-  assertEquals("diff_prettyHtml:", "<span>a&para;<br></span><del style=\"background:#FFE6E6;\">&lt;B&gt;b&lt;/B&gt;</del><ins style=\"background:#E6FFE6;\">c&amp;d</ins>", dmp.diff_prettyHtml(diffs));
+  assertEquals("diff_prettyHtml:", "<span>a&para;<br></span><del style=\"background:#ffe6e6;\">&lt;B&gt;b&lt;/B&gt;</del><ins style=\"background:#e6ffe6;\">c&amp;d</ins>", dmp.diff_prettyHtml(diffs));
 }
 
 void diff_match_patch_test::testDiffText() {
@@ -893,29 +900,28 @@ void diff_match_patch_test::testPatchApply() {
 
 void diff_match_patch_test::assertEquals(const QString &strCase, int n1, int n2) {
   if (n1 != n2) {
-    qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
-        .arg(strCase, QString::number(n1), QString::number(n2))));
+    qDebug("%s FAIL\nExpected: %d\nActual: %d", qPrintable(strCase), n1, n2);
     throw strCase;
   }
-  qDebug(qPrintable(QString("%1 OK").arg(strCase)));
+  qDebug("%s OK", qPrintable(strCase));
 }
 
 void diff_match_patch_test::assertEquals(const QString &strCase, const QString &s1, const QString &s2) {
   if (s1 != s2) {
-    qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
-        .arg(strCase, s1, s2)));
+    qDebug("%s FAIL\nExpected: %s\nActual: %s",
+           qPrintable(strCase), qPrintable(s1), qPrintable(s2));
     throw strCase;
   }
-  qDebug(qPrintable(QString("%1 OK").arg(strCase)));
+  qDebug("%s OK", qPrintable(strCase));
 }
 
 void diff_match_patch_test::assertEquals(const QString &strCase, const Diff &d1, const Diff &d2) {
   if (d1 != d2) {
-    qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
-        .arg(strCase, d1.toString(), d2.toString())));
+    qDebug("%s FAIL\nExpected: %s\nActual: %s", qPrintable(strCase),
+        qPrintable(d1.toString()), qPrintable(d2.toString()));
     throw strCase;
   }
-  qDebug(qPrintable(QString("%1 OK").arg(strCase)));
+  qDebug("%s OK", qPrintable(strCase));
 }
 
 void diff_match_patch_test::assertEquals(const QString &strCase, const QList<Diff> &list1, const QList<Diff> &list2) {
@@ -956,11 +962,11 @@ void diff_match_patch_test::assertEquals(const QString &strCase, const QList<Dif
       first = false;
     }
     listString2 += ")";
-    qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
-        .arg(strCase, listString1, listString2)));
+    qDebug("%s FAIL\nExpected: %s\nActual: %s",
+        qPrintable(strCase), qPrintable(listString1), qPrintable(listString2));
     throw strCase;
   }
-  qDebug(qPrintable(QString("%1 OK").arg(strCase)));
+  qDebug("%s OK", qPrintable(strCase));
 }
 
 void diff_match_patch_test::assertEquals(const QString &strCase, const QList<QVariant> &list1, const QList<QVariant> &list2) {
@@ -1001,20 +1007,20 @@ void diff_match_patch_test::assertEquals(const QString &strCase, const QList<QVa
       first = false;
     }
     listString2 += ")";
-    qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
-        .arg(strCase, listString1, listString2)));
+    qDebug("%s FAIL\nExpected: %s\nActual: %s",
+        qPrintable(strCase), qPrintable(listString1), qPrintable(listString2));
     throw strCase;
   }
-  qDebug(qPrintable(QString("%1 OK").arg(strCase)));
+  qDebug("%s OK", qPrintable(strCase));
 }
 
 void diff_match_patch_test::assertEquals(const QString &strCase, const QVariant &var1, const QVariant &var2) {
   if (var1 != var2) {
-    qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
-        .arg(strCase, var1.toString(), var2.toString())));
+    qDebug("%s FAIL\nExpected: %s\nActual: %s", qPrintable(strCase),
+        qPrintable(var1.toString()), qPrintable(var2.toString()));
     throw strCase;
   }
-  qDebug(qPrintable(QString("%1 OK").arg(strCase)));
+  qDebug("%s OK", qPrintable(strCase));
 }
 
 void diff_match_patch_test::assertEquals(const QString &strCase, const QMap<QChar, int> &m1, const QMap<QChar, int> &m2) {
@@ -1024,52 +1030,50 @@ void diff_match_patch_test::assertEquals(const QString &strCase, const QMap<QCha
     i1.next();
     i2.next();
     if (i1.key() != i2.key() || i1.value() != i2.value()) {
-      qDebug(qPrintable(QString("%1 FAIL\nExpected: (%2, %3)\nActual: (%4, %5)")
-          .arg(strCase, QString(i1.key()), QString::number(i1.value()), QString(i2.key()), QString::number(i2.value()))));
+      qDebug("%s FAIL\nExpected: (%c, %d)\nActual: (%c, %d)", qPrintable(strCase),
+          i1.key().toAscii(), i1.value(), i2.key().toAscii(), i2.value());
       throw strCase;
     }
   }
 
   if (i1.hasNext()) {
     i1.next();
-    qDebug(qPrintable(QString("%1 FAIL\nExpected: (%2, %3)\nActual: none")
-        .arg(strCase, QString(i1.key()), QString::number(i1.value()))));
+    qDebug("%s FAIL\nExpected: (%c, %d)\nActual: none",
+        qPrintable(strCase), i1.key().toAscii(), i1.value());
     throw strCase;
   }
   if (i2.hasNext()) {
     i2.next();
-    qDebug(qPrintable(QString("%1 FAIL\nExpected: none\nActual: (%2, %3)")
-        .arg(strCase, QString(i2.key()), QString::number(i2.value()))));
+    qDebug("%s FAIL\nExpected: none\nActual: (%c, %d)",
+        qPrintable(strCase), i2.key().toAscii(), i2.value());
     throw strCase;
   }
-  qDebug(qPrintable(QString("%1 OK").arg(strCase)));
+  qDebug("%s OK", qPrintable(strCase));
 }
 
 void diff_match_patch_test::assertEquals(const QString &strCase, const QStringList &list1, const QStringList &list2) {
   if (list1 != list2) {
-    qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
-        .arg(strCase, list1.join(","), list2.join(","))));
+    qDebug("%s FAIL\nExpected: %s\nActual: %s", qPrintable(strCase),
+        qPrintable(list1.join(",")), qPrintable(list2.join(",")));
     throw strCase;
   }
-  qDebug(qPrintable(QString("%1 OK").arg(strCase)));
+  qDebug("%s OK", qPrintable(strCase));
 }
 
 void diff_match_patch_test::assertTrue(const QString &strCase, bool value) {
   if (!value) {
-    qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
-        .arg(strCase, "true", "false")));
+    qDebug("%s FAIL\nExpected: true\nActual: false", qPrintable(strCase));
     throw strCase;
   }
-  qDebug(qPrintable(QString("%1 OK").arg(strCase)));
+  qDebug("%s OK", qPrintable(strCase));
 }
 
 void diff_match_patch_test::assertFalse(const QString &strCase, bool value) {
   if (value) {
-    qDebug(qPrintable(QString("%1 FAIL\nExpected: %2\nActual: %3")
-        .arg(strCase, "false", "true")));
+    qDebug("%s FAIL\nExpected: false\nActual: true", qPrintable(strCase));
     throw strCase;
   }
-  qDebug(qPrintable(QString("%1 OK").arg(strCase)));
+  qDebug("%s OK", qPrintable(strCase));
 }
 
 
@@ -1088,13 +1092,7 @@ QStringList diff_match_patch_test::diff_rebuildtexts(QList<Diff> diffs) {
   return text;
 }
 
-void diff_match_patch_test::assertNull(const QString &strCase, const QStringList &list) {
-  if (!list.isEmpty()) {
-    throw strCase;
-  }
-}
-
-void diff_match_patch_test::assertNull(const QString &strCase, const QList<Diff> &list) {
+void diff_match_patch_test::assertEmpty(const QString &strCase, const QStringList &list) {
   if (!list.isEmpty()) {
     throw strCase;
   }
@@ -1167,4 +1165,9 @@ qmake
 mingw32-make
 g++ -o diff_match_patch_test debug\diff_match_patch_test.o debug\diff_match_patch.o \qt4\lib\libQtCore4.a
 diff_match_patch_test.exe
+
+Compile insructions for OS X:
+qmake -spec macx-g++
+make
+./diff_match_patch
 */

@@ -84,6 +84,7 @@ class DiffTest(DiffMatchPatchTest):
 
   def testDiffHalfMatch(self):
     # Detect a halfmatch.
+    self.dmp.Diff_Timeout = 1
     # No match.
     self.assertEquals(None, self.dmp.diff_halfMatch("1234567890", "abcdef"))
 
@@ -104,6 +105,14 @@ class DiffTest(DiffMatchPatchTest):
     self.assertEquals(("", "-=-=-=-=-=", "x", "", "x-=-=-=-=-=-=-="), self.dmp.diff_halfMatch("x-=-=-=-=-=-=-=-=-=-=-=-=", "xx-=-=-=-=-=-=-="))
 
     self.assertEquals(("-=-=-=-=-=", "", "", "y", "-=-=-=-=-=-=-=y"), self.dmp.diff_halfMatch("-=-=-=-=-=-=-=-=-=-=-=-=y", "-=-=-=-=-=-=-=yy"))
+
+    # Non-optimal halfmatch.
+    # Optimal diff would be -q+x=H-i+e=lloHe+Hu=llo-Hew+y not -qHillo+x=HelloHe-w+Hulloy
+    self.assertEquals(("qHillo", "w", "x", "Hulloy", "HelloHe"), self.dmp.diff_halfMatch("qHilloHelloHew", "xHelloHeHulloy"))
+
+    # Optimal no halfmatch.
+    self.dmp.Diff_Timeout = 0
+    self.assertEquals(None, self.dmp.diff_halfMatch("qHilloHelloHew", "xHelloHeHulloy"))
 
   def testDiffLinesToChars(self):
     # Convert lines down to characters.
@@ -328,7 +337,7 @@ class DiffTest(DiffMatchPatchTest):
   def testDiffPrettyHtml(self):
     # Pretty print.
     diffs = [(self.dmp.DIFF_EQUAL, "a\n"), (self.dmp.DIFF_DELETE, "<B>b</B>"), (self.dmp.DIFF_INSERT, "c&d")]
-    self.assertEquals("<span>a&para;<br></span><del style=\"background:#FFE6E6;\">&lt;B&gt;b&lt;/B&gt;</del><ins style=\"background:#E6FFE6;\">c&amp;d</ins>", self.dmp.diff_prettyHtml(diffs))
+    self.assertEquals("<span>a&para;<br></span><del style=\"background:#ffe6e6;\">&lt;B&gt;b&lt;/B&gt;</del><ins style=\"background:#e6ffe6;\">c&amp;d</ins>", self.dmp.diff_prettyHtml(diffs))
 
   def testDiffText(self):
     # Compute the source and destination texts.

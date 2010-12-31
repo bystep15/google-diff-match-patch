@@ -393,7 +393,7 @@ namespace DiffMatchPatch {
         // Eliminate freak matches (e.g. blank lines)
         diff_cleanupSemantic(diffs);
 
-        // Rediff any Replacement blocks, this time character-by-character.
+        // Rediff any replacement blocks, this time character-by-character.
         // Add a dummy entry at the end.
         diffs.Add(new Diff(Operation.EQUAL, string.Empty));
         int pointer = 0;
@@ -722,6 +722,10 @@ namespace DiffMatchPatch {
      */
 
     protected string[] diff_halfMatch(string text1, string text2) {
+      if (this.Diff_Timeout <= 0) {
+        // Don't risk returning a non-optimal diff if we have unlimited time.
+        return null;
+      }
       string longtext = text1.Length > text2.Length ? text1 : text2;
       string shorttext = text1.Length > text2.Length ? text2 : text1;
       if (longtext.Length < 4 || shorttext.Length * 2 < longtext.Length) {
@@ -1270,11 +1274,11 @@ namespace DiffMatchPatch {
           .Replace(">", "&gt;").Replace("\n", "&para;<br>");
         switch (aDiff.operation) {
           case Operation.INSERT:
-            html.Append("<ins style=\"background:#E6FFE6;\">").Append(text)
+            html.Append("<ins style=\"background:#e6ffe6;\">").Append(text)
                 .Append("</ins>");
             break;
           case Operation.DELETE:
-            html.Append("<del style=\"background:#FFE6E6;\">").Append(text)
+            html.Append("<del style=\"background:#ffe6e6;\">").Append(text)
                 .Append("</del>");
             break;
           case Operation.EQUAL:

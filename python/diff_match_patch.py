@@ -500,6 +500,9 @@ class diff_match_patch:
       the prefix of text2, the suffix of text2 and the common middle.  Or None
       if there was no match.
     """
+    if self.Diff_Timeout <= 0:
+      # Don't risk returning a non-optimal diff if we have unlimited time.
+      return None
     if len(text1) > len(text2):
       (longtext, shorttext) = (text1, text2)
     else:
@@ -971,9 +974,9 @@ class diff_match_patch:
       text = (data.replace("&", "&amp;").replace("<", "&lt;")
                  .replace(">", "&gt;").replace("\n", "&para;<br>"))
       if op == self.DIFF_INSERT:
-        html.append("<ins style=\"background:#E6FFE6;\">%s</ins>" % text)
+        html.append("<ins style=\"background:#e6ffe6;\">%s</ins>" % text)
       elif op == self.DIFF_DELETE:
-        html.append("<del style=\"background:#FFE6E6;\">%s</del>" % text)
+        html.append("<del style=\"background:#ffe6e6;\">%s</del>" % text)
       elif op == self.DIFF_EQUAL:
         html.append("<span>%s</span>" % text)
       if op != self.DIFF_DELETE:

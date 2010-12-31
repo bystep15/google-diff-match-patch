@@ -630,6 +630,10 @@ public class diff_match_patch {
    *     common middle.  Or null if there was no match.
    */
   protected String[] diff_halfMatch(String text1, String text2) {
+    if (Diff_Timeout <= 0) {
+      // Don't risk returning a non-optimal diff if we have unlimited time.
+      return null;
+    }
     String longtext = text1.length() > text2.length() ? text1 : text2;
     String shorttext = text1.length() > text2.length() ? text2 : text1;
     if (longtext.length() < 4 || shorttext.length() * 2 < longtext.length()) {
@@ -1273,11 +1277,11 @@ public class diff_match_patch {
           .replace(">", "&gt;").replace("\n", "&para;<br>");
       switch (aDiff.operation) {
       case INSERT:
-        html.append("<ins style=\"background:#E6FFE6;\">").append(text)
+        html.append("<ins style=\"background:#e6ffe6;\">").append(text)
             .append("</ins>");
         break;
       case DELETE:
-        html.append("<del style=\"background:#FFE6E6;\">").append(text)
+        html.append("<del style=\"background:#ffe6e6;\">").append(text)
             .append("</del>");
         break;
       case EQUAL:

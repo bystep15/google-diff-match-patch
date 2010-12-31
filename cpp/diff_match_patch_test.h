@@ -75,8 +75,7 @@ class diff_match_patch_test {
   void assertEquals(const QString &strCase, const QStringList &list1, const QStringList &list2);
   void assertTrue(const QString &strCase, bool value);
   void assertFalse(const QString &strCase, bool value);
-  void assertNull(const QString &strCase, const QStringList &list);
-  void assertNull(const QString &strCase, const QList<Diff> &list);
+  void assertEmpty(const QString &strCase, const QStringList &list);
 
   // Construct the two texts which made up the diff originally.
   QStringList diff_rebuildtexts(QList<Diff> diffs);

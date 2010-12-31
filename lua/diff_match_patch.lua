@@ -487,7 +487,7 @@ function diff_levenshtein(diffs)
       insertions = insertions + #data
     elseif (op == DIFF_DELETE) then
       deletions = deletions + #data
-    else--if (op == DIFF_EQUAL) then
+    elseif (op == DIFF_EQUAL) then
       -- A deletion and an insertion is one substitution.
       levenshtein = levenshtein + max(insertions, deletions)
       insertions = 0
@@ -511,10 +511,10 @@ function diff_prettyHtml(diffs)
     local data = diff[2]  -- Text of change.
     local text = gsub(data, htmlEncode_pattern, htmlEncode_replace)
     if op == DIFF_INSERT then
-      html[x] = '<ins style="background:#E6FFE6;">' .. text .. '</ins>'
+      html[x] = '<ins style="background:#e6ffe6;">' .. text .. '</ins>'
     elseif op == DIFF_DELETE then
-      html[x] = '<del style="background:#FFE6E6;">' .. text .. '</del>'
-    else--if op == DIFF_EQUAL then
+      html[x] = '<del style="background:#ffe6e6;">' .. text .. '</del>'
+    elseif op == DIFF_EQUAL then
       html[x] = '<span>' .. text .. '</span>'
     end
     if op ~= DIFF_DELETE then
@@ -640,7 +640,7 @@ function _diff_compute(text1, text2, checklines, deadline)
       elseif (diff_type == DIFF_DELETE) then
         count_delete = count_delete + 1
         text_delete = text_delete .. diffs[pointer][2]
-      else--if (diff_type == DIFF_EQUAL) then
+      elseif (diff_type == DIFF_EQUAL) then
         -- Upon reaching an equality, check for prior redundancies.
         if (count_delete >= 1) and (count_insert >= 1) then
           -- Delete the offending records and add the merged ones.
@@ -1012,6 +1012,10 @@ end
 * @private
 --]]
 function _diff_halfMatch(text1, text2)
+  if Diff_Timeout <= 0 then
+    -- Don't risk returning a non-optimal diff if we have unlimited time.
+    return nil
+  end
   local longtext = (#text1 > #text2) and text1 or text2
   local shorttext = (#text1 > #text2) and text2 or text1
   if (#longtext < 4) or (#shorttext * 2 < #longtext) then
@@ -1364,7 +1368,7 @@ function _diff_toDelta(diffs)
       text[x] = '+' .. gsub(data, percentEncode_pattern, percentEncode_replace)
     elseif (op == DIFF_DELETE) then
       text[x] = '-' .. #data
-    else--if (op == DIFF_EQUAL) then
+    elseif (op == DIFF_EQUAL) then
       text[x] = '=' .. #data
     end
   end
@@ -1710,7 +1714,7 @@ function patch_make(a, opt_b, opt_c)
       patch.diffs[patchDiffLength] = diff
       postpatch_text = strsub(postpatch_text, 1, char_count2)
           .. strsub(postpatch_text, char_count2 + #diff_text + 1)
-    else--if (diff_type == DIFF_EQUAL) then
+    elseif (diff_type == DIFF_EQUAL) then
       if (#diff_text <= Patch_Margin * 2)
           and (patchDiffLength ~= 0) and (#diffs ~= x) then
         -- Small equality inside a patch.
@@ -2261,7 +2265,7 @@ function _patch_appendText(patch, text)
       op = '+'
     elseif (diff_type == DIFF_DELETE) then
       op = '-'
-    else--if (diff_type == DIFF_EQUAL) then
+    elseif (diff_type == DIFF_EQUAL) then
       op = ' '
     end
     text[#text + 1] = op

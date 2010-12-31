@@ -172,6 +172,7 @@ end
 
 function testDiffHalfMatch()
   -- Detect a halfmatch.
+  dmp.settings{Diff_Timeout = 1}
 
   -- No match.
   assertEquivalent({nil}, {dmp.diff_halfMatch('1234567890', 'abcdef')})
@@ -192,6 +193,14 @@ function testDiffHalfMatch()
       {dmp.diff_halfMatch('x-=-=-=-=-=-=-=-=-=-=-=-=', 'xx-=-=-=-=-=-=-=')})
   assertEquivalent({'-=-=-=-=-=', '', '', 'y', '-=-=-=-=-=-=-=y'},
       {dmp.diff_halfMatch('-=-=-=-=-=-=-=-=-=-=-=-=y', '-=-=-=-=-=-=-=yy')})
+
+  -- Non-optimal halfmatch.
+  -- Optimal diff would be -q+x=H-i+e=lloHe+Hu=llo-Hew+y not -qHillo+x=HelloHe-w+Hulloy
+  assertEquivalent({'qHillo', 'w', 'x', 'Hulloy', 'HelloHe'},
+      {dmp.diff_halfMatch('qHilloHelloHew', 'xHelloHeHulloy')})
+  -- Optimal no halfmatch.
+  dmp.settings{Diff_Timeout = 0}
+  assertEquivalent({nill}, {dmp.diff_halfMatch('qHilloHelloHew', 'xHelloHeHulloy')})
 end
 
 function testDiffToLines()
@@ -467,8 +476,8 @@ function testDiffPrettyHtml()
       }
   assertEquals(
         '<span>a&para;<br></span>'
-        .. '<del style="background:#FFE6E6;">&lt;B&gt;b&lt;/B&gt;'
-        .. '</del><ins style="background:#E6FFE6;">c&amp;d</ins>',
+        .. '<del style="background:#ffe6e6;">&lt;B&gt;b&lt;/B&gt;'
+        .. '</del><ins style="background:#e6ffe6;">c&amp;d</ins>',
         dmp.diff_prettyHtml(diffs)
       )
 end
