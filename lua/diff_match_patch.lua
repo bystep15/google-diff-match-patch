@@ -683,12 +683,27 @@ function _diff_bisect(text1, text2, deadline)
   local text2_length = #text2
   local _sub, _element
   local max_d = ceil((text1_length + text2_length) / 2)
-  local v1 = {[1]=1}
-  local v2 = {[1]=1}
+  local v_offset = max_d
+  local v_length = 2 * max_d
+  local v1 = {}
+  local v2 = {}
+  -- Setting all elements to -1 is faster in Lua than mixing integers and nil.
+  for x = 0, v_length - 1 do
+    v1[x] = -1
+    v2[x] = -1
+  end
+  v1[v_offset + 1] = 0
+  v2[v_offset + 1] = 0
   local delta = text1_length - text2_length
   -- If the total number of characters is odd, then
   -- the front path will collide with the reverse path.
   local front = (delta % 2 ~= 0)
+  -- Offsets for start and end of k loop.
+  -- Prevents mapping of space beyond the grid.
+  local k1start = 0
+  local k1end = 0
+  local k2start = 0
+  local k2end = 0
   for d = 0, max_d - 1 do
     -- Bail out if deadline is reached.
     if clock() > deadline then
@@ -696,12 +711,14 @@ function _diff_bisect(text1, text2, deadline)
     end
 
     -- Walk the front path one step.
-    for k1 = -d, d, 2 do
+    for k1 = -d + k1start, d - k1end, 2 do
+      local k1_offset = v_offset + k1
       local x1
-      if (k1 == -d) or ((k1 ~= d) and (v1[k1 - 1] < v1[k1 + 1])) then
-        x1 = v1[k1 + 1]
+      if (k1 == -d) or ((k1 ~= d) and
+          (v1[k1_offset - 1] < v1[k1_offset + 1])) then
+        x1 = v1[k1_offset + 1]
       else
-        x1 = v1[k1 - 1] + 1
+        x1 = v1[k1_offset - 1] + 1
       end
       local y1 = x1 - k1
       while (x1 <= text1_length) and (y1 <= text2_length)
@@ -709,35 +726,35 @@ function _diff_bisect(text1, text2, deadline)
         x1 = x1 + 1
         y1 = y1 + 1
       end
-      v1[k1] = x1
-      if front then
-        local k2 = delta - k1
-        if v2[k2] then
+      v1[k1_offset] = x1
+      if x1 > text1_length + 1 then
+        -- Ran off the right of the graph.
+        k1end = k1end + 2
+      elseif y1 > text2_length + 1 then
+        -- Ran off the bottom of the graph.
+        k1start = k1start + 2
+      elseif front then
+        local k2_offset = v_offset + delta - k1
+        if k2_offset >= 0 and k2_offset < v_length and v2[k2_offset] ~= -1 then
           -- Mirror x2 onto top-left coordinate system.
-          local x2 = text1_length - v2[k2] + 1
+          local x2 = text1_length - v2[k2_offset] + 1
           if x1 > x2 then
             -- Overlap detected.
-            local a1 = diff_main(strsub(text1, 1, x1 - 1),
-                                 strsub(text2, 1, y1 - 1), false, deadline)
-            local a1_len = #a1
-            local a2 = diff_main(strsub(text1, x1),
-                                 strsub(text2, y1), false, deadline)
-            for i, v in ipairs(a2) do
-              a1[a1_len + i] = v
-            end
-            return a1
+            return _diff_bisectSplit(text1, text2, x1, y1, deadline)
           end
         end
       end
     end
 
     -- Walk the reverse path one step.
-    for k2 = -d, d, 2 do
+    for k2 = -d + k2start, d - k2end, 2 do
+      local k2_offset = v_offset + k2
       local x2
-      if (k2 == -d) or ((k2 ~= d) and (v2[k2 - 1] < v2[k2 + 1])) then
-        x2 = v2[k2 + 1]
+      if (k2 == -d) or ((k2 ~= d) and
+          (v2[k2_offset - 1] < v2[k2_offset + 1])) then
+        x2 = v2[k2_offset + 1]
       else
-        x2 = v2[k2 - 1] + 1
+        x2 = v2[k2_offset - 1] + 1
       end
       local y2 = x2 - k2
       while (x2 <= text1_length) and (y2 <= text2_length)
@@ -745,25 +762,23 @@ function _diff_bisect(text1, text2, deadline)
         x2 = x2 + 1
         y2 = y2 + 1
       end
-      v2[k2] = x2
-      if not front then
-        local k1 = delta - k2
-        if v1[k1] then
-          local x1 = v1[k1]
-          local y1 = x1 - k1
+      v2[k2_offset] = x2
+      if x2 > text1_length + 1 then
+        -- Ran off the left of the graph.
+        k2end = k2end + 2
+      elseif y2 > text2_length + 1 then
+        -- Ran off the top of the graph.
+        k2start = k2start + 2
+      elseif not front then
+        local k1_offset = v_offset + delta - k2
+        if k1_offset >= 0 and k1_offset < v_length and v1[k1_offset] ~= -1 then
+          local x1 = v1[k1_offset]
+          local y1 = v_offset + x1 - k1_offset
           -- Mirror x2 onto top-left coordinate system.
           x2 = text1_length - x2 + 1
           if x1 > x2 then
             -- Overlap detected.
-            local a1 = diff_main(strsub(text1, 1, x1 - 1),
-                                 strsub(text2, 1, y1 - 1), false, deadline)
-            local a1_len = #a1
-            local a2 = diff_main(strsub(text1, x1),
-                                 strsub(text2, y1), false, deadline)
-            for i, v in ipairs(a2) do
-              a1[a1_len + i] = v
-            end
-            return a1
+            return _diff_bisectSplit(text1, text2, x1, y1, deadline)
           end
         end
       end
@@ -773,6 +788,35 @@ function _diff_bisect(text1, text2, deadline)
   -- number of diffs equals number of characters, no commonality at all.
   return {{DIFF_DELETE, text1}, {DIFF_INSERT, text2}}
 end
+
+--[[
+ * Given the location of the 'middle snake', split the diff in two parts
+ * and recurse.
+ * @param {string} text1 Old string to be diffed.
+ * @param {string} text2 New string to be diffed.
+ * @param {number} x Index of split point in text1.
+ * @param {number} y Index of split point in text2.
+ * @param {number} deadline Time at which to bail if not yet complete.
+ * @return {Array.<Array.<number|string>>} Array of diff tuples.
+ * @private
+--]]
+function _diff_bisectSplit(text1, text2, x, y, deadline)
+  local text1a = strsub(text1, 1, x - 1)
+  local text2a = strsub(text2, 1, y - 1)
+  local text1b = strsub(text1, x)
+  local text2b = strsub(text2, y)
+
+  -- Compute both diffs serially.
+  local diffs = diff_main(text1a, text2a, false, deadline)
+  local diffsb = diff_main(text1b, text2b, false, deadline)
+
+  local diffs_len = #diffs
+  for i, v in ipairs(diffsb) do
+    diffs[diffs_len + i] = v
+  end
+  return diffs
+end
+
 
 --[[
 * Split two texts into an array of strings.  Reduce the texts to an array of
@@ -984,7 +1028,7 @@ function _diff_halfMatchI(longtext, shorttext, i)
         strsub(shorttext, j))
     local suffixLength = _diff_commonSuffix(strsub(longtext, 1, i - 1),
         strsub(shorttext, 1, j - 1))
-    if (#best_common < suffixLength+prefixLength) then
+    if #best_common < suffixLength + prefixLength then
       best_common = strsub(shorttext, j - suffixLength, j - 1)
           .. strsub(shorttext, j, j + prefixLength - 1)
       best_longtext_a = strsub(longtext, 1, i - suffixLength - 1)
@@ -995,7 +1039,7 @@ function _diff_halfMatchI(longtext, shorttext, i)
   end
   if #best_common * 2 >= #longtext then
     return {best_longtext_a, best_longtext_b,
-        best_shorttext_a, best_shorttext_b, best_common}
+            best_shorttext_a, best_shorttext_b, best_common}
   else
     return nil
   end
@@ -1120,7 +1164,7 @@ function _diff_cleanupSemanticLossless(diffs)
 
       -- First, shift the edit as far left as possible.
       local commonOffset = _diff_commonSuffix(equality1, edit)
-      if (commonOffset > 0) then
+      if commonOffset > 0 then
         local commonString = strsub(edit, -commonOffset)
         equality1 = strsub(equality1, 1, -commonOffset - 1)
         edit = commonString .. strsub(edit, 1, -commonOffset - 1)
@@ -1134,30 +1178,30 @@ function _diff_cleanupSemanticLossless(diffs)
       local bestScore = _diff_cleanupSemanticScore(equality1, edit)
           + _diff_cleanupSemanticScore(edit, equality2)
 
-      while (strbyte(edit, 1) == strbyte(equality2, 1)) do
+      while strbyte(edit, 1) == strbyte(equality2, 1) do
         equality1 = equality1 .. strsub(edit, 1, 1)
         edit = strsub(edit, 2) .. strsub(equality2, 1, 1)
         equality2 = strsub(equality2, 2)
         local score = _diff_cleanupSemanticScore(equality1, edit)
             + _diff_cleanupSemanticScore(edit, equality2)
         -- The >= encourages trailing rather than leading whitespace on edits.
-        if (score >= bestScore) then
+        if score >= bestScore then
           bestScore = score
           bestEquality1 = equality1
           bestEdit = edit
           bestEquality2 = equality2
         end
       end
-      if (prevDiff[2] ~= bestEquality1) then
+      if prevDiff[2] ~= bestEquality1 then
         -- We have an improvement, save it back to the diff.
-        if (#bestEquality1 > 0) then
+        if #bestEquality1 > 0 then
           diffs[pointer - 1][2] = bestEquality1
         else
           tremove(diffs, pointer - 1)
           pointer = pointer - 1
         end
         diffs[pointer][2] = bestEdit
-        if (#bestEquality2 > 0) then
+        if #bestEquality2 > 0 then
           diffs[pointer + 1][2] = bestEquality2
         else
           tremove(diffs, pointer + 1, 1)
@@ -1262,13 +1306,13 @@ function _diff_cleanupMerge(diffs)
       local currentText = diff[2]
       local prevText = prevDiff[2]
       local nextText = nextDiff[2]
-      if (strsub(currentText, -#prevText) == prevText) then
+      if strsub(currentText, -#prevText) == prevText then
         -- Shift the edit over the previous equality.
         diff[2] = prevText .. strsub(currentText, 1, -#prevText - 1)
         nextDiff[2] = prevText .. nextDiff[2]
         tremove(diffs, pointer - 1)
         changes = true
-      elseif (strsub(currentText, 1, #nextText) == nextText) then
+      elseif strsub(currentText, 1, #nextText) == nextText then
         -- Shift the edit over the next equality.
         prevDiff[2] = prevText .. nextText
         diff[2] = strsub(currentText, #nextText + 1) .. nextText
@@ -1302,13 +1346,13 @@ function _diff_xIndex(diffs, loc)
   local x
   for _x, diff in ipairs(diffs) do
     x = _x
-    if (diff[1] ~= DIFF_INSERT) then   -- Equality or deletion.
+    if diff[1] ~= DIFF_INSERT then   -- Equality or deletion.
       chars1 = chars1 + #diff[2]
     end
-    if (diff[1] ~= DIFF_DELETE) then   -- Equality or insertion.
+    if diff[1] ~= DIFF_DELETE then   -- Equality or insertion.
       chars2 = chars2 + #diff[2]
     end
-    if (chars1 > loc) then   -- Overshot the location.
+    if chars1 > loc then   -- Overshot the location.
       break
     end
     last_chars1 = chars1
@@ -1330,7 +1374,7 @@ end
 function _diff_text1(diffs)
   local text = {}
   for x, diff in ipairs(diffs) do
-    if (diff[1] ~= DIFF_INSERT) then
+    if diff[1] ~= DIFF_INSERT then
       text[#text + 1] = diff[2]
     end
   end
@@ -1345,7 +1389,7 @@ end
 function _diff_text2(diffs)
   local text = {}
   for x, diff in ipairs(diffs) do
-    if (diff[1] ~= DIFF_DELETE) then
+    if diff[1] ~= DIFF_DELETE then
       text[#text + 1] = diff[2]
     end
   end
@@ -1364,11 +1408,11 @@ function _diff_toDelta(diffs)
   local text = {}
   for x, diff in ipairs(diffs) do
     local op, data = diff[1], diff[2]
-    if (op == DIFF_INSERT) then
+    if op == DIFF_INSERT then
       text[x] = '+' .. gsub(data, percentEncode_pattern, percentEncode_replace)
-    elseif (op == DIFF_DELETE) then
+    elseif op == DIFF_DELETE then
       text[x] = '-' .. #data
-    elseif (op == DIFF_EQUAL) then
+    elseif op == DIFF_EQUAL then
       text[x] = '=' .. #data
     end
   end
@@ -1452,15 +1496,15 @@ function match_main(text, pattern, loc)
     error('Null inputs. (match_main)')
   end
 
-  if (text == pattern) then
+  if text == pattern then
     -- Shortcut (potentially not guaranteed by the algorithm)
     return 1
-  elseif (#text == 0) then
+  elseif #text == 0 then
     -- Nothing to match.
     return -1
   end
   loc = max(1, min(loc, #text))
-  if (strsub(text, loc, loc + #pattern - 1) == pattern) then
+  if strsub(text, loc, loc + #pattern - 1) == pattern then
     -- Perfect match at the perfect spot!  (Includes case of null pattern)
     return loc
   else
@@ -1499,7 +1543,7 @@ end
 * @private
 --]]
 function _match_bitap(text, pattern, loc)
-  if (#pattern > Match_MaxBits) then
+  if #pattern > Match_MaxBits then
     error('Pattern too long.')
   end
 
@@ -2145,10 +2189,10 @@ function _patch_splitMax(patches)
   local x = 1
   while true do
     local patch = patches[x]
-    if (patch == nil) then
+    if patch == nil then
       return
     end
-    if (patch.length1 > patch_size) then
+    if patch.length1 > patch_size then
       local bigpatch = patch
       -- Remove the big old patch.
       tremove(patches, x)
@@ -2162,7 +2206,7 @@ function _patch_splitMax(patches)
         local empty = true
         patch.start1 = start1 - #precontext
         patch.start2 = start2 - #precontext
-        if (precontext ~= '') then
+        if precontext ~= '' then
           patch.length1, patch.length2 = #precontext, #precontext
           patch.diffs[#patch.diffs + 1] = {DIFF_EQUAL, precontext}
         end
@@ -2212,7 +2256,7 @@ function _patch_splitMax(patches)
         precontext = strsub(precontext, -Patch_Margin)
         -- Append the end context for this patch.
         local postcontext = strsub(_diff_text1(bigpatch.diffs), 1, Patch_Margin)
-        if (postcontext ~= '') then
+        if postcontext ~= '' then
           patch.length1 = patch.length1 + #postcontext
           patch.length2 = patch.length2 + #postcontext
           if patch.diffs[1]
@@ -2244,13 +2288,13 @@ function _patch_appendText(patch, text)
   local start1, start2 = patch.start1, patch.start2
   local diffs = patch.diffs
 
-  if (length1 == 1) then
+  if length1 == 1 then
     coords1 = start1
   else
     coords1 = ((length1 == 0) and (start1 - 1) or start1) .. ',' .. length1
   end
 
-  if (length2 == 1) then
+  if length2 == 1 then
     coords2 = start2
   else
     coords2 = ((length2 == 0) and (start2 - 1) or start2) .. ',' .. length2
@@ -2261,11 +2305,11 @@ function _patch_appendText(patch, text)
   -- Escape the body of the patch with %xx notation.
   for x, diff in ipairs(patch.diffs) do
     local diff_type = diff[1]
-    if (diff_type == DIFF_INSERT) then
+    if diff_type == DIFF_INSERT then
       op = '+'
-    elseif (diff_type == DIFF_DELETE) then
+    elseif diff_type == DIFF_DELETE then
       op = '-'
-    elseif (diff_type == DIFF_EQUAL) then
+    elseif diff_type == DIFF_EQUAL then
       op = ' '
     end
     text[#text + 1] = op
@@ -2315,4 +2359,3 @@ _M.new_patch_obj = _new_patch_obj
 _M.patch_addContext = _patch_addContext
 _M.patch_splitMax = _patch_splitMax
 _M.patch_addPadding = _patch_addPadding
-

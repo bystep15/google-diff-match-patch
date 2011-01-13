@@ -256,66 +256,114 @@ class diff_match_patch:
     text1_length = len(text1)
     text2_length = len(text2)
     max_d = (text1_length + text2_length + 1) / 2
-    v1 = {1:0}
-    v2 = {1:0}
+    v_offset = max_d
+    v_length = 2 * max_d
+    v1 = [-1] * v_length
+    v1[v_offset + 1] = 0
+    v2 = v1[:]
     delta = text1_length - text2_length
     # If the total number of characters is odd, then the front path will
     # collide with the reverse path.
     front = (delta % 2 != 0)
+    # Offsets for start and end of k loop.
+    # Prevents mapping of space beyond the grid.
+    k1start = 0
+    k1end = 0
+    k2start = 0
+    k2end = 0
     for d in xrange(max_d):
       # Bail out if deadline is reached.
       if time.time() > deadline:
         break
 
       # Walk the front path one step.
-      for k1 in xrange(-d, d + 1, 2):
-        if k1 == -d or k1 != d and v1[k1 - 1] < v1[k1 + 1]:
-          x1 = v1[k1 + 1]
+      for k1 in xrange(-d + k1start, d + 1 - k1end, 2):
+        k1_offset = v_offset + k1
+        if (k1 == -d or k1 != d and
+            v1[k1_offset - 1] < v1[k1_offset + 1]):
+          x1 = v1[k1_offset + 1]
         else:
-          x1 = v1[k1 - 1] + 1
+          x1 = v1[k1_offset - 1] + 1
         y1 = x1 - k1
         while (x1 < text1_length and y1 < text2_length and
                text1[x1] == text2[y1]):
           x1 += 1
           y1 += 1
-        v1[k1] = x1
-        if front:
-          k2 = delta - k1
-          if k2 in v2:
+        v1[k1_offset] = x1
+        if x1 > text1_length:
+          # Ran off the right of the graph.
+          k1end += 2
+        elif y1 > text2_length:
+          # Ran off the bottom of the graph.
+          k1start += 2
+        elif front:
+          k2_offset = v_offset + delta - k1
+          if k2_offset >= 0 and k2_offset < v_length and v2[k2_offset] != -1:
             # Mirror x2 onto top-left coordinate system.
-            x2 = text1_length - v2[k2]
+            x2 = text1_length - v2[k2_offset]
             if x1 >= x2:
               # Overlap detected.
-              return (self.diff_main(text1[:x1], text2[:y1], False, deadline) +
-                      self.diff_main(text1[x1:], text2[y1:], False, deadline))
+              return self.diff_bisectSplit(text1, text2, x1, y1, deadline)
 
       # Walk the reverse path one step.
-      for k2 in xrange(-d, d + 1, 2):
-        if k2 == -d or k2 != d and v2[k2 - 1] < v2[k2 + 1]:
-          x2 = v2[k2 + 1]
+      for k2 in xrange(-d + k2start, d + 1 - k2end, 2):
+        k2_offset = v_offset + k2
+        if (k2 == -d or k2 != d and
+            v2[k2_offset - 1] < v2[k2_offset + 1]):
+          x2 = v2[k2_offset + 1]
         else:
-          x2 = v2[k2 - 1] + 1
+          x2 = v2[k2_offset - 1] + 1
         y2 = x2 - k2
         while (x2 < text1_length and y2 < text2_length and
                text1[-x2 - 1] == text2[-y2 - 1]):
           x2 += 1
           y2 += 1
-        v2[k2] = x2
-        if not front:
-          k1 = delta - k2
-          if k1 in v1:
-            x1 = v1[k1]
-            y1 = x1 - k1
+        v2[k2_offset] = x2
+        if x2 > text1_length:
+          # Ran off the left of the graph.
+          k2end += 2
+        elif y2 > text2_length:
+          # Ran off the top of the graph.
+          k2start += 2
+        elif not front:
+          k1_offset = v_offset + delta - k2
+          if k1_offset >= 0 and k1_offset < v_length and v1[k1_offset] != -1:
+            x1 = v1[k1_offset]
+            y1 = v_offset + x1 - k1_offset
             # Mirror x2 onto top-left coordinate system.
             x2 = text1_length - x2
             if x1 >= x2:
               # Overlap detected.
-              return (self.diff_main(text1[:x1], text2[:y1], False, deadline) +
-                      self.diff_main(text1[x1:], text2[y1:], False, deadline))
+              return self.diff_bisectSplit(text1, text2, x1, y1, deadline)
 
     # Diff took too long and hit the deadline or
     # number of diffs equals number of characters, no commonality at all.
     return [(self.DIFF_DELETE, text1), (self.DIFF_INSERT, text2)]
+
+  def diff_bisectSplit(self, text1, text2, x, y, deadline):
+    """Given the location of the 'middle snake', split the diff in two parts
+    and recurse.
+
+    Args:
+      text1: Old string to be diffed.
+      text2: New string to be diffed.
+      x: Index of split point in text1.
+      y: Index of split point in text2.
+      deadline: Time at which to bail if not yet complete.
+
+    Returns:
+      Array of diff tuples.
+    """
+    text1a = text1[:x]
+    text2a = text2[:y]
+    text1b = text1[x:]
+    text2b = text2[y:]
+
+    # Compute both diffs serially.
+    diffs = self.diff_main(text1a, text2a, False, deadline)
+    diffsb = self.diff_main(text1b, text2b, False, deadline)
+
+    return diffs + diffsb
 
   def diff_linesToChars(self, text1, text2):
     """Split two texts into an array of strings.  Reduce the texts to a string

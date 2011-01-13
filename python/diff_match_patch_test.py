@@ -468,6 +468,9 @@ class DiffTest(DiffMatchPatchTest):
 
     self.assertEquals([(self.dmp.DIFF_DELETE, "ABCD"), (self.dmp.DIFF_EQUAL, "a"), (self.dmp.DIFF_DELETE, "="), (self.dmp.DIFF_INSERT, "-"), (self.dmp.DIFF_EQUAL, "bcd"), (self.dmp.DIFF_DELETE, "="), (self.dmp.DIFF_INSERT, "-"), (self.dmp.DIFF_EQUAL, "efghijklmnopqrs"), (self.dmp.DIFF_DELETE, "EFGHIJKLMNOefg")], self.dmp.diff_main("ABCDa=bcd=efghijklmnopqrsEFGHIJKLMNOefg", "a-bcd-efghijklmnopqrs", False))
 
+    # Large equality.
+    self.assertEquals([(self.dmp.DIFF_INSERT, " "), (self.dmp.DIFF_EQUAL,"a"), (self.dmp.DIFF_INSERT,"nd"), (self.dmp.DIFF_EQUAL," [[Pennsylvania]]"), (self.dmp.DIFF_DELETE," and [[New")], self.dmp.diff_main("a [[Pennsylvania]] and [[New", " and [[Pennsylvania]]", False))
+
     # Timeout.
     self.dmp.Diff_Timeout = 0.1  # 100ms
     a = "`Twas brillig, and the slithy toves\nDid gyre and gimble in the wabe:\nAll mimsy were the borogoves,\nAnd the mome raths outgrabe.\n"

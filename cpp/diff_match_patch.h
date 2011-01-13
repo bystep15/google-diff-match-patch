@@ -221,6 +221,19 @@ class diff_match_patch {
   QList<Diff> diff_bisect(const QString &text1, const QString &text2, clock_t deadline);
 
   /**
+   * Given the location of the 'middle snake', split the diff in two parts
+   * and recurse.
+   * @param text1 Old string to be diffed.
+   * @param text2 New string to be diffed.
+   * @param x Index of split point in text1.
+   * @param y Index of split point in text2.
+   * @param deadline Time at which to bail if not yet complete.
+   * @return LinkedList of Diff objects.
+   */
+ private:
+  QList<Diff> diff_bisectSplit(const QString &text1, const QString &text2, int x, int y, clock_t deadline);
+
+  /**
    * Split two texts into a list of strings.  Reduce the texts to a string of
    * hashes where each Unicode character represents one line.
    * @param text1 First string.

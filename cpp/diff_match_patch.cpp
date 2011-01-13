@@ -372,14 +372,26 @@ QList<Diff> diff_match_patch::diff_bisect(const QString &text1,
   const int text1_length = text1.length();
   const int text2_length = text2.length();
   const int max_d = (text1_length + text2_length + 1) / 2;
-  QMap<int, int> v1;
-  QMap<int, int> v2;
-  v1.insert(1, 0);
-  v2.insert(1, 0);
+  const int v_offset = max_d;
+  const int v_length = 2 * max_d;
+  int *v1 = new int[v_length];
+  int *v2 = new int[v_length];
+  for (int x = 0; x < v_length; x++) {
+    v1[x] = -1;
+    v2[x] = -1;
+  }
+  v1[v_offset + 1] = 0;
+  v2[v_offset + 1] = 0;
   const int delta = text1_length - text2_length;
   // If the total number of characters is odd, then the front path will
   // collide with the reverse path.
   const bool front = (delta % 2 != 0);
+  // Offsets for start and end of k loop.
+  // Prevents mapping of space beyond the grid.
+  int k1start = 0;
+  int k1end = 0;
+  int k2start = 0;
+  int k2end = 0;
   for (int d = 0; d < max_d; d++) {
     // Bail out if deadline is reached.
     if (clock() > deadline) {
@@ -387,12 +399,13 @@ QList<Diff> diff_match_patch::diff_bisect(const QString &text1,
     }
 
     // Walk the front path one step.
-    for (int k1 = -d; k1 <= d; k1 += 2) {
+    for (int k1 = -d + k1start; k1 <= d - k1end; k1 += 2) {
+      const int k1_offset = v_offset + k1;
       int x1;
-      if (k1 == -d || (k1 != d && v1.value(k1 - 1) < v1.value(k1 + 1))) {
-        x1 = v1.value(k1 + 1);
+      if (k1 == -d || (k1 != d && v1[k1_offset - 1] < v1[k1_offset + 1])) {
+        x1 = v1[k1_offset + 1];
       } else {
-        x1 = v1.value(k1 - 1) + 1;
+        x1 = v1[k1_offset - 1] + 1;
       }
       int y1 = x1 - k1;
       while (x1 < text1_length && y1 < text2_length
@@ -400,31 +413,34 @@ QList<Diff> diff_match_patch::diff_bisect(const QString &text1,
         x1++;
         y1++;
       }
-      v1.insert(k1, x1);
-      if (front) {
-        int k2 = delta - k1;
-        if (v2.contains(k2)) {
+      v1[k1_offset] = x1;
+      if (x1 > text1_length) {
+        // Ran off the right of the graph.
+        k1end += 2;
+      } else if (y1 > text2_length) {
+        // Ran off the bottom of the graph.
+        k1start += 2;
+      } else if (front) {
+        int k2_offset = v_offset + delta - k1;
+        if (k2_offset >= 0 && k2_offset < v_length && v2[k2_offset] != -1) {
           // Mirror x2 onto top-left coordinate system.
-          int x2 = text1_length - v2.value(k2);
+          int x2 = text1_length - v2[k2_offset];
           if (x1 >= x2) {
             // Overlap detected.
-            QList<Diff> diffs = diff_main(text1.left(x1), text2.left(y1),
-                                          false, deadline);
-            diffs += diff_main(safeMid(text1, x1), safeMid(text2, y1),
-                               false, deadline);
-            return diffs;
+            return diff_bisectSplit(text1, text2, x1, y1, deadline);
           }
         }
       }
     }
 
     // Walk the reverse path one step.
-    for (int k2 = -d; k2 <= d; k2 += 2) {
+    for (int k2 = -d + k2start; k2 <= d - k2end; k2 += 2) {
+      const int k2_offset = v_offset + k2;
       int x2;
-      if (k2 == -d || (k2 != d && v2.value(k2 - 1) < v2.value(k2 + 1))) {
-        x2 = v2.value(k2 + 1);
+      if (k2 == -d || (k2 != d && v2[k2_offset - 1] < v2[k2_offset + 1])) {
+        x2 = v2[k2_offset + 1];
       } else {
-        x2 = v2.value(k2 - 1) + 1;
+        x2 = v2[k2_offset - 1] + 1;
       }
       int y2 = x2 - k2;
       while (x2 < text1_length && y2 < text2_length
@@ -432,21 +448,23 @@ QList<Diff> diff_match_patch::diff_bisect(const QString &text1,
         x2++;
         y2++;
       }
-      v2.insert(k2, x2);
-      if (!front) {
-        int k1 = delta - k2;
-        if (v2.contains(k2)) {
-          int x1 = v1.value(k1);
-          int y1 = x1 - k1;
+      v2[k2_offset] = x2;
+      if (x2 > text1_length) {
+        // Ran off the left of the graph.
+        k2end += 2;
+      } else if (y2 > text2_length) {
+        // Ran off the top of the graph.
+        k2start += 2;
+      } else if (!front) {
+        int k1_offset = v_offset + delta - k2;
+        if (k1_offset >= 0 && k1_offset < v_length && v1[k1_offset] != -1) {
+          int x1 = v1[k1_offset];
+          int y1 = v_offset + x1 - k1_offset;
           // Mirror x2 onto top-left coordinate system.
-          x2 = text1_length - v2.value(k2);
+          x2 = text1_length - x2;
           if (x1 >= x2) {
             // Overlap detected.
-            QList<Diff> diffs = diff_main(text1.left(x1), text2.left(y1),
-                                          false, deadline);
-            diffs += diff_main(safeMid(text1, x1), safeMid(text2, y1),
-                               false, deadline);
-            return diffs;
+            return diff_bisectSplit(text1, text2, x1, y1, deadline);
           }
         }
       }
@@ -460,6 +478,19 @@ QList<Diff> diff_match_patch::diff_bisect(const QString &text1,
   return diffs;
 }
 
+QList<Diff> diff_match_patch::diff_bisectSplit(const QString &text1,
+    const QString &text2, int x, int y, clock_t deadline) {
+  QString text1a = text1.left(x);
+  QString text2a = text2.left(y);
+  QString text1b = safeMid(text1, x);
+  QString text2b = safeMid(text2, y);
+
+  // Compute both diffs serially.
+  QList<Diff> diffs = diff_main(text1a, text2a, false, deadline);
+  QList<Diff> diffsb = diff_main(text1b, text2b, false, deadline);
+
+  return diffs + diffsb;
+}
 
 QList<QVariant> diff_match_patch::diff_linesToChars(const QString &text1,
                                                     const QString &text2) {

@@ -362,14 +362,26 @@ public class diff_match_patch {
     int text1_length = text1.length();
     int text2_length = text2.length();
     int max_d = (text1_length + text2_length + 1) / 2;
-    Map<Integer, Integer> v1 = new HashMap<Integer, Integer>();
-    Map<Integer, Integer> v2 = new HashMap<Integer, Integer>();
-    v1.put(1, 0);
-    v2.put(1, 0);
+    int v_offset = max_d;
+    int v_length = 2 * max_d;
+    int[] v1 = new int[v_length];
+    int[] v2 = new int[v_length];
+    for (int x = 0; x < v_length; x++) {
+      v1[x] = -1;
+      v2[x] = -1;
+    }
+    v1[v_offset + 1] = 0;
+    v2[v_offset + 1] = 0;
     int delta = text1_length - text2_length;
     // If the total number of characters is odd, then the front path will
     // collide with the reverse path.
     boolean front = (delta % 2 != 0);
+    // Offsets for start and end of k loop.
+    // Prevents mapping of space beyond the grid.
+    int k1start = 0;
+    int k1end = 0;
+    int k2start = 0;
+    int k2end = 0;
     for (int d = 0; d < max_d; d++) {
       // Bail out if deadline is reached.
       if (System.currentTimeMillis() > deadline) {
@@ -377,12 +389,13 @@ public class diff_match_patch {
       }
 
       // Walk the front path one step.
-      for (int k1 = -d; k1 <= d; k1 += 2) {
-    	int x1;
-        if (k1 == -d || k1 != d && v1.get(k1 - 1) < v1.get(k1 + 1)) {
-          x1 = v1.get(k1 + 1);
+      for (int k1 = -d + k1start; k1 <= d - k1end; k1 += 2) {
+        int k1_offset = v_offset + k1;
+        int x1;
+        if (k1 == -d || k1 != d && v1[k1_offset - 1] < v1[k1_offset + 1]) {
+          x1 = v1[k1_offset + 1];
         } else {
-          x1 = v1.get(k1 - 1) + 1;
+          x1 = v1[k1_offset - 1] + 1;
         }
         int y1 = x1 - k1;
         while (x1 < text1_length && y1 < text2_length
@@ -390,31 +403,34 @@ public class diff_match_patch {
           x1++;
           y1++;
         }
-        v1.put(k1, x1);
-        if (front) {
-          int k2 = delta - k1;
-          if (v2.containsKey(k2)) {
+        v1[k1_offset] = x1;
+        if (x1 > text1_length) {
+          // Ran off the right of the graph.
+          k1end += 2;
+        } else if (y1 > text2_length) {
+          // Ran off the bottom of the graph.
+          k1start += 2;
+        } else if (front) {
+          int k2_offset = v_offset + delta - k1;
+          if (k2_offset >= 0 && k2_offset < v_length && v2[k2_offset] != -1) {
             // Mirror x2 onto top-left coordinate system.
-            int x2 = text1_length - v2.get(k2);
+            int x2 = text1_length - v2[k2_offset];
             if (x1 >= x2) {
               // Overlap detected.
-              LinkedList<Diff> diffs = diff_main(text1.substring(0, x1),
-                  text2.substring(0, y1), false, deadline);
-              diffs.addAll(diff_main(text1.substring(x1),
-                  text2.substring(y1), false, deadline));
-              return diffs;
+              return diff_bisectSplit(text1, text2, x1, y1, deadline);
             }
           }
         }
       }
 
       // Walk the reverse path one step.
-      for (int k2 = -d; k2 <= d; k2 += 2) {
-    	int x2;
-        if (k2 == -d || k2 != d && v2.get(k2 - 1) < v2.get(k2 + 1)) {
-          x2 = v2.get(k2 + 1);
+      for (int k2 = -d + k2start; k2 <= d - k2end; k2 += 2) {
+        int k2_offset = v_offset + k2;
+        int x2;
+        if (k2 == -d || k2 != d && v2[k2_offset - 1] < v2[k2_offset + 1]) {
+          x2 = v2[k2_offset + 1];
         } else {
-          x2 = v2.get(k2 - 1) + 1;
+          x2 = v2[k2_offset - 1] + 1;
         }
         int y2 = x2 - k2;
         while (x2 < text1_length && y2 < text2_length
@@ -423,21 +439,23 @@ public class diff_match_patch {
           x2++;
           y2++;
         }
-        v2.put(k2, x2);
-        if (!front) {
-          int k1 = delta - k2;
-          if (v1.containsKey(k1)) {
-            int x1 = v1.get(k1);
-            int y1 = x1 - k1;
+        v2[k2_offset] = x2;
+        if (x2 > text1_length) {
+          // Ran off the left of the graph.
+          k2end += 2;
+        } else if (y2 > text2_length) {
+          // Ran off the top of the graph.
+          k2start += 2;
+        } else if (!front) {
+          int k1_offset = v_offset + delta - k2;
+          if (k1_offset >= 0 && k1_offset < v_length && v1[k1_offset] != -1) {
+            int x1 = v1[k1_offset];
+            int y1 = v_offset + x1 - k1_offset;
             // Mirror x2 onto top-left coordinate system.
             x2 = text1_length - x2;
             if (x1 >= x2) {
               // Overlap detected.
-              LinkedList<Diff> diffs = diff_main(text1.substring(0, x1),
-                  text2.substring(0, y1), false, deadline);
-              diffs.addAll(diff_main(text1.substring(x1),
-                  text2.substring(y1), false, deadline));
-              return diffs;
+              return diff_bisectSplit(text1, text2, x1, y1, deadline);
             }
           }
         }
@@ -452,6 +470,32 @@ public class diff_match_patch {
   }
 
 
+  /**
+   * Given the location of the 'middle snake', split the diff in two parts
+   * and recurse.
+   * @param text1 Old string to be diffed.
+   * @param text2 New string to be diffed.
+   * @param x Index of split point in text1.
+   * @param y Index of split point in text2.
+   * @param deadline Time at which to bail if not yet complete.
+   * @return LinkedList of Diff objects.
+   */
+  private LinkedList<Diff> diff_bisectSplit(String text1, String text2,
+                                            int x, int y, long deadline) {
+    String text1a = text1.substring(0, x);
+    String text2a = text2.substring(0, y);
+    String text1b = text1.substring(x);
+    String text2b = text2.substring(y);
+
+    // Compute both diffs serially.
+    LinkedList<Diff> diffs = diff_main(text1a, text2a, false, deadline);
+    LinkedList<Diff> diffsb = diff_main(text1b, text2b, false, deadline);
+
+    diffs.addAll(diffsb);
+    return diffs;  
+  }
+
+  
   /**
    * Split two texts into a list of strings.  Reduce the texts to a string of
    * hashes where each Unicode character represents one line.

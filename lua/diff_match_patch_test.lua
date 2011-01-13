@@ -724,6 +724,16 @@ function testDiffMain()
       }, dmp.diff_main('ABCDa=bcd=efghijklmnopqrsEFGHIJKLMNOefg',
                        'a-bcd-efghijklmnopqrs', false))
 
+  -- Large equality.
+  assertEquivalent({
+        {DIFF_INSERT, ' '},
+        {DIFF_EQUAL, 'a'},
+        {DIFF_INSERT, 'nd'},
+        {DIFF_EQUAL, ' [[Pennsylvania]]'},
+        {DIFF_DELETE, ' and [[New'}
+      }, dmp.diff_main('a [[Pennsylvania]] and [[New',
+                       ' and [[Pennsylvania]]', false))
+
   -- Timeout.
   dmp.settings{Diff_Timeout = 0.1}  -- 100ms
   -- Increase the text lengths by 1024 times to ensure a timeout.
