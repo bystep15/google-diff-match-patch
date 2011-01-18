@@ -1646,6 +1646,7 @@ class diff_match_patch:
   def patch_splitMax(self, patches):
     """Look through the patches and break up any which are longer than the
     maximum limit of the match algorithm.
+    Intended to be called only from within patch_apply.
 
     Args:
       patches: Array of patch objects.

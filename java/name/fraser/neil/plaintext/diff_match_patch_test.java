@@ -816,7 +816,7 @@ public class diff_match_patch_test extends TestCase {
     results = dmp.patch_apply(patches, "ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567890");
     boolArray = (boolean[]) results[1];
     resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
-    assertEquals("ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567YYYYYYYYYY890\tfalse\ttrue", resultStr);
+    assertEquals("patch_apply: Compensate for failed patch.", "ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567YYYYYYYYYY890\tfalse\ttrue", resultStr);
     dmp.Match_Threshold = 0.5f;
     dmp.Match_Distance = 1000;
 

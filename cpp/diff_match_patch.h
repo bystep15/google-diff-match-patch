@@ -291,7 +291,7 @@ class diff_match_patch {
    * @return The number of characters common to the end of the first
    *     string and the start of the second string.
    */
- public:
+ protected:
   int diff_commonOverlap(const QString &text1, const QString &text2);
 
   /**
@@ -558,6 +558,7 @@ class diff_match_patch {
   /**
    * Look through the patches and break up any which are longer than the
    * maximum limit of the match algorithm.
+   * Intended to be called only from within patch_apply.
    * @param patches LinkedList of Patch objects.
    */
  public:

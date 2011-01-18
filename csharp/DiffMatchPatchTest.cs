@@ -1077,7 +1077,7 @@ namespace nicTest {
       results = dmp.patch_apply(patches, "ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567890");
       boolArray = (bool[])results[1];
       resultStr = results[0] + "\t" + boolArray[0] + "\t" + boolArray[1];
-      Assert.AreEqual("ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567YYYYYYYYYY890\tFalse\tTrue", resultStr, "Compensate for failed patch.");
+      Assert.AreEqual("ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567YYYYYYYYYY890\tFalse\tTrue", resultStr, "patch_apply: Compensate for failed patch.");
       dmp.Match_Threshold = 0.5f;
       dmp.Match_Distance = 1000;
 

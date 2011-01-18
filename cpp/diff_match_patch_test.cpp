@@ -867,7 +867,7 @@ void diff_match_patch_test::testPatchApply() {
   results = dmp.patch_apply(patches, "ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567890");
   boolArray = results.second;
   resultStr = results.first + "\t" + (boolArray[0] ? "true" : "false") + "\t" + (boolArray[1] ? "true" : "false");
-  assertEquals("Compensate for failed patch.", "ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567YYYYYYYYYY890\tfalse\ttrue", resultStr);
+  assertEquals("patch_apply: Compensate for failed patch.", "ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567YYYYYYYYYY890\tfalse\ttrue", resultStr);
   dmp.Match_Threshold = 0.5f;
   dmp.Match_Distance = 1000;
 

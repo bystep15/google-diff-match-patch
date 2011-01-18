@@ -959,6 +959,7 @@ end
 * @param {string} text2 Second string.
 * @return {number} The number of characters common to the end of the first
 *     string and the start of the second string.
+* @private
 --]]
 function _diff_commonOverlap(text1, text2)
   -- Cache the text lengths to prevent multiple calls.
@@ -1007,7 +1008,7 @@ end
 * Closure, but does not reference any external variables.
 * @param {string} longtext Longer string.
 * @param {string} shorttext Shorter string.
-* @param {number} i Start index of quarter length substring within longtext
+* @param {number} i Start index of quarter length substring within longtext.
 * @return {?Array.<string>} Five element Array, containing the prefix of
 *    longtext, the suffix of longtext, the prefix of shorttext, the suffix
 *    of shorttext and the common middle.  Or nil if there was no match.
@@ -1110,6 +1111,7 @@ local blanklineStart = '^\r?\n\r?\n'
 * @param {string} one First string.
 * @param {string} two Second string.
 * @return {number} The score.
+* @private
 --]]
 function _diff_cleanupSemanticScore(one, two)
   if (#one == 0) or (#two == 0) then
@@ -1523,7 +1525,7 @@ end
 * @return {Object} Hash of character locations.
 * @private
 --]]
-function _match_alphabet (pattern)
+function _match_alphabet(pattern)
   local s = {}
   local i = 0
   for c in gmatch(pattern, '.') do
@@ -2182,6 +2184,7 @@ end
 --[[
 * Look through the patches and break up any which are longer than the maximum
 * limit of the match algorithm.
+* Intended to be called only from within patch_apply.
 * @param {Array.<_new_patch_obj>} patches Array of patch objects.
 --]]
 function _patch_splitMax(patches)

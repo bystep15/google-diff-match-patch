@@ -622,7 +622,7 @@ public class diff_match_patch {
    * @return The number of characters common to the end of the first
    *     string and the start of the second string.
    */
-  public int diff_commonOverlap(String text1, String text2) {
+  protected int diff_commonOverlap(String text1, String text2) {
     // Cache the text lengths to prevent multiple calls.
     int text1_length = text1.length();
     int text2_length = text2.length();
@@ -2088,6 +2088,7 @@ public class diff_match_patch {
   /**
    * Look through the patches and break up any which are longer than the
    * maximum limit of the match algorithm.
+   * Intended to be called only from within patch_apply.
    * @param patches LinkedList of Patch objects.
    */
   public void patch_splitMax(LinkedList<Patch> patches) {
