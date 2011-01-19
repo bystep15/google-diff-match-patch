@@ -294,10 +294,15 @@ class DiffTest(DiffMatchPatchTest):
     self.dmp.diff_cleanupSemantic(diffs)
     self.assertEquals([(self.dmp.DIFF_EQUAL, "The "), (self.dmp.DIFF_DELETE, "cow and the "), (self.dmp.DIFF_EQUAL, "cat.")], diffs)
 
-    # Overlap elimination.
+    # Overlap elimination #1.
     diffs = [(self.dmp.DIFF_DELETE, "abcxx"), (self.dmp.DIFF_INSERT, "xxdef")]
     self.dmp.diff_cleanupSemantic(diffs)
     self.assertEquals([(self.dmp.DIFF_DELETE, "abc"), (self.dmp.DIFF_EQUAL, "xx"), (self.dmp.DIFF_INSERT, "def")], diffs)
+
+    # Overlap elimination #2.
+    diffs = [(self.dmp.DIFF_DELETE, "abcxx"), (self.dmp.DIFF_INSERT, "xxdef"), (self.dmp.DIFF_DELETE, "ABCXX"), (self.dmp.DIFF_INSERT, "XXDEF")]
+    self.dmp.diff_cleanupSemantic(diffs)
+    self.assertEquals([(self.dmp.DIFF_DELETE, "abc"), (self.dmp.DIFF_EQUAL, "xx"), (self.dmp.DIFF_INSERT, "def"), (self.dmp.DIFF_DELETE, "ABC"), (self.dmp.DIFF_EQUAL, "XX"), (self.dmp.DIFF_INSERT, "DEF")], diffs)
 
   def testDiffCleanupEfficiency(self):
     # Cleanup operationally trivial equalities.

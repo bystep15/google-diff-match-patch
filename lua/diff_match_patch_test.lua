@@ -390,10 +390,14 @@ function testDiffCleanupSemantic()
   dmp.diff_cleanupSemantic(diffs)
   assertEquivalent({{DIFF_EQUAL, 'The '}, {DIFF_DELETE, 'cow and the '},
       {DIFF_EQUAL, 'cat.'}}, diffs)
-  -- Overlap elimination.
+  -- Overlap elimination #1.
   diffs = {{DIFF_DELETE, 'abcxx'}, {DIFF_INSERT, 'xxdef'}}
   dmp.diff_cleanupSemantic(diffs)
   assertEquivalent({{DIFF_DELETE, 'abc'}, {DIFF_EQUAL, 'xx'}, {DIFF_INSERT, 'def'}}, diffs)
+  -- Overlap elimination #2.
+  diffs = {{DIFF_DELETE, 'abcxx'}, {DIFF_INSERT, 'xxdef'}, {DIFF_DELETE, 'ABCXX'}, {DIFF_INSERT, 'XXDEF'}}
+  dmp.diff_cleanupSemantic(diffs)
+  assertEquivalent({{DIFF_DELETE, 'abc'}, {DIFF_EQUAL, 'xx'}, {DIFF_INSERT, 'def'}, {DIFF_DELETE, 'ABC'}, {DIFF_EQUAL, 'XX'}, {DIFF_INSERT, 'DEF'}}, diffs)
 end
 
 function testDiffCleanupEfficiency()

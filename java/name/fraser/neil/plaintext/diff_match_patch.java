@@ -859,7 +859,8 @@ public class diff_match_patch {
         if (overlap_length != 0) {
           // Overlap found.  Insert an equality and trim the surrounding edits.
           pointer.previous();
-          pointer.add(new Diff(Operation.EQUAL, insertion.substring(0, overlap_length)));
+          pointer.add(new Diff(Operation.EQUAL,
+                               insertion.substring(0, overlap_length)));
           prevDiff.text =
               deletion.substring(0, deletion.length() - overlap_length);
           thisDiff.text = insertion.substring(overlap_length);
@@ -868,6 +869,7 @@ public class diff_match_patch {
         }
         thisDiff = pointer.hasNext() ? pointer.next() : null;
       }
+      prevDiff = thisDiff;
       thisDiff = pointer.hasNext() ? pointer.next() : null;
     }
   }

@@ -421,7 +421,7 @@ namespace nicTest {
           new Diff(Operation.DELETE, "cow and the "),
           new Diff(Operation.EQUAL, "cat.")}, diffs);
 
-      // Overlap elimination.
+      // Overlap elimination #1.
       diffs = new List<Diff> {
           new Diff(Operation.DELETE, "abcxx"),
           new Diff(Operation.INSERT, "xxdef")};
@@ -430,6 +430,21 @@ namespace nicTest {
           new Diff(Operation.DELETE, "abc"),
           new Diff(Operation.EQUAL, "xx"),
           new Diff(Operation.INSERT, "def")}, diffs);
+
+      // Overlap elimination #2.
+      diffs = new List<Diff> {
+          new Diff(Operation.DELETE, "abcxx"),
+          new Diff(Operation.INSERT, "xxdef"),
+          new Diff(Operation.DELETE, "ABCXX"),
+          new Diff(Operation.INSERT, "XXDEF")};
+      dmp.diff_cleanupSemantic(diffs);
+      CollectionAssert.AreEqual(new List<Diff> {
+          new Diff(Operation.DELETE, "abc"),
+          new Diff(Operation.EQUAL, "xx"),
+          new Diff(Operation.INSERT, "def"),
+          new Diff(Operation.DELETE, "ABC"),
+          new Diff(Operation.EQUAL, "XX"),
+          new Diff(Operation.INSERT, "DEF")}, diffs);
     }
 
     [Test()]

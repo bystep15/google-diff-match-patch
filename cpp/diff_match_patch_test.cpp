@@ -341,7 +341,11 @@ void diff_match_patch_test::testDiffCleanupSemantic() {
 
   diffs = diffList(Diff(DELETE, "abcxx"), Diff(INSERT, "xxdef"));
   dmp.diff_cleanupSemantic(diffs);
-  assertEquals("diff_cleanupSemantic: Overlap elimination.", diffList(Diff(DELETE, "abc"), Diff(EQUAL, "xx"), Diff(INSERT, "def")), diffs);
+  assertEquals("diff_cleanupSemantic: Overlap elimination #1.", diffList(Diff(DELETE, "abc"), Diff(EQUAL, "xx"), Diff(INSERT, "def")), diffs);
+
+  diffs = diffList(Diff(DELETE, "abcxx"), Diff(INSERT, "xxdef"), Diff(DELETE, "ABCXX"), Diff(INSERT, "XXDEF"));
+  dmp.diff_cleanupSemantic(diffs);
+  assertEquals("diff_cleanupSemantic: Overlap elimination #2.", diffList(Diff(DELETE, "abc"), Diff(EQUAL, "xx"), Diff(INSERT, "def"), Diff(DELETE, "ABC"), Diff(EQUAL, "XX"), Diff(INSERT, "DEF")), diffs);
 }
 
 void diff_match_patch_test::testDiffCleanupEfficiency() {

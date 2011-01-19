@@ -817,6 +817,7 @@ void diff_match_patch::diff_cleanupSemantic(QList<Diff> &diffs) {
       }
       thisDiff = pointer.hasNext() ? &pointer.next() : NULL;
     }
+    prevDiff = thisDiff;
     thisDiff = pointer.hasNext() ? &pointer.next() : NULL;
   }
 }

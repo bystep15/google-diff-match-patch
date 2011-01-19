@@ -293,7 +293,11 @@ public class diff_match_patch_test extends TestCase {
 
     diffs = diffList(new Diff(DELETE, "abcxx"), new Diff(INSERT, "xxdef"));
     dmp.diff_cleanupSemantic(diffs);
-    assertEquals("diff_cleanupSemantic: Overlap elimination.", diffList(new Diff(DELETE, "abc"), new Diff(EQUAL, "xx"), new Diff(INSERT, "def")), diffs);
+    assertEquals("diff_cleanupSemantic: Overlap elimination #1.", diffList(new Diff(DELETE, "abc"), new Diff(EQUAL, "xx"), new Diff(INSERT, "def")), diffs);
+
+    diffs = diffList(new Diff(DELETE, "abcxx"), new Diff(INSERT, "xxdef"), new Diff(DELETE, "ABCXX"), new Diff(INSERT, "XXDEF"));
+    dmp.diff_cleanupSemantic(diffs);
+    assertEquals("diff_cleanupSemantic: Overlap elimination #2.", diffList(new Diff(DELETE, "abc"), new Diff(EQUAL, "xx"), new Diff(INSERT, "def"), new Diff(DELETE, "ABC"), new Diff(EQUAL, "XX"), new Diff(INSERT, "DEF")), diffs);
   }
 
   public void testDiffCleanupEfficiency() {
