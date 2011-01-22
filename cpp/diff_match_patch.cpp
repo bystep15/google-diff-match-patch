@@ -298,70 +298,73 @@ QList<Diff> diff_match_patch::diff_compute(QString text1, QString text2,
   }
 
   // Perform a real diff.
-  if (checklines && (text1.length() < 100 || text2.length() < 100)) {
-    checklines = false;  // Too trivial for the overhead.
-  }
-  QStringList linearray;
-  if (checklines) {
-    // Scan the text on a line-by-line basis first.
-    const QList<QVariant> b = diff_linesToChars(text1, text2);
-    text1 = b[0].toString();
-    text2 = b[1].toString();
-    linearray = b[2].toStringList();
+  if (checklines && text1.length() > 100 && text2.length() > 100) {
+    return diff_lineMode(text1, text2, deadline);
   }
 
-  diffs = diff_bisect(text1, text2, deadline);
+  return diff_bisect(text1, text2, deadline);
+}
 
-  if (checklines) {
-    // Convert the diff back to original text.
-    diff_charsToLines(diffs, linearray);
-    // Eliminate freak matches (e.g. blank lines)
-    diff_cleanupSemantic(diffs);
 
-    // Rediff any replacement blocks, this time character-by-character.
-    // Add a dummy entry at the end.
-    diffs.append(Diff(EQUAL, ""));
-    int count_delete = 0;
-    int count_insert = 0;
-    QString text_delete = "";
-    QString text_insert = "";
+QList<Diff> diff_match_patch::diff_lineMode(QString text1, QString text2,
+    clock_t deadline) {
+  // Scan the text on a line-by-line basis first.
+  const QList<QVariant> b = diff_linesToChars(text1, text2);
+  text1 = b[0].toString();
+  text2 = b[1].toString();
+  QStringList linearray = b[2].toStringList();
 
-    QMutableListIterator<Diff> pointer(diffs);
-    Diff *thisDiff = pointer.hasNext() ? &pointer.next() : NULL;
-    while (thisDiff != NULL) {
-      switch (thisDiff->operation) {
-        case INSERT:
-          count_insert++;
-          text_insert += thisDiff->text;
-          break;
-        case DELETE:
-          count_delete++;
-          text_delete += thisDiff->text;
-          break;
-        case EQUAL:
-          // Upon reaching an equality, check for prior redundancies.
-          if (count_delete >= 1 && count_insert >= 1) {
-            // Delete the offending records and add the merged ones.
+  QList<Diff> diffs = diff_main(text1, text2, false, deadline);
+
+  // Convert the diff back to original text.
+  diff_charsToLines(diffs, linearray);
+  // Eliminate freak matches (e.g. blank lines)
+  diff_cleanupSemantic(diffs);
+
+  // Rediff any replacement blocks, this time character-by-character.
+  // Add a dummy entry at the end.
+  diffs.append(Diff(EQUAL, ""));
+  int count_delete = 0;
+  int count_insert = 0;
+  QString text_delete = "";
+  QString text_insert = "";
+
+  QMutableListIterator<Diff> pointer(diffs);
+  Diff *thisDiff = pointer.hasNext() ? &pointer.next() : NULL;
+  while (thisDiff != NULL) {
+    switch (thisDiff->operation) {
+      case INSERT:
+        count_insert++;
+        text_insert += thisDiff->text;
+        break;
+      case DELETE:
+        count_delete++;
+        text_delete += thisDiff->text;
+        break;
+      case EQUAL:
+        // Upon reaching an equality, check for prior redundancies.
+        if (count_delete >= 1 && count_insert >= 1) {
+          // Delete the offending records and add the merged ones.
+          pointer.previous();
+          for (int j = 0; j < count_delete + count_insert; j++) {
             pointer.previous();
-            for (int j = 0; j < count_delete + count_insert; j++) {
-              pointer.previous();
-              pointer.remove();
-            }
-            foreach(Diff newDiff,
-                diff_main(text_delete, text_insert, false, deadline)) {
-              pointer.insert(newDiff);
-            }
+            pointer.remove();
           }
-          count_insert = 0;
-          count_delete = 0;
-          text_delete = "";
-          text_insert = "";
-          break;
-      }
-      thisDiff = pointer.hasNext() ? &pointer.next() : NULL;
+          foreach(Diff newDiff,
+              diff_main(text_delete, text_insert, false, deadline)) {
+            pointer.insert(newDiff);
+          }
+        }
+        count_insert = 0;
+        count_delete = 0;
+        text_delete = "";
+        text_insert = "";
+        break;
     }
-    diffs.removeLast();  // Remove the dummy entry at the end.
+    thisDiff = pointer.hasNext() ? &pointer.next() : NULL;
   }
+  diffs.removeLast();  // Remove the dummy entry at the end.
+
   return diffs;
 }
 

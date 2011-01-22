@@ -210,6 +210,18 @@ class diff_match_patch {
   QList<Diff> diff_compute(QString text1, QString text2, bool checklines, clock_t deadline);
 
   /**
+   * Do a quick line-level diff on both strings, then rediff the parts for
+   * greater accuracy.
+   * This speedup can produce non-minimal diffs.
+   * @param text1 Old string to be diffed.
+   * @param text2 New string to be diffed.
+   * @param deadline Time when the diff should be complete by.
+   * @return Linked List of Diff objects.
+   */
+ private:
+  QList<Diff> diff_lineMode(QString text1, QString text2, clock_t deadline);
+
+  /**
    * Find the 'middle snake' of a diff, split the problem in two
    * and return the recursively constructed diff.
    * See Myers 1986 paper: An O(ND) Difference Algorithm and Its Variations.

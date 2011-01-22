@@ -496,11 +496,19 @@ class DiffTest(DiffMatchPatchTest):
     self.dmp.Diff_Timeout = 0
 
     # Test the linemode speedup.
-    # Must be long to pass the 200 char cutoff.
-    a = "1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n"
-    b = "abcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\n"
+    # Must be long to pass the 100 char cutoff.
+    # Simple line-mode.
+    a = "1234567890\n" * 13
+    b = "abcdefghij\n" * 13
     self.assertEquals(self.dmp.diff_main(a, b, False), self.dmp.diff_main(a, b, True))
-    a = "1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n"
+
+    # Single line-mode.
+    a = "1234567890" * 13
+    b = "abcdefghij" * 13
+    self.assertEquals(self.dmp.diff_main(a, b, False), self.dmp.diff_main(a, b, True))
+
+    # Overlap line-mode.
+    a = "1234567890\n" * 13
     b = "abcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n"
     texts_linemode = self.diff_rebuildtexts(self.dmp.diff_main(a, b, True))
     texts_textmode = self.diff_rebuildtexts(self.dmp.diff_main(a, b, False))

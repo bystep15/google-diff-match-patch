@@ -109,17 +109,6 @@ local function indexOf(a, b, start)
   return strfind(a, b, start, true)
 end
 
-local function getMaxBits()
-  local maxbits = 0
-  local oldi, newi = 1, 2
-  while (oldi ~= newi) do
-    maxbits = maxbits + 1
-    oldi = newi
-    newi = lshift(newi, 1)
-  end
-  return maxbits
-end
-
 local htmlEncode_pattern = '[&<>\n]'
 local htmlEncode_replace = {
   ['&'] = '&amp;', ['<'] = '&lt;', ['>'] = '&gt;', ['\n'] = '&para;<br>'
@@ -167,8 +156,8 @@ local Match_Distance = 1000
 local Patch_DeleteThreshold = 0.5
 -- Chunk size for context length.
 local Patch_Margin = 4
--- How many bits in a number?
-local Match_MaxBits = getMaxBits()
+-- The number of bits in an int.
+local Match_MaxBits = 32
 
 function settings(new)
   if new then
@@ -601,69 +590,76 @@ function _diff_compute(text1, text2, checklines, deadline)
     end
   end
 
-  -- Perform a real diff.
-  -- LUANOTE: Until Unicode is supported by Lua efficently, the line-mode
+  -- LUANOTE: Until Unicode is supported by Lua efficiently, the line-mode
   -- speedup is impractical.
-  --[[
-  if checklines and (#text1 < 100 or #text2 < 100) then
-    -- Too trivial for the overhead.
-    checklines = false
+  checklines = false
+  if checklines and #text1 > 100 and #text2 > 100 then
+    return _diff_lineMode(text1, text2, deadline)
   end
+
+  return _diff_bisect(text1, text2, deadline)
+end
+
+--[[
+* Do a quick line-level diff on both strings, then rediff the parts for
+* greater accuracy.
+* This speedup can produce non-minimal diffs.
+* @param {string} text1 Old string to be diffed.
+* @param {string} text2 New string to be diffed.
+* @param {number} deadline Time when the diff should be complete by.
+* @return {Array.<Array.<number|string>>} Array of diff tuples.
+* @private
+--]]
+function _diff_lineMode(text1, text2, deadline)
   local linearray
-  if checklines then
-    -- Scan the text on a line-by-line basis first.
-    text1, text2, linearray = _diff_toLines(text1, text2)
-  end
-  --]]
+  -- Scan the text on a line-by-line basis first.
+  text1, text2, linearray = _diff_toLines(text1, text2)
 
-  diffs = _diff_bisect(text1, text2, deadline)
+  local diffs = _diff_main(text1, text2, false, deadline)
 
-  --[[
-  if checklines then
-    -- Convert the diff back to original text.
-    _diff_fromLines(diffs, linearray)
-    -- Eliminate freak matches (e.g. blank lines)
-    diff_cleanupSemantic(diffs)
-    -- Rediff any replacement blocks, this time character-by-character.
-    -- Add a dummy entry at the end.
-    diffs[#diffs + 1] = {DIFF_EQUAL, ''}
-    local pointer = 1
-    local count_delete = 0
-    local count_insert = 0
-    local text_delete = ''
-    local text_insert = ''
-    while (pointer <= #diffs) do
-      local diff_type = diffs[pointer][1]
-      if (diff_type == DIFF_INSERT) then
-        count_insert = count_insert + 1
-        text_insert = text_insert .. diffs[pointer][2]
-      elseif (diff_type == DIFF_DELETE) then
-        count_delete = count_delete + 1
-        text_delete = text_delete .. diffs[pointer][2]
-      elseif (diff_type == DIFF_EQUAL) then
-        -- Upon reaching an equality, check for prior redundancies.
-        if (count_delete >= 1) and (count_insert >= 1) then
-          -- Delete the offending records and add the merged ones.
-          local a = diff_main(text_delete, text_insert, false, deadline)
-          pointer = pointer - count_delete - count_insert
-          for i = 1, count_delete + count_insert do
-            tremove(diffs, pointer)
-          end
-          for j = #a, 1, -1 do
-            tinsert(diffs, pointer, a[j])
-          end
-          pointer = pointer + #a
+  -- Convert the diff back to original text.
+  _diff_fromLines(diffs, linearray)
+  -- Eliminate freak matches (e.g. blank lines)
+  diff_cleanupSemantic(diffs)
+  -- Rediff any replacement blocks, this time character-by-character.
+  -- Add a dummy entry at the end.
+  diffs[#diffs + 1] = {DIFF_EQUAL, ''}
+  local pointer = 1
+  local count_delete = 0
+  local count_insert = 0
+  local text_delete = ''
+  local text_insert = ''
+  while (pointer <= #diffs) do
+    local diff_type = diffs[pointer][1]
+    if (diff_type == DIFF_INSERT) then
+      count_insert = count_insert + 1
+      text_insert = text_insert .. diffs[pointer][2]
+    elseif (diff_type == DIFF_DELETE) then
+      count_delete = count_delete + 1
+      text_delete = text_delete .. diffs[pointer][2]
+    elseif (diff_type == DIFF_EQUAL) then
+      -- Upon reaching an equality, check for prior redundancies.
+      if (count_delete >= 1) and (count_insert >= 1) then
+        -- Delete the offending records and add the merged ones.
+        local a = diff_main(text_delete, text_insert, false, deadline)
+        pointer = pointer - count_delete - count_insert
+        for i = 1, count_delete + count_insert do
+          tremove(diffs, pointer)
         end
-        count_insert = 0
-        count_delete = 0
-        text_delete = ''
-        text_insert = ''
+        for j = #a, 1, -1 do
+          tinsert(diffs, pointer, a[j])
+        end
+        pointer = pointer + #a
       end
-      pointer = pointer + 1
+      count_insert = 0
+      count_delete = 0
+      text_delete = ''
+      text_insert = ''
     end
-    diffs[#diffs] = nil  -- Remove the dummy entry at the end.
+    pointer = pointer + 1
   end
-  --]]
+  diffs[#diffs] = nil  -- Remove the dummy entry at the end.
+
   return diffs
 end
 

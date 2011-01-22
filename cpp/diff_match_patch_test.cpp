@@ -553,16 +553,20 @@ void diff_match_patch_test::testDiffMain() {
   dmp.Diff_Timeout = 0;
 
   // Test the linemode speedup.
-  // Must be long to pass the 200 char cutoff.
+  // Must be long to pass the 100 char cutoff.
   a = "1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n";
   b = "abcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\n";
-  assertEquals("diff_main: Simple.", dmp.diff_main(a, b, true), dmp.diff_main(a, b, false));
+  assertEquals("diff_main: Simple line-mode.", dmp.diff_main(a, b, true), dmp.diff_main(a, b, false));
+
+  a = "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
+  b = "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij";
+  assertEquals("diff_main: Single line-mode.", dmp.diff_main(a, b, true), dmp.diff_main(a, b, false));
 
   a = "1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n";
   b = "abcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n";
   QStringList texts_linemode = diff_rebuildtexts(dmp.diff_main(a, b, true));
   QStringList texts_textmode = diff_rebuildtexts(dmp.diff_main(a, b, false));
-  assertEquals("diff_main: Overlap.", texts_textmode, texts_linemode);
+  assertEquals("diff_main: Overlap line-mode.", texts_textmode, texts_linemode);
 
   // Test null inputs.
   try {

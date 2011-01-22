@@ -50,25 +50,8 @@ function diff_match_patch() {
   // Chunk size for context length.
   this.Patch_Margin = 4;
 
-  /**
-   * Compute the number of bits in an int.
-   * The normal answer for JavaScript is 32.
-   * @return {number} Max bits.
-   * @private
-   */
-  function getMaxBits_() {
-    var maxbits = 0;
-    var oldi = 1;
-    var newi = 2;
-    while (oldi != newi) {
-      maxbits++;
-      oldi = newi;
-      newi = newi << 1;
-    }
-    return maxbits;
-  }
-  // How many bits in a number?
-  this.Match_MaxBits = getMaxBits_();
+  // The number of bits in an int.
+  this.Match_MaxBits = 32;
 }
 
 
@@ -222,70 +205,79 @@ diff_match_patch.prototype.diff_compute_ = function(text1, text2, checklines,
     return diffs_a.concat([[DIFF_EQUAL, mid_common]], diffs_b);
   }
 
-  // Perform a real diff.
-  if (checklines && (text1.length < 100 || text2.length < 100)) {
-    // Too trivial for the overhead.
-    checklines = false;
-  }
-  /** @type {!Array.<string>} */
-  var linearray;
-  if (checklines) {
-    // Scan the text on a line-by-line basis first.
-    var a = this.diff_linesToChars_(text1, text2);
-    text1 = /** @type {string} */(a[0]);
-    text2 = /** @type {string} */(a[1]);
-    linearray = /** @type {!Array.<string>} */(a[2]);
+  if (checklines && text1.length > 100 && text2.length > 100) {
+    return this.diff_lineMode_(text1, text2, deadline);
   }
 
-  diffs = this.diff_bisect_(text1, text2, deadline);
+  return this.diff_bisect_(text1, text2, deadline);
+};
 
-  if (checklines) {
-    // Convert the diff back to original text.
-    this.diff_charsToLines_(diffs, linearray);
-    // Eliminate freak matches (e.g. blank lines)
-    this.diff_cleanupSemantic(diffs);
 
-    // Rediff any replacement blocks, this time character-by-character.
-    // Add a dummy entry at the end.
-    diffs.push([DIFF_EQUAL, '']);
-    var pointer = 0;
-    var count_delete = 0;
-    var count_insert = 0;
-    var text_delete = '';
-    var text_insert = '';
-    while (pointer < diffs.length) {
-      switch (diffs[pointer][0]) {
-        case DIFF_INSERT:
-          count_insert++;
-          text_insert += diffs[pointer][1];
-          break;
-        case DIFF_DELETE:
-          count_delete++;
-          text_delete += diffs[pointer][1];
-          break;
-        case DIFF_EQUAL:
-          // Upon reaching an equality, check for prior redundancies.
-          if (count_delete >= 1 && count_insert >= 1) {
-            // Delete the offending records and add the merged ones.
-            var a = this.diff_main(text_delete, text_insert, false, deadline);
-            diffs.splice(pointer - count_delete - count_insert,
-                         count_delete + count_insert);
-            pointer = pointer - count_delete - count_insert;
-            for (var j = a.length - 1; j >= 0; j--) {
-              diffs.splice(pointer, 0, a[j]);
-            }
-            pointer = pointer + a.length;
+/**
+ * Do a quick line-level diff on both strings, then rediff the parts for
+ * greater accuracy.
+ * This speedup can produce non-minimal diffs.
+ * @param {string} text1 Old string to be diffed.
+ * @param {string} text2 New string to be diffed.
+ * @param {number} deadline Time when the diff should be complete by.
+ * @return {!Array.<!diff_match_patch.Diff>} Array of diff tuples.
+ * @private
+ */
+diff_match_patch.prototype.diff_lineMode_ = function(text1, text2, deadline) {
+  // Scan the text on a line-by-line basis first.
+  var a = this.diff_linesToChars_(text1, text2);
+  text1 = /** @type {string} */(a[0]);
+  text2 = /** @type {string} */(a[1]);
+  var linearray = /** @type {!Array.<string>} */(a[2]);
+
+  var diffs = this.diff_bisect_(text1, text2, deadline);
+
+  // Convert the diff back to original text.
+  this.diff_charsToLines_(diffs, linearray);
+  // Eliminate freak matches (e.g. blank lines)
+  this.diff_cleanupSemantic(diffs);
+
+  // Rediff any replacement blocks, this time character-by-character.
+  // Add a dummy entry at the end.
+  diffs.push([DIFF_EQUAL, '']);
+  var pointer = 0;
+  var count_delete = 0;
+  var count_insert = 0;
+  var text_delete = '';
+  var text_insert = '';
+  while (pointer < diffs.length) {
+    switch (diffs[pointer][0]) {
+      case DIFF_INSERT:
+        count_insert++;
+        text_insert += diffs[pointer][1];
+        break;
+      case DIFF_DELETE:
+        count_delete++;
+        text_delete += diffs[pointer][1];
+        break;
+      case DIFF_EQUAL:
+        // Upon reaching an equality, check for prior redundancies.
+        if (count_delete >= 1 && count_insert >= 1) {
+          // Delete the offending records and add the merged ones.
+          var a = this.diff_main(text_delete, text_insert, false, deadline);
+          diffs.splice(pointer - count_delete - count_insert,
+                       count_delete + count_insert);
+          pointer = pointer - count_delete - count_insert;
+          for (var j = a.length - 1; j >= 0; j--) {
+            diffs.splice(pointer, 0, a[j]);
           }
-          count_insert = 0;
-          count_delete = 0;
-          text_delete = '';
-          text_insert = '';
-          break;
-      }
-      pointer++;
+          pointer = pointer + a.length;
+        }
+        count_insert = 0;
+        count_delete = 0;
+        text_delete = '';
+        text_insert = '';
+        break;
     }
-    diffs.pop();  // Remove the dummy entry at the end.
+    pointer++;
   }
+  diffs.pop();  // Remove the dummy entry at the end.
+
   return diffs;
 };
 

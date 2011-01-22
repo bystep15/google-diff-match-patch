@@ -765,11 +765,18 @@ From Marathon to Waterloo, in order categorical.
   dmp.settings{Diff_Timeout = 0}
 
   -- Test the linemode speedup.
-  -- Must be long to pass the 200 char cutoff.
+  -- Must be long to pass the 100 char cutoff.
+  -- Simple line-mode.
   a = string.rep('1234567890\n', 13)
   b = string.rep('abcdefghij\n', 13)
   assertEquivalent(dmp.diff_main(a, b, false), dmp.diff_main(a, b, true))
 
+  -- Single line-mode.
+  a = string.rep('1234567890', 13)
+  b = string.rep('abcdefghij', 13)
+  assertEquivalent(dmp.diff_main(a, b, false), dmp.diff_main(a, b, true))
+
+  -- Overlap line-mode.
   a = string.rep('1234567890\n', 13)
   b = [[
 abcdefghij
@@ -786,10 +793,9 @@ abcdefghij
 1234567890
 abcdefghij
 ]]
-
-  --local texts_linemode = diff_rebuildtexts(dmp.diff_main(a, b, true))
-  --local texts_textmode = diff_rebuildtexts(dmp.diff_main(a, b, false))
-  --assertEquivalent(texts_textmode, texts_linemode)
+  local texts_linemode = diff_rebuildtexts(dmp.diff_main(a, b, true))
+  local texts_textmode = diff_rebuildtexts(dmp.diff_main(a, b, false))
+  assertEquivalent(texts_textmode, texts_linemode)
 
   -- Test null inputs.
   success, result = pcall(dmp.diff_main, nil, nil)
@@ -1215,4 +1221,3 @@ function runTests()
 end
 
 runTests()
-

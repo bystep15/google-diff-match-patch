@@ -554,11 +554,18 @@ function testDiffMain() {
   dmp.Diff_Timeout = 0;
 
   // Test the linemode speedup.
-  // Must be long to pass the 200 char cutoff.
+  // Must be long to pass the 100 char cutoff.
+  // Simple line-mode.
   a = '1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n';
   b = 'abcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\n';
   assertEquivalent(dmp.diff_main(a, b, false), dmp.diff_main(a, b, true));
 
+  // Single line-mode.
+  a = '1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890';
+  b = 'abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij';
+  assertEquivalent(dmp.diff_main(a, b, false), dmp.diff_main(a, b, true));
+
+  // Overlap line-mode.
   a = '1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n';
   b = 'abcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n';
   var texts_linemode = diff_rebuildtexts(dmp.diff_main(a, b, true));
@@ -903,5 +910,3 @@ function testPatchApply() {
   results = dmp.patch_apply(patches, 'x');
   assertEquivalent(['x123', [true]], results);
 }
-
-

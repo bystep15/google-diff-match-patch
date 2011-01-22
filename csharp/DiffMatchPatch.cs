@@ -369,70 +369,77 @@ namespace DiffMatchPatch {
         return diffs;
       }
 
-      // Perform a real diff.
-      if (checklines && (text1.Length < 100 || text2.Length < 100)) {
-        checklines = false;  // Too trivial for the overhead.
+      if (checklines && text1.Length > 100 && text2.Length > 100) {
+        return diff_lineMode(text1, text2, deadline);
       }
 
-      List<string> linearray = null;
-      if (checklines) {
-        // Scan the text on a line-by-line basis first.
-        Object[] b = diff_linesToChars(text1, text2);
-        text1 = (string)b[0];
-        text2 = (string)b[1];
-        // The following Java warning is harmless.
-        // Suggestions for how to clear it would be appreciated.
-        linearray = (List<string>)b[2];
-      }
+      return diff_bisect(text1, text2, deadline);
+    }
 
-      diffs = diff_bisect(text1, text2, deadline);
+    /**
+     * Do a quick line-level diff on both strings, then rediff the parts for
+     * greater accuracy.
+     * This speedup can produce non-minimal diffs.
+     * @param text1 Old string to be diffed.
+     * @param text2 New string to be diffed.
+     * @param deadline Time when the diff should be complete by.
+     * @return List of Diff objects.
+     */
+    private List<Diff> diff_lineMode(string text1, string text2,
+                                     DateTime deadline) {
+      // Scan the text on a line-by-line basis first.
+      Object[] b = diff_linesToChars(text1, text2);
+      text1 = (string)b[0];
+      text2 = (string)b[1];
+      List<string> linearray = (List<string>)b[2];
 
-      if (checklines) {
-        // Convert the diff back to original text.
-        diff_charsToLines(diffs, linearray);
-        // Eliminate freak matches (e.g. blank lines)
-        diff_cleanupSemantic(diffs);
+      List<Diff> diffs = diff_main(text1, text2, false, deadline);
 
-        // Rediff any replacement blocks, this time character-by-character.
-        // Add a dummy entry at the end.
-        diffs.Add(new Diff(Operation.EQUAL, string.Empty));
-        int pointer = 0;
-        int count_delete = 0;
-        int count_insert = 0;
-        string text_delete = string.Empty;
-        string text_insert = string.Empty;
-        while (pointer < diffs.Count) {
-          switch (diffs[pointer].operation) {
-            case Operation.INSERT:
-              count_insert++;
-              text_insert += diffs[pointer].text;
-              break;
-            case Operation.DELETE:
-              count_delete++;
-              text_delete += diffs[pointer].text;
-              break;
-            case Operation.EQUAL:
-              // Upon reaching an equality, check for prior redundancies.
-              if (count_delete >= 1 && count_insert >= 1) {
-                // Delete the offending records and add the merged ones.
-                List<Diff> a =
-                    this.diff_main(text_delete, text_insert, false, deadline);
-                diffs.RemoveRange(pointer - count_delete - count_insert,
-                    count_delete + count_insert);
-                pointer = pointer - count_delete - count_insert;
-                diffs.InsertRange(pointer, a);
-                pointer = pointer + a.Count;
-              }
-              count_insert = 0;
-              count_delete = 0;
-              text_delete = string.Empty;
-              text_insert = string.Empty;
-              break;
-          }
-          pointer++;
+      // Convert the diff back to original text.
+      diff_charsToLines(diffs, linearray);
+      // Eliminate freak matches (e.g. blank lines)
+      diff_cleanupSemantic(diffs);
+
+      // Rediff any replacement blocks, this time character-by-character.
+      // Add a dummy entry at the end.
+      diffs.Add(new Diff(Operation.EQUAL, string.Empty));
+      int pointer = 0;
+      int count_delete = 0;
+      int count_insert = 0;
+      string text_delete = string.Empty;
+      string text_insert = string.Empty;
+      while (pointer < diffs.Count) {
+        switch (diffs[pointer].operation) {
+          case Operation.INSERT:
+            count_insert++;
+            text_insert += diffs[pointer].text;
+            break;
+          case Operation.DELETE:
+            count_delete++;
+            text_delete += diffs[pointer].text;
+            break;
+          case Operation.EQUAL:
+            // Upon reaching an equality, check for prior redundancies.
+            if (count_delete >= 1 && count_insert >= 1) {
+              // Delete the offending records and add the merged ones.
+              List<Diff> a =
+                  this.diff_main(text_delete, text_insert, false, deadline);
+              diffs.RemoveRange(pointer - count_delete - count_insert,
+                  count_delete + count_insert);
+              pointer = pointer - count_delete - count_insert;
+              diffs.InsertRange(pointer, a);
+              pointer = pointer + a.Count;
+            }
+            count_insert = 0;
+            count_delete = 0;
+            text_delete = string.Empty;
+            text_insert = string.Empty;
+            break;
         }
-        diffs.RemoveAt(diffs.Count - 1);  // Remove the dummy entry at the end.
+        pointer++;
       }
+      diffs.RemoveAt(diffs.Count - 1);  // Remove the dummy entry at the end.
+
       return diffs;
     }
 
@@ -2267,4 +2274,3 @@ namespace DiffMatchPatch {
     }
   }
 }
-

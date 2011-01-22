@@ -279,70 +279,80 @@ public class diff_match_patch {
       return diffs;
     }
 
-    // Perform a real diff.
-    if (checklines && (text1.length() < 100 || text2.length() < 100)) {
-      checklines = false;  // Too trivial for the overhead.
-    }
-    List<String> linearray = null;
-    if (checklines) {
-      // Scan the text on a line-by-line basis first.
-      LinesToCharsResult b = diff_linesToChars(text1, text2);
-      text1 = b.chars1;
-      text2 = b.chars2;
-      linearray = b.lineArray;
+    if (checklines && text1.length() > 100 && text2.length() > 100) {
+      return diff_lineMode(text1, text2, deadline);
     }
 
-    diffs = diff_bisect(text1, text2, deadline);
+    return diff_bisect(text1, text2, deadline);
+  }
+  
+  /**
+   * Do a quick line-level diff on both strings, then rediff the parts for
+   * greater accuracy.
+   * This speedup can produce non-minimal diffs.
+   * @param text1 Old string to be diffed.
+   * @param text2 New string to be diffed.
+   * @param deadline Time when the diff should be complete by.
+   * @return Linked List of Diff objects.
+   */
+  private LinkedList<Diff> diff_lineMode(String text1, String text2,
+                                         long deadline) {
+    // Scan the text on a line-by-line basis first.
+    LinesToCharsResult b = diff_linesToChars(text1, text2);
+    text1 = b.chars1;
+    text2 = b.chars2;
+    List<String> linearray = b.lineArray;
 
-    if (checklines) {
-      // Convert the diff back to original text.
-      diff_charsToLines(diffs, linearray);
-      // Eliminate freak matches (e.g. blank lines)
-      diff_cleanupSemantic(diffs);
+    LinkedList<Diff> diffs = diff_main(text1, text2, false, deadline);
 
-      // Rediff any replacement blocks, this time character-by-character.
-      // Add a dummy entry at the end.
-      diffs.add(new Diff(Operation.EQUAL, ""));
-      int count_delete = 0;
-      int count_insert = 0;
-      String text_delete = "";
-      String text_insert = "";
-      ListIterator<Diff> pointer = diffs.listIterator();
-      Diff thisDiff = pointer.next();
-      while (thisDiff != null) {
-        switch (thisDiff.operation) {
-        case INSERT:
-          count_insert++;
-          text_insert += thisDiff.text;
-          break;
-        case DELETE:
-          count_delete++;
-          text_delete += thisDiff.text;
-          break;
-        case EQUAL:
-          // Upon reaching an equality, check for prior redundancies.
-          if (count_delete >= 1 && count_insert >= 1) {
-            // Delete the offending records and add the merged ones.
+    // Convert the diff back to original text.
+    diff_charsToLines(diffs, linearray);
+    // Eliminate freak matches (e.g. blank lines)
+    diff_cleanupSemantic(diffs);
+
+    // Rediff any replacement blocks, this time character-by-character.
+    // Add a dummy entry at the end.
+    diffs.add(new Diff(Operation.EQUAL, ""));
+    int count_delete = 0;
+    int count_insert = 0;
+    String text_delete = "";
+    String text_insert = "";
+    ListIterator<Diff> pointer = diffs.listIterator();
+    Diff thisDiff = pointer.next();
+    while (thisDiff != null) {
+      switch (thisDiff.operation) {
+      case INSERT:
+        count_insert++;
+        text_insert += thisDiff.text;
+        break;
+      case DELETE:
+        count_delete++;
+        text_delete += thisDiff.text;
+        break;
+      case EQUAL:
+        // Upon reaching an equality, check for prior redundancies.
+        if (count_delete >= 1 && count_insert >= 1) {
+          // Delete the offending records and add the merged ones.
+          pointer.previous();
+          for (int j = 0; j < count_delete + count_insert; j++) {
             pointer.previous();
-            for (int j = 0; j < count_delete + count_insert; j++) {
-              pointer.previous();
-              pointer.remove();
-            }
-            for (Diff newDiff : diff_main(text_delete, text_insert, false,
-                deadline)) {
-              pointer.add(newDiff);
-            }
+            pointer.remove();
           }
-          count_insert = 0;
-          count_delete = 0;
-          text_delete = "";
-          text_insert = "";
-          break;
+          for (Diff newDiff : diff_main(text_delete, text_insert, false,
+              deadline)) {
+            pointer.add(newDiff);
+          }
         }
-        thisDiff = pointer.hasNext() ? pointer.next() : null;
+        count_insert = 0;
+        count_delete = 0;
+        text_delete = "";
+        text_insert = "";
+        break;
       }
-      diffs.removeLast();  // Remove the dummy entry at the end.
+      thisDiff = pointer.hasNext() ? pointer.next() : null;
     }
+    diffs.removeLast();  // Remove the dummy entry at the end.
+
     return diffs;
   }
 

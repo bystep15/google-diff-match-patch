@@ -751,16 +751,20 @@ namespace nicTest {
       dmp.Diff_Timeout = 0;
 
       // Test the linemode speedup.
-      // Must be long to pass the 200 char cutoff.
+      // Must be long to pass the 100 char cutoff.
       a = "1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n";
       b = "abcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\nabcdefghij\n";
-      CollectionAssert.AreEqual(dmp.diff_main(a, b, true), dmp.diff_main(a, b, false), "diff_main: Simple.");
+      CollectionAssert.AreEqual(dmp.diff_main(a, b, true), dmp.diff_main(a, b, false), "diff_main: Simple line-mode.");
+
+      a = "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
+      b = "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij";
+      CollectionAssert.AreEqual(dmp.diff_main(a, b, true), dmp.diff_main(a, b, false), "diff_main: Single line-mode.");
 
       a = "1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n1234567890\n";
       b = "abcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n1234567890\n1234567890\n1234567890\nabcdefghij\n";
       string[] texts_linemode = diff_rebuildtexts(dmp.diff_main(a, b, true));
       string[] texts_textmode = diff_rebuildtexts(dmp.diff_main(a, b, false));
-      CollectionAssert.AreEqual(texts_textmode, texts_linemode, "diff_main: Overlap.");
+      CollectionAssert.AreEqual(texts_textmode, texts_linemode, "diff_main: Overlap line-mode.");
 
       // Test null inputs -- not needed because nulls can't be passed in C#.
     }
@@ -1139,4 +1143,3 @@ namespace nicTest {
     }
   }
 }
-

@@ -61,7 +61,7 @@ class diff_match_patch:
     # Chunk size for context length.
     self.Patch_Margin = 4
 
-    # How many bits in a number?
+    # The number of bits in an int.
     # Python has no maximum, thus to disable patch splitting set to 0.
     # However to avoid long patches in certain pathological cases, use 32.
     # Multiple short patches (using native ints) are much faster than long ones.
@@ -191,51 +191,66 @@ class diff_match_patch:
       # Merge the results.
       return diffs_a + [(self.DIFF_EQUAL, mid_common)] + diffs_b
 
-    # Perform a real diff.
-    if checklines and (len(text1) < 100 or len(text2) < 100):
-      checklines = False  # Too trivial for the overhead.
-    if checklines:
-      # Scan the text on a line-by-line basis first.
-      (text1, text2, linearray) = self.diff_linesToChars(text1, text2)
+    if checklines and len(text1) > 100 and len(text2) > 100:
+      return self.diff_lineMode(text1, text2, deadline)
 
-    diffs = self.diff_bisect(text1, text2, deadline)
+    return self.diff_bisect(text1, text2, deadline)
 
-    if checklines:
-      # Convert the diff back to original text.
-      self.diff_charsToLines(diffs, linearray)
-      # Eliminate freak matches (e.g. blank lines)
-      self.diff_cleanupSemantic(diffs)
+  def diff_lineMode(self, text1, text2, deadline):
+    """Do a quick line-level diff on both strings, then rediff the parts for
+      greater accuracy.
+      This speedup can produce non-minimal diffs.
 
-      # Rediff any replacement blocks, this time character-by-character.
-      # Add a dummy entry at the end.
-      diffs.append((self.DIFF_EQUAL, ''))
-      pointer = 0
-      count_delete = 0
-      count_insert = 0
-      text_delete = ''
-      text_insert = ''
-      while pointer < len(diffs):
-        if diffs[pointer][0] == self.DIFF_INSERT:
-          count_insert += 1
-          text_insert += diffs[pointer][1]
-        elif diffs[pointer][0] == self.DIFF_DELETE:
-          count_delete += 1
-          text_delete += diffs[pointer][1]
-        elif diffs[pointer][0] == self.DIFF_EQUAL:
-          # Upon reaching an equality, check for prior redundancies.
-          if count_delete >= 1 and count_insert >= 1:
-            # Delete the offending records and add the merged ones.
-            a = self.diff_main(text_delete, text_insert, False, deadline)
-            diffs[pointer - count_delete - count_insert : pointer] = a
-            pointer = pointer - count_delete - count_insert + len(a)
-          count_insert = 0
-          count_delete = 0
-          text_delete = ''
-          text_insert = ''
+    Args:
+      text1: Old string to be diffed.
+      text2: New string to be diffed.
+      deadline: Time when the diff should be complete by.
 
-        pointer += 1
+    Returns:
+      Array of changes.
+    """
 
-      diffs.pop()  # Remove the dummy entry at the end.
+    # Scan the text on a line-by-line basis first.
+    (text1, text2, linearray) = self.diff_linesToChars(text1, text2)
+
+    diffs = self.diff_main(text1, text2, False, deadline)
+
+    # Convert the diff back to original text.
+    self.diff_charsToLines(diffs, linearray)
+    # Eliminate freak matches (e.g. blank lines)
+    self.diff_cleanupSemantic(diffs)
+
+    # Rediff any replacement blocks, this time character-by-character.
+    # Add a dummy entry at the end.
+    diffs.append((self.DIFF_EQUAL, ''))
+    pointer = 0
+    count_delete = 0
+    count_insert = 0
+    text_delete = ''
+    text_insert = ''
+    while pointer < len(diffs):
+      if diffs[pointer][0] == self.DIFF_INSERT:
+        count_insert += 1
+        text_insert += diffs[pointer][1]
+      elif diffs[pointer][0] == self.DIFF_DELETE:
+        count_delete += 1
+        text_delete += diffs[pointer][1]
+      elif diffs[pointer][0] == self.DIFF_EQUAL:
+        # Upon reaching an equality, check for prior redundancies.
+        if count_delete >= 1 and count_insert >= 1:
+          # Delete the offending records and add the merged ones.
+          a = self.diff_main(text_delete, text_insert, False, deadline)
+          diffs[pointer - count_delete - count_insert : pointer] = a
+          pointer = pointer - count_delete - count_insert + len(a)
+        count_insert = 0
+        count_delete = 0
+        text_delete = ''
+        text_insert = ''
+
+      pointer += 1
+
+    diffs.pop()  # Remove the dummy entry at the end.
+
     return diffs
 
   def diff_bisect(self, text1, text2, deadline):
