@@ -430,6 +430,8 @@ QList<Diff> diff_match_patch::diff_bisect(const QString &text1,
           int x2 = text1_length - v2[k2_offset];
           if (x1 >= x2) {
             // Overlap detected.
+            delete [] v1;
+            delete [] v2;
             return diff_bisectSplit(text1, text2, x1, y1, deadline);
           }
         }
@@ -467,12 +469,16 @@ QList<Diff> diff_match_patch::diff_bisect(const QString &text1,
           x2 = text1_length - x2;
           if (x1 >= x2) {
             // Overlap detected.
+            delete [] v1;
+            delete [] v2;
             return diff_bisectSplit(text1, text2, x1, y1, deadline);
           }
         }
       }
     }
   }
+  delete [] v1;
+  delete [] v2;
   // Diff took too long and hit the deadline or
   // number of diffs equals number of characters, no commonality at all.
   QList<Diff> diffs;
