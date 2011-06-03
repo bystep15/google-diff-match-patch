@@ -797,6 +797,8 @@ public class diff_match_patch {
         } else {
           length_deletions2 += thisDiff.text.length();
         }
+        // Eliminate an equality that is smaller or equal to the edits on both
+        // sides of it.
         if (lastequality != null && (lastequality.length()
             <= Math.max(length_insertions1, length_deletions1))
             && (lastequality.length()
@@ -849,8 +851,9 @@ public class diff_match_patch {
     diff_cleanupSemanticLossless(diffs);
 
     // Find any overlaps between deletions and insertions.
-    // e.g: <del>abcxx</del><ins>xxdef</ins>
-    //   -> <del>abc</del>xx<ins>def</ins>
+    // e.g: <del>abcxxx</del><ins>xxxdef</ins>
+    //   -> <del>abc</del>xxx<ins>def</ins>
+    // Only extract an overlap if it is as big as the edit ahead or behind it.
     pointer = diffs.listIterator();
     Diff prevDiff = null;
     thisDiff = null;
@@ -866,7 +869,8 @@ public class diff_match_patch {
         String deletion = prevDiff.text;
         String insertion = thisDiff.text;
         int overlap_length = this.diff_commonOverlap(deletion, insertion);
-        if (overlap_length != 0) {
+        if (overlap_length >= deletion.length() / 2.0 ||
+            overlap_length >= insertion.length() / 2.0) {
           // Overlap found.  Insert an equality and trim the surrounding edits.
           pointer.previous();
           pointer.add(new Diff(Operation.EQUAL,

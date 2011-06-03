@@ -421,30 +421,41 @@ namespace nicTest {
           new Diff(Operation.DELETE, "cow and the "),
           new Diff(Operation.EQUAL, "cat.")}, diffs);
 
-      // Overlap elimination #1.
+      // No overlap elimination.
       diffs = new List<Diff> {
           new Diff(Operation.DELETE, "abcxx"),
           new Diff(Operation.INSERT, "xxdef")};
       dmp.diff_cleanupSemantic(diffs);
       CollectionAssert.AreEqual(new List<Diff> {
-          new Diff(Operation.DELETE, "abc"),
-          new Diff(Operation.EQUAL, "xx"),
-          new Diff(Operation.INSERT, "def")}, diffs);
-
-      // Overlap elimination #2.
-      diffs = new List<Diff> {
           new Diff(Operation.DELETE, "abcxx"),
-          new Diff(Operation.INSERT, "xxdef"),
-          new Diff(Operation.DELETE, "ABCXX"),
-          new Diff(Operation.INSERT, "XXDEF")};
+          new Diff(Operation.INSERT, "xxdef")}, diffs);
+
+      // Overlap elimination.
+      diffs = new List<Diff> {
+          new Diff(Operation.DELETE, "abcxxx"),
+          new Diff(Operation.INSERT, "xxxdef")};
       dmp.diff_cleanupSemantic(diffs);
       CollectionAssert.AreEqual(new List<Diff> {
           new Diff(Operation.DELETE, "abc"),
-          new Diff(Operation.EQUAL, "xx"),
-          new Diff(Operation.INSERT, "def"),
-          new Diff(Operation.DELETE, "ABC"),
-          new Diff(Operation.EQUAL, "XX"),
-          new Diff(Operation.INSERT, "DEF")}, diffs);
+          new Diff(Operation.EQUAL, "xxx"),
+          new Diff(Operation.INSERT, "def")}, diffs);
+
+      // Two overlap eliminations.
+      diffs = new List<Diff> {
+          new Diff(Operation.DELETE, "abcd1212"),
+          new Diff(Operation.INSERT, "1212efghi"),
+          new Diff(Operation.EQUAL, "----"),
+          new Diff(Operation.DELETE, "A3"),
+          new Diff(Operation.INSERT, "3BC")};
+      dmp.diff_cleanupSemantic(diffs);
+      CollectionAssert.AreEqual(new List<Diff> {
+          new Diff(Operation.DELETE, "abcd"),
+          new Diff(Operation.EQUAL, "1212"),
+          new Diff(Operation.INSERT, "efghi"),
+          new Diff(Operation.EQUAL, "----"),
+          new Diff(Operation.DELETE, "A"),
+          new Diff(Operation.EQUAL, "3"),
+          new Diff(Operation.INSERT, "BC")}, diffs);
     }
 
     [Test()]

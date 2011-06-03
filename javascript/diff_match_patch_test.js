@@ -338,15 +338,20 @@ function testDiffCleanupSemantic() {
   dmp.diff_cleanupSemantic(diffs);
   assertEquivalent([[DIFF_EQUAL, 'The '], [DIFF_DELETE, 'cow and the '], [DIFF_EQUAL, 'cat.']], diffs);
 
-  // Overlap elimination #1.
+  // No overlap elimination.
   diffs = [[DIFF_DELETE, 'abcxx'], [DIFF_INSERT, 'xxdef']];
   dmp.diff_cleanupSemantic(diffs);
-  assertEquivalent([[DIFF_DELETE, 'abc'], [DIFF_EQUAL, 'xx'], [DIFF_INSERT, 'def']], diffs);
+  assertEquivalent([[DIFF_DELETE, 'abcxx'], [DIFF_INSERT, 'xxdef']], diffs);
 
-  // Overlap elimination #2.
-  diffs = [[DIFF_DELETE, 'abcxx'], [DIFF_INSERT, 'xxdef'], [DIFF_DELETE, 'ABCXX'], [DIFF_INSERT, 'XXDEF']];
+  // Overlap elimination.
+  diffs = [[DIFF_DELETE, 'abcxxx'], [DIFF_INSERT, 'xxxdef']];
   dmp.diff_cleanupSemantic(diffs);
-  assertEquivalent([[DIFF_DELETE, 'abc'], [DIFF_EQUAL, 'xx'], [DIFF_INSERT, 'def'], [DIFF_DELETE, 'ABC'], [DIFF_EQUAL, 'XX'], [DIFF_INSERT, 'DEF']], diffs);
+  assertEquivalent([[DIFF_DELETE, 'abc'], [DIFF_EQUAL, 'xxx'], [DIFF_INSERT, 'def']], diffs);
+
+  // Two overlap eliminations.
+  diffs = [[DIFF_DELETE, 'abcd1212'], [DIFF_INSERT, '1212efghi'], [DIFF_EQUAL, '----'], [DIFF_DELETE, 'A3'], [DIFF_INSERT, '3BC']];
+  dmp.diff_cleanupSemantic(diffs);
+  assertEquivalent([[DIFF_DELETE, 'abcd'], [DIFF_EQUAL, '1212'], [DIFF_INSERT, 'efghi'], [DIFF_EQUAL, '----'], [DIFF_DELETE, 'A'], [DIFF_EQUAL, '3'], [DIFF_INSERT, 'BC']], diffs);
 }
 
 function testDiffCleanupEfficiency() {

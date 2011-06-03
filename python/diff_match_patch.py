@@ -659,6 +659,8 @@ class diff_match_patch:
           length_insertions2 += len(diffs[pointer][1])
         else:
           length_deletions2 += len(diffs[pointer][1])
+        # Eliminate an equality that is smaller or equal to the edits on both
+        # sides of it.
         if (lastequality != None and (len(lastequality) <=
             max(length_insertions1, length_deletions1)) and
             (len(lastequality) <= max(length_insertions2, length_deletions2))):
@@ -689,8 +691,9 @@ class diff_match_patch:
     self.diff_cleanupSemanticLossless(diffs)
 
     # Find any overlaps between deletions and insertions.
-    # e.g: <del>abcxx</del><ins>xxdef</ins>
-    #   -> <del>abc</del>xx<ins>def</ins>
+    # e.g: <del>abcxxx</del><ins>xxxdef</ins>
+    #   -> <del>abc</del>xxx<ins>def</ins>
+    # Only extract an overlap if it is as big as the edit ahead or behind it.
     pointer = 1
     while pointer < len(diffs):
       if (diffs[pointer - 1][0] == self.DIFF_DELETE and
@@ -698,7 +701,8 @@ class diff_match_patch:
         deletion = diffs[pointer - 1][1]
         insertion = diffs[pointer][1]
         overlap_length = self.diff_commonOverlap(deletion, insertion)
-        if overlap_length != 0:
+        if (overlap_length >= len(deletion) / 2.0 or
+            overlap_length >= len(insertion) / 2.0):
           # Overlap found.  Insert an equality and trim the surrounding edits.
           diffs.insert(pointer, (self.DIFF_EQUAL, insertion[:overlap_length]))
           diffs[pointer - 1] = (self.DIFF_DELETE,

@@ -753,6 +753,8 @@ diff_match_patch.prototype.diff_cleanupSemantic = function(diffs) {
       } else {
         length_deletions2 += diffs[pointer][1].length;
       }
+      // Eliminate an equality that is smaller or equal to the edits on both
+      // sides of it.
       if (lastequality !== null && (lastequality.length <=
           Math.max(length_insertions1, length_deletions1)) &&
           (lastequality.length <= Math.max(length_insertions2,
@@ -785,8 +787,9 @@ diff_match_patch.prototype.diff_cleanupSemantic = function(diffs) {
   this.diff_cleanupSemanticLossless(diffs);
 
   // Find any overlaps between deletions and insertions.
-  // e.g: <del>abcxx</del><ins>xxdef</ins>
-  //   -> <del>abc</del>xx<ins>def</ins>
+  // e.g: <del>abcxxx</del><ins>xxxdef</ins>
+  //   -> <del>abc</del>xxx<ins>def</ins>
+  // Only extract an overlap if it is as big as the edit ahead or behind it.
   pointer = 1;
   while (pointer < diffs.length) {
     if (diffs[pointer - 1][0] == DIFF_DELETE &&
@@ -794,7 +797,8 @@ diff_match_patch.prototype.diff_cleanupSemantic = function(diffs) {
       var deletion = /** @type {string} */(diffs[pointer - 1][1]);
       var insertion = /** @type {string} */(diffs[pointer][1]);
       var overlap_length = this.diff_commonOverlap_(deletion, insertion);
-      if (overlap_length) {
+      if (overlap_length >= deletion.length / 2 ||
+          overlap_length >= insertion.length / 2) {
         // Overlap found.  Insert an equality and trim the surrounding edits.
         diffs.splice(pointer, 0,
             [DIFF_EQUAL, insertion.substring(0, overlap_length)]);

@@ -293,11 +293,15 @@ public class diff_match_patch_test extends TestCase {
 
     diffs = diffList(new Diff(DELETE, "abcxx"), new Diff(INSERT, "xxdef"));
     dmp.diff_cleanupSemantic(diffs);
-    assertEquals("diff_cleanupSemantic: Overlap elimination #1.", diffList(new Diff(DELETE, "abc"), new Diff(EQUAL, "xx"), new Diff(INSERT, "def")), diffs);
+    assertEquals("diff_cleanupSemantic: No overlap elimination.", diffList(new Diff(DELETE, "abcxx"), new Diff(INSERT, "xxdef")), diffs);
 
-    diffs = diffList(new Diff(DELETE, "abcxx"), new Diff(INSERT, "xxdef"), new Diff(DELETE, "ABCXX"), new Diff(INSERT, "XXDEF"));
+    diffs = diffList(new Diff(DELETE, "abcxxx"), new Diff(INSERT, "xxxdef"));
     dmp.diff_cleanupSemantic(diffs);
-    assertEquals("diff_cleanupSemantic: Overlap elimination #2.", diffList(new Diff(DELETE, "abc"), new Diff(EQUAL, "xx"), new Diff(INSERT, "def"), new Diff(DELETE, "ABC"), new Diff(EQUAL, "XX"), new Diff(INSERT, "DEF")), diffs);
+    assertEquals("diff_cleanupSemantic: Overlap elimination.", diffList(new Diff(DELETE, "abc"), new Diff(EQUAL, "xxx"), new Diff(INSERT, "def")), diffs);
+
+    diffs = diffList(new Diff(DELETE, "abcd1212"), new Diff(INSERT, "1212efghi"), new Diff(EQUAL, "----"), new Diff(DELETE, "A3"), new Diff(INSERT, "3BC"));
+    dmp.diff_cleanupSemantic(diffs);
+    assertEquals("diff_cleanupSemantic: Two overlap eliminations.", diffList(new Diff(DELETE, "abcd"), new Diff(EQUAL, "1212"), new Diff(INSERT, "efghi"), new Diff(EQUAL, "----"), new Diff(DELETE, "A"), new Diff(EQUAL, "3"), new Diff(INSERT, "BC")), diffs);
   }
 
   public void testDiffCleanupEfficiency() {

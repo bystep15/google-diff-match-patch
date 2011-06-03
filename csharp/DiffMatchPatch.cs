@@ -872,6 +872,8 @@ namespace DiffMatchPatch {
           } else {
             length_deletions2 += diffs[pointer].text.Length;
           }
+          // Eliminate an equality that is smaller or equal to the edits on both
+          // sides of it.
           if (lastequality != null && (lastequality.Length
               <= Math.Max(length_insertions1, length_deletions1))
               && (lastequality.Length
@@ -905,8 +907,9 @@ namespace DiffMatchPatch {
       diff_cleanupSemanticLossless(diffs);
 
       // Find any overlaps between deletions and insertions.
-      // e.g: <del>abcxx</del><ins>xxdef</ins>
-      //   -> <del>abc</del>xx<ins>def</ins>
+      // e.g: <del>abcxxx</del><ins>xxxdef</ins>
+      //   -> <del>abc</del>xxx<ins>def</ins>
+      // Only extract an overlap if it is as big as the edit ahead or behind it.
       pointer = 1;
       while (pointer < diffs.Count) {
         if (diffs[pointer - 1].operation == Operation.DELETE &&
@@ -914,7 +917,8 @@ namespace DiffMatchPatch {
           string deletion = diffs[pointer - 1].text;
           string insertion = diffs[pointer].text;
           int overlap_length = diff_commonOverlap(deletion, insertion);
-          if (overlap_length != 0) {
+          if (overlap_length >= deletion.Length / 2.0 ||
+              overlap_length >= insertion.Length / 2.0) {
             // Overlap found.
             // Insert an equality and trim the surrounding edits.
             diffs.Insert(pointer, new Diff(Operation.EQUAL,

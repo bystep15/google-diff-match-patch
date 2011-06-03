@@ -311,9 +311,11 @@ function diff_cleanupSemantic(diffs)
       else
         length_deletions2 = length_deletions2 + #(diffs[pointer][2])
       end
+      -- Eliminate an equality that is smaller or equal to the edits on both
+      -- sides of it.
       if lastequality
-         and (#lastequality <= max(length_insertions1, length_deletions1))
-         and (#lastequality <= max(length_insertions2, length_deletions2)) then
+          and (#lastequality <= max(length_insertions1, length_deletions1))
+          and (#lastequality <= max(length_insertions2, length_deletions2)) then
         -- Duplicate record.
         tinsert(diffs, equalities[equalitiesLength],
          {DIFF_DELETE, lastequality})
@@ -340,16 +342,18 @@ function diff_cleanupSemantic(diffs)
   _diff_cleanupSemanticLossless(diffs)
 
   -- Find any overlaps between deletions and insertions.
-  -- e.g: <del>abcxx</del><ins>xxdef</ins>
-  --   -> <del>abc</del>xx<ins>def</ins>
+  -- e.g: <del>abcxxx</del><ins>xxxdef</ins>
+  --   -> <del>abc</del>xxx<ins>def</ins>
+  -- Only extract an overlap if it is as big as the edit ahead or behind it.
   pointer = 2
-  while (diffs[pointer]) do
+  while diffs[pointer] do
     if (diffs[pointer - 1][1] == DIFF_DELETE and
         diffs[pointer][1] == DIFF_INSERT) then
       local deletion = diffs[pointer - 1][2]
       local insertion = diffs[pointer][2]
       local overlap_length = _diff_commonOverlap(deletion, insertion)
-      if overlap_length > 0 then
+      if (overlap_length >= #deletion / 2 or
+          overlap_length >= #insertion / 2) then
         -- Overlap found.  Insert an equality and trim the surrounding edits.
         tinsert(diffs, pointer,
             {DIFF_EQUAL, strsub(insertion, 1, overlap_length)})
