@@ -2152,8 +2152,11 @@ patch_obj.prototype.toString = function() {
 
 
 // Export these global variables so that they survive Google's JS compiler.
-window['diff_match_patch'] = diff_match_patch;
-window['patch_obj'] = patch_obj;
-window['DIFF_DELETE'] = DIFF_DELETE;
-window['DIFF_INSERT'] = DIFF_INSERT;
-window['DIFF_EQUAL'] = DIFF_EQUAL;
+// In a browser, 'this' will be 'window'.
+// In node.js 'this' will be a global object.
+this['diff_match_patch'] = diff_match_patch;
+this['patch_obj'] = patch_obj;
+this['DIFF_DELETE'] = DIFF_DELETE;
+this['DIFF_INSERT'] = DIFF_INSERT;
+this['DIFF_EQUAL'] = DIFF_EQUAL;
+
