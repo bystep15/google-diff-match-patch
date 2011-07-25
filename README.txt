@@ -29,6 +29,7 @@ Objective C:
 * Includes speed test (this is a separate bundle for other languages).
 
 Python:
+* Two versions, one for Python 2.x, the other for Python 3.x.
 * Runs 10x faster under PyPy than CPython.
 
 Demos:
