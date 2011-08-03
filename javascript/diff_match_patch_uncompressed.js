@@ -1536,7 +1536,7 @@ diff_match_patch.prototype.match_alphabet_ = function(pattern) {
 /**
  * Increase the context until it is unique,
  * but don't let the pattern expand beyond Match_MaxBits.
- * @param {!patch_obj} patch The patch to grow.
+ * @param {!diff_match_patch.patch_obj} patch The patch to grow.
  * @param {string} text Source text.
  * @private
  */
@@ -1600,7 +1600,7 @@ diff_match_patch.prototype.patch_addContext_ = function(patch, text) {
  * Array of diff tuples for text1 to text2 (method 3) or undefined (method 2).
  * @param {string|!Array.<!diff_match_patch.Diff>} opt_c Array of diff tuples
  * for text1 to text2 (method 4) or undefined (methods 1,2,3).
- * @return {!Array.<!patch_obj>} Array of patch objects.
+ * @return {!Array.<!diff_match_patch.patch_obj>} Array of patch objects.
  */
 diff_match_patch.prototype.patch_make = function(a, opt_b, opt_c) {
   var text1, diffs;
@@ -1639,7 +1639,7 @@ diff_match_patch.prototype.patch_make = function(a, opt_b, opt_c) {
     return [];  // Get rid of the null case.
   }
   var patches = [];
-  var patch = new patch_obj();
+  var patch = new diff_match_patch.patch_obj();
   var patchDiffLength = 0;  // Keeping our own length var is faster in JS.
   var char_count1 = 0;  // Number of characters into the text1 string.
   var char_count2 = 0;  // Number of characters into the text2 string.
@@ -1684,7 +1684,7 @@ diff_match_patch.prototype.patch_make = function(a, opt_b, opt_c) {
           if (patchDiffLength) {
             this.patch_addContext_(patch, prepatch_text);
             patches.push(patch);
-            patch = new patch_obj();
+            patch = new diff_match_patch.patch_obj();
             patchDiffLength = 0;
             // Unlike Unidiff, our patch lists have a rolling context.
             // http://code.google.com/p/google-diff-match-patch/wiki/Unidiff
@@ -1717,15 +1717,15 @@ diff_match_patch.prototype.patch_make = function(a, opt_b, opt_c) {
 
 /**
  * Given an array of patches, return another array that is identical.
- * @param {!Array.<!patch_obj>} patches Array of patch objects.
- * @return {!Array.<!patch_obj>} Array of patch objects.
+ * @param {!Array.<!diff_match_patch.patch_obj>} patches Array of patch objects.
+ * @return {!Array.<!diff_match_patch.patch_obj>} Array of patch objects.
  */
 diff_match_patch.prototype.patch_deepCopy = function(patches) {
   // Making deep copies is hard in JavaScript.
   var patchesCopy = [];
   for (var x = 0; x < patches.length; x++) {
     var patch = patches[x];
-    var patchCopy = new patch_obj();
+    var patchCopy = new diff_match_patch.patch_obj();
     patchCopy.diffs = [];
     for (var y = 0; y < patch.diffs.length; y++) {
       patchCopy.diffs[y] = patch.diffs[y].slice();
@@ -1743,7 +1743,7 @@ diff_match_patch.prototype.patch_deepCopy = function(patches) {
 /**
  * Merge a set of patches onto the text.  Return a patched text, as well
  * as a list of true/false values indicating which patches were applied.
- * @param {!Array.<!patch_obj>} patches Array of patch objects.
+ * @param {!Array.<!diff_match_patch.patch_obj>} patches Array of patch objects.
  * @param {string} text Old text.
  * @return {!Array.<string|!Array.<boolean>>} Two element Array, containing the
  *      new text and an array of boolean values.
@@ -1851,7 +1851,7 @@ diff_match_patch.prototype.patch_apply = function(patches, text) {
 /**
  * Add some padding on text start and end so that edges can match something.
  * Intended to be called only from within patch_apply.
- * @param {!Array.<!patch_obj>} patches Array of patch objects.
+ * @param {!Array.<!diff_match_patch.patch_obj>} patches Array of patch objects.
  * @return {string} The padding string added to each side.
  */
 diff_match_patch.prototype.patch_addPadding = function(patches) {
@@ -1911,7 +1911,7 @@ diff_match_patch.prototype.patch_addPadding = function(patches) {
  * Look through the patches and break up any which are longer than the maximum
  * limit of the match algorithm.
  * Intended to be called only from within patch_apply.
- * @param {!Array.<!patch_obj>} patches Array of patch objects.
+ * @param {!Array.<!diff_match_patch.patch_obj>} patches Array of patch objects.
  */
 diff_match_patch.prototype.patch_splitMax = function(patches) {
   var patch_size = this.Match_MaxBits;
@@ -1925,7 +1925,7 @@ diff_match_patch.prototype.patch_splitMax = function(patches) {
       var precontext = '';
       while (bigpatch.diffs.length !== 0) {
         // Create one of several smaller patches.
-        var patch = new patch_obj();
+        var patch = new diff_match_patch.patch_obj();
         var empty = true;
         patch.start1 = start1 - precontext.length;
         patch.start2 = start2 - precontext.length;
@@ -2001,7 +2001,7 @@ diff_match_patch.prototype.patch_splitMax = function(patches) {
 
 /**
  * Take a list of patches and return a textual representation.
- * @param {!Array.<!patch_obj>} patches Array of patch objects.
+ * @param {!Array.<!diff_match_patch.patch_obj>} patches Array of patch objects.
  * @return {string} Text representation of patches.
  */
 diff_match_patch.prototype.patch_toText = function(patches) {
@@ -2016,7 +2016,7 @@ diff_match_patch.prototype.patch_toText = function(patches) {
 /**
  * Parse a textual representation of patches and return a list of patch objects.
  * @param {string} textline Text representation of patches.
- * @return {!Array.<!patch_obj>} Array of patch objects.
+ * @return {!Array.<!diff_match_patch.patch_obj>} Array of patch objects.
  * @throws {!Error} If invalid input.
  */
 diff_match_patch.prototype.patch_fromText = function(textline) {
@@ -2032,7 +2032,7 @@ diff_match_patch.prototype.patch_fromText = function(textline) {
     if (!m) {
       throw new Error('Invalid patch string: ' + text[textPointer]);
     }
-    var patch = new patch_obj();
+    var patch = new diff_match_patch.patch_obj();
     patches.push(patch);
     patch.start1 = parseInt(m[1], 10);
     if (m[2] === '') {
@@ -2094,7 +2094,7 @@ diff_match_patch.prototype.patch_fromText = function(textline) {
  * Class representing one patch operation.
  * @constructor
  */
-function patch_obj() {
+diff_match_patch.patch_obj = function() {
   /** @type {!Array.<!diff_match_patch.Diff>} */
   this.diffs = [];
   /** @type {?number} */
@@ -2105,7 +2105,7 @@ function patch_obj() {
   this.length1 = 0;
   /** @type {number} */
   this.length2 = 0;
-}
+};
 
 
 /**
@@ -2114,7 +2114,7 @@ function patch_obj() {
  * Indicies are printed as 1-based, not 0-based.
  * @return {string} The GNU diff string.
  */
-patch_obj.prototype.toString = function() {
+diff_match_patch.patch_obj.prototype.toString = function() {
   var coords1, coords2;
   if (this.length1 === 0) {
     coords1 = this.start1 + ',0';
@@ -2155,7 +2155,6 @@ patch_obj.prototype.toString = function() {
 // In a browser, 'this' will be 'window'.
 // In node.js 'this' will be a global object.
 this['diff_match_patch'] = diff_match_patch;
-this['patch_obj'] = patch_obj;
 this['DIFF_DELETE'] = DIFF_DELETE;
 this['DIFF_INSERT'] = DIFF_INSERT;
 this['DIFF_EQUAL'] = DIFF_EQUAL;
