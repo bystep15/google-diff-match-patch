@@ -117,6 +117,11 @@ function testDiffCommonOverlap() {
 
   // Overlap.
   assertEquals(3, dmp.diff_commonOverlap_('123456xxx', 'xxxabcd'));
+
+  // Unicode.
+  // Some overly clever languages (C#) may treat ligatures as equal to their
+  // component letters.  E.g. U+FB01 == 'fi'
+  assertEquals(0, dmp.diff_commonOverlap_('fi', '\ubf01i'));
 }
 
 function testDiffHalfMatch() {

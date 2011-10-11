@@ -71,6 +71,11 @@ namespace nicTest {
 
       // Overlap.
       Assert.AreEqual(3, dmp.diff_commonOverlap("123456xxx", "xxxabcd"));
+
+      // Unicode.
+      // Some overly clever languages (C#) may treat ligatures as equal to their
+      // component letters.  E.g. U+FB01 == 'fi'
+      Assert.AreEqual(0, dmp.diff_commonOverlap("fi", "\ufb01i"));
     }
 
     [Test()]

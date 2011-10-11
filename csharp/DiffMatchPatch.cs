@@ -738,7 +738,7 @@ namespace DiffMatchPatch {
       int length = 1;
       while (true) {
         string pattern = text1.Substring(text_length - length);
-        int found = text2.IndexOf(pattern);
+        int found = text2.IndexOf(pattern, StringComparison.Ordinal);
         if (found == -1) {
           return best;
         }

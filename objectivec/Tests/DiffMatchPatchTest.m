@@ -81,6 +81,11 @@
   // Overlap.
   STAssertEquals((NSUInteger)3, [dmp diff_commonOverlapOfFirstString:@"123456xxx" andSecondString:@"xxxabcd"], @"Detect any suffix/prefix overlap. Overlap.");
 
+  // Unicode.
+  // Some overly clever languages (C#) may treat ligatures as equal to their
+  // component letters.  E.g. U+FB01 == 'fi'
+  STAssertEquals((NSUInteger)0, [dmp diff_commonOverlapOfFirstString:@"fi" andSecondString:@"\U0000bf01i"], @"Detect any suffix/prefix overlap. Unicode.");
+
   [dmp release];
 }
 
