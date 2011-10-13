@@ -78,7 +78,7 @@ public class diff_match_patch_test extends TestCase {
 
     // Some overly clever languages (C#) may treat ligatures as equal to their
     // component letters.  E.g. U+FB01 == 'fi'
-    assertEquals("diff_commonOverlap: Unicode.", 0, dmp.diff_commonOverlap("fi", "\ubf01i"));
+    assertEquals("diff_commonOverlap: Unicode.", 0, dmp.diff_commonOverlap("fi", "\ufb01i"));
   }
 
   public void testDiffHalfmatch() {

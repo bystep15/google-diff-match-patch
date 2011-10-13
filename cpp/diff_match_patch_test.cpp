@@ -111,7 +111,7 @@ void diff_match_patch_test::testDiffCommonOverlap() {
 
   // Some overly clever languages (C#) may treat ligatures as equal to their
   // component letters.  E.g. U+FB01 == 'fi'
-  assertEquals("diff_commonOverlap: Unicode.", 0, dmp.diff_commonOverlap("fi", QString::fromWCharArray((const wchar_t*) L"\ubf01i", 2)));
+  assertEquals("diff_commonOverlap: Unicode.", 0, dmp.diff_commonOverlap("fi", QString::fromWCharArray((const wchar_t*) L"\ufb01i", 2)));
 }
 
 void diff_match_patch_test::testDiffHalfmatch() {

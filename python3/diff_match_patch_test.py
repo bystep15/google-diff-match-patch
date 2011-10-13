@@ -86,7 +86,7 @@ class DiffTest(DiffMatchPatchTest):
     # Unicode.
     # Some overly clever languages (C#) may treat ligatures as equal to their
     # component letters.  E.g. U+FB01 == 'fi'
-    self.assertEqual(0, self.dmp.diff_commonOverlap("fi", "\ubf01i"))
+    self.assertEqual(0, self.dmp.diff_commonOverlap("fi", "\ufb01i"))
 
   def testDiffHalfMatch(self):
     # Detect a halfmatch.
