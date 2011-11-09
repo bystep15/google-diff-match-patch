@@ -695,6 +695,8 @@ class diff_match_patch:
     # Find any overlaps between deletions and insertions.
     # e.g: <del>abcxxx</del><ins>xxxdef</ins>
     #   -> <del>abc</del>xxx<ins>def</ins>
+    # e.g: <del>xxxabc</del><ins>defxxx</ins>
+    #   -> <ins>def</ins>xxx<del>abc</del>
     # Only extract an overlap if it is as big as the edit ahead or behind it.
     pointer = 1
     while pointer < len(diffs):
@@ -702,15 +704,29 @@ class diff_match_patch:
           diffs[pointer][0] == self.DIFF_INSERT):
         deletion = diffs[pointer - 1][1]
         insertion = diffs[pointer][1]
-        overlap_length = self.diff_commonOverlap(deletion, insertion)
-        if (overlap_length >= len(deletion) / 2.0 or
-            overlap_length >= len(insertion) / 2.0):
-          # Overlap found.  Insert an equality and trim the surrounding edits.
-          diffs.insert(pointer, (self.DIFF_EQUAL, insertion[:overlap_length]))
-          diffs[pointer - 1] = (self.DIFF_DELETE,
-                                deletion[:len(deletion) - overlap_length])
-          diffs[pointer + 1] = (self.DIFF_INSERT, insertion[overlap_length:])
-          pointer += 1
+        overlap_length1 = self.diff_commonOverlap(deletion, insertion)
+        overlap_length2 = self.diff_commonOverlap(insertion, deletion)
+        if overlap_length1 >= overlap_length2:
+          if (overlap_length1 >= len(deletion) / 2.0 or
+              overlap_length1 >= len(insertion) / 2.0):
+            # Overlap found.  Insert an equality and trim the surrounding edits.
+            diffs.insert(pointer, (self.DIFF_EQUAL,
+                                   insertion[:overlap_length1]))
+            diffs[pointer - 1] = (self.DIFF_DELETE,
+                                  deletion[:len(deletion) - overlap_length1])
+            diffs[pointer + 1] = (self.DIFF_INSERT,
+                                  insertion[overlap_length1:])
+            pointer += 1
+        else:
+          if (overlap_length2 >= len(deletion) / 2.0 or
+              overlap_length2 >= len(insertion) / 2.0):
+            # Reverse overlap found.
+            # Insert an equality and swap and trim the surrounding edits.
+            diffs.insert(pointer, (self.DIFF_EQUAL, deletion[:overlap_length2]))
+            diffs[pointer - 1] = (self.DIFF_INSERT,
+                                  insertion[:len(insertion) - overlap_length2])
+            diffs[pointer + 1] = (self.DIFF_DELETE, deletion[overlap_length2:])
+            pointer += 1
         pointer += 1
       pointer += 1
 

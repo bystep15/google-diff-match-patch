@@ -445,6 +445,16 @@ namespace nicTest {
           new Diff(Operation.EQUAL, "xxx"),
           new Diff(Operation.INSERT, "def")}, diffs);
 
+      // Reverse overlap elimination.
+      diffs = new List<Diff> {
+          new Diff(Operation.DELETE, "xxxabc"),
+          new Diff(Operation.INSERT, "defxxx")};
+      dmp.diff_cleanupSemantic(diffs);
+      CollectionAssert.AreEqual(new List<Diff> {
+          new Diff(Operation.INSERT, "def"),
+          new Diff(Operation.EQUAL, "xxx"),
+          new Diff(Operation.DELETE, "abc")}, diffs);
+
       // Two overlap eliminations.
       diffs = new List<Diff> {
           new Diff(Operation.DELETE, "abcd1212"),
@@ -694,11 +704,11 @@ namespace nicTest {
       // the insertion and deletion pairs are swapped.
       // If the order changes, tweak this test as required.
       List<Diff> diffs = new List<Diff> {new Diff(Operation.DELETE, "c"), new Diff(Operation.INSERT, "m"), new Diff(Operation.EQUAL, "a"), new Diff(Operation.DELETE, "t"), new Diff(Operation.INSERT, "p")};
-      Assert.AreEqual(diffs, dmp.diff_bisect(a, b, DateTime.MaxValue));
+      CollectionAssert.AreEqual(diffs, dmp.diff_bisect(a, b, DateTime.MaxValue));
 
       // Timeout.
       diffs = new List<Diff> {new Diff(Operation.DELETE, "cat"), new Diff(Operation.INSERT, "map")};
-      Assert.AreEqual(diffs, dmp.diff_bisect(a, b, DateTime.MinValue));
+      CollectionAssert.AreEqual(diffs, dmp.diff_bisect(a, b, DateTime.MinValue));
     }
 
     [Test()]

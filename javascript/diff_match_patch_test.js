@@ -353,6 +353,11 @@ function testDiffCleanupSemantic() {
   dmp.diff_cleanupSemantic(diffs);
   assertEquivalent([[DIFF_DELETE, 'abc'], [DIFF_EQUAL, 'xxx'], [DIFF_INSERT, 'def']], diffs);
 
+  // Reverse overlap elimination.
+  diffs = [[DIFF_DELETE, 'xxxabc'], [DIFF_INSERT, 'defxxx']];
+  dmp.diff_cleanupSemantic(diffs);
+  assertEquivalent([[DIFF_INSERT, 'def'], [DIFF_EQUAL, 'xxx'], [DIFF_DELETE, 'abc']], diffs);
+
   // Two overlap eliminations.
   diffs = [[DIFF_DELETE, 'abcd1212'], [DIFF_INSERT, '1212efghi'], [DIFF_EQUAL, '----'], [DIFF_DELETE, 'A3'], [DIFF_INSERT, '3BC']];
   dmp.diff_cleanupSemantic(diffs);

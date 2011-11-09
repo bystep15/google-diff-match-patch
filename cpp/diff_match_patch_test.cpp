@@ -351,6 +351,10 @@ void diff_match_patch_test::testDiffCleanupSemantic() {
   dmp.diff_cleanupSemantic(diffs);
   assertEquals("diff_cleanupSemantic: Overlap elimination.", diffList(Diff(DELETE, "abc"), Diff(EQUAL, "xxx"), Diff(INSERT, "def")), diffs);
 
+  diffs = diffList(Diff(DELETE, "xxxabc"), Diff(INSERT, "defxxx"));
+  dmp.diff_cleanupSemantic(diffs);
+  assertEquals("diff_cleanupSemantic: Reverse overlap elimination.", diffList(Diff(INSERT, "def"), Diff(EQUAL, "xxx"), Diff(DELETE, "abc")), diffs);
+
   diffs = diffList(Diff(DELETE, "abcd1212"), Diff(INSERT, "1212efghi"), Diff(EQUAL, "----"), Diff(DELETE, "A3"), Diff(INSERT, "3BC"));
   dmp.diff_cleanupSemantic(diffs);
   assertEquals("diff_cleanupSemantic: Two overlap eliminations.", diffList(Diff(DELETE, "abcd"), Diff(EQUAL, "1212"), Diff(INSERT, "efghi"), Diff(EQUAL, "----"), Diff(DELETE, "A"), Diff(EQUAL, "3"), Diff(INSERT, "BC")), diffs);

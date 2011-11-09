@@ -909,6 +909,8 @@ namespace DiffMatchPatch {
       // Find any overlaps between deletions and insertions.
       // e.g: <del>abcxxx</del><ins>xxxdef</ins>
       //   -> <del>abc</del>xxx<ins>def</ins>
+      // e.g: <del>xxxabc</del><ins>defxxx</ins>
+      //   -> <ins>def</ins>xxx<del>abc</del>
       // Only extract an overlap if it is as big as the edit ahead or behind it.
       pointer = 1;
       while (pointer < diffs.Count) {
@@ -916,17 +918,34 @@ namespace DiffMatchPatch {
             diffs[pointer].operation == Operation.INSERT) {
           string deletion = diffs[pointer - 1].text;
           string insertion = diffs[pointer].text;
-          int overlap_length = diff_commonOverlap(deletion, insertion);
-          if (overlap_length >= deletion.Length / 2.0 ||
-              overlap_length >= insertion.Length / 2.0) {
-            // Overlap found.
-            // Insert an equality and trim the surrounding edits.
-            diffs.Insert(pointer, new Diff(Operation.EQUAL,
-                insertion.Substring(0, overlap_length)));
-            diffs[pointer - 1].text =
-                deletion.Substring(0, deletion.Length - overlap_length);
-            diffs[pointer + 1].text = insertion.Substring(overlap_length);
-            pointer++;
+          int overlap_length1 = diff_commonOverlap(deletion, insertion);
+          int overlap_length2 = diff_commonOverlap(insertion, deletion);
+          if (overlap_length1 >= overlap_length2) {
+            if (overlap_length1 >= deletion.Length / 2.0 ||
+                overlap_length1 >= insertion.Length / 2.0) {
+              // Overlap found.
+              // Insert an equality and trim the surrounding edits.
+              diffs.Insert(pointer, new Diff(Operation.EQUAL,
+                  insertion.Substring(0, overlap_length1)));
+              diffs[pointer - 1].text =
+                  deletion.Substring(0, deletion.Length - overlap_length1);
+              diffs[pointer + 1].text = insertion.Substring(overlap_length1);
+              pointer++;
+            }
+          } else {
+            if (overlap_length2 >= deletion.Length / 2.0 ||
+                overlap_length2 >= insertion.Length / 2.0) {
+              // Reverse overlap found.
+              // Insert an equality and swap and trim the surrounding edits.
+              diffs.Insert(pointer, new Diff(Operation.EQUAL,
+                  deletion.Substring(0, overlap_length2)));
+              diffs[pointer - 1].operation = Operation.INSERT;
+              diffs[pointer - 1].text =
+                  insertion.Substring(0, insertion.Length - overlap_length2);
+              diffs[pointer + 1].operation = Operation.DELETE;
+              diffs[pointer + 1].text = deletion.Substring(overlap_length2);
+              pointer++;
+            }
           }
           pointer++;
         }

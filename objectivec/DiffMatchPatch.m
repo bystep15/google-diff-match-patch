@@ -1567,6 +1567,8 @@ void splice(NSMutableArray *input, NSUInteger start, NSUInteger count, NSArray *
       } else {
         length_deletions2 += thisDiff.text.length;
       }
+      // Eliminate an equality that is smaller or equal to the edits on both
+      // sides of it.
       if (lastequality != nil
           && (lastequality.length <= MAX(length_insertions1, length_deletions1))
           && (lastequality.length <= MAX(length_insertions2, length_deletions2))) {
@@ -1608,23 +1610,44 @@ void splice(NSMutableArray *input, NSUInteger start, NSUInteger count, NSArray *
   [self diff_cleanupSemanticLossless:diffs];
 
   // Find any overlaps between deletions and insertions.
-  // e.g: <del>abcxx</del><ins>xxdef</ins>
-  //   -> <del>abc</del>xx<ins>def</ins>
+  // e.g: <del>abcxxx</del><ins>xxxdef</ins>
+  //   -> <del>abc</del>xxx<ins>def</ins>
+  // e.g: <del>xxxabc</del><ins>defxxx</ins>
+  //   -> <ins>def</ins>xxx<del>abc</del>
+  // Only extract an overlap if it is as big as the edit ahead or behind it.
   thisPointer = 1;
   while (thisPointer < diffs.count) {
     if (prevDiff.operation == DIFF_DELETE && thisDiff.operation == DIFF_INSERT) {
       NSString *deletion = prevDiff.text;
       NSString *insertion = thisDiff.text;
-      NSUInteger overlap_length = (NSUInteger)diff_commonOverlap((CFStringRef)deletion, (CFStringRef)insertion);
-      if (overlap_length != 0) {
-        // Overlap found.
-        // Insert an equality and trim the surrounding edits.
-        [diffs insertObject:[Diff diffWithOperation:DIFF_EQUAL
-                                            andText:[insertion substringWithRange:NSMakeRange(0, overlap_length)]]
-                    atIndex:thisPointer];
-        prevDiff.text = [deletion substringWithRange:NSMakeRange(0, deletion.length - overlap_length)];
-        nextDiff.text = [insertion substringFromIndex:overlap_length];
-        thisPointer++;
+      NSUInteger overlap_length1 = (NSUInteger)diff_commonOverlap((CFStringRef)deletion, (CFStringRef)insertion);
+      NSUInteger overlap_length2 = (NSUInteger)diff_commonOverlap((CFStringRef)insertion, (CFStringRef)deletion);
+      if (overlap_length1 >= overlap_length2) {
+        if (overlap_length1 >= deletion.length / 2.0 ||
+            overlap_length1 >= insertion.length / 2.0) {
+          // Overlap found.
+          // Insert an equality and trim the surrounding edits.
+          [diffs insertObject:[Diff diffWithOperation:DIFF_EQUAL
+              andText:[insertion substringWithRange:NSMakeRange(0, overlap_length1)]]
+              atIndex:thisPointer];
+          prevDiff.text = [deletion substringWithRange:NSMakeRange(0, deletion.length - overlap_length1)];
+          nextDiff.text = [insertion substringFromIndex:overlap_length1];
+          thisPointer++;
+        }
+      } else {
+        if (overlap_length2 >= deletion.length / 2.0 ||
+            overlap_length2 >= insertion.length / 2.0) {
+          // Reverse overlap found.
+          // Insert an equality and swap and trim the surrounding edits.
+          [diffs insertObject:[Diff diffWithOperation:DIFF_EQUAL
+              andText:[deletion substringWithRange:NSMakeRange(0, overlap_length2)]]
+              atIndex:thisPointer];
+          prevDiff.operation = DIFF_INSERT;
+          prevDiff.text = [insertion substringWithRange:NSMakeRange(0, insertion.length - overlap_length2)];
+          nextDiff.operation = DIFF_DELETE;
+          nextDiff.text = [deletion substringFromIndex:overlap_length2];
+          thisPointer++;
+        }
       }
       thisPointer++;
     }

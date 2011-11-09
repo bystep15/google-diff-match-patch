@@ -344,6 +344,8 @@ function diff_cleanupSemantic(diffs)
   -- Find any overlaps between deletions and insertions.
   -- e.g: <del>abcxxx</del><ins>xxxdef</ins>
   --   -> <del>abc</del>xxx<ins>def</ins>
+  -- e.g: <del>xxxabc</del><ins>defxxx</ins>
+  --   -> <ins>def</ins>xxx<del>abc</del>
   -- Only extract an overlap if it is as big as the edit ahead or behind it.
   pointer = 2
   while diffs[pointer] do
@@ -351,16 +353,32 @@ function diff_cleanupSemantic(diffs)
         diffs[pointer][1] == DIFF_INSERT) then
       local deletion = diffs[pointer - 1][2]
       local insertion = diffs[pointer][2]
-      local overlap_length = _diff_commonOverlap(deletion, insertion)
-      if (overlap_length >= #deletion / 2 or
-          overlap_length >= #insertion / 2) then
-        -- Overlap found.  Insert an equality and trim the surrounding edits.
-        tinsert(diffs, pointer,
-            {DIFF_EQUAL, strsub(insertion, 1, overlap_length)})
-        diffs[pointer - 1][2] =
-            strsub(deletion, 1, #deletion - overlap_length)
-        diffs[pointer + 1][2] = strsub(insertion, overlap_length + 1)
-        pointer = pointer + 1
+      local overlap_length1 = _diff_commonOverlap(deletion, insertion)
+      local overlap_length2 = _diff_commonOverlap(insertion, deletion)
+      if (overlap_length1 >= overlap_length2) then
+        if (overlap_length1 >= #deletion / 2 or
+            overlap_length1 >= #insertion / 2) then
+          -- Overlap found.  Insert an equality and trim the surrounding edits.
+          tinsert(diffs, pointer,
+              {DIFF_EQUAL, strsub(insertion, 1, overlap_length1)})
+          diffs[pointer - 1][2] =
+              strsub(deletion, 1, #deletion - overlap_length1)
+          diffs[pointer + 1][2] = strsub(insertion, overlap_length1 + 1)
+          pointer = pointer + 1
+        end
+      else
+        if (overlap_length2 >= #deletion / 2 or
+            overlap_length2 >= #insertion / 2) then
+          -- Reverse overlap found.
+          -- Insert an equality and swap and trim the surrounding edits.
+          tinsert(diffs, pointer,
+              {DIFF_EQUAL, strsub(deletion, 1, overlap_length2)})
+          diffs[pointer - 1] = {DIFF_INSERT,
+              strsub(insertion, 1, #insertion - overlap_length2)}
+          diffs[pointer + 1] = {DIFF_DELETE,
+              strsub(deletion, overlap_length2 + 1)}
+          pointer = pointer + 1
+        end
       end
       pointer = pointer + 1
     end

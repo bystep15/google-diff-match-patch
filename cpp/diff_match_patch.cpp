@@ -801,6 +801,8 @@ void diff_match_patch::diff_cleanupSemantic(QList<Diff> &diffs) {
   // Find any overlaps between deletions and insertions.
   // e.g: <del>abcxxx</del><ins>xxxdef</ins>
   //   -> <del>abc</del>xxx<ins>def</ins>
+  // e.g: <del>xxxabc</del><ins>defxxx</ins>
+  //   -> <ins>def</ins>xxx<del>abc</del>
   // Only extract an overlap if it is as big as the edit ahead or behind it.
   pointer.toFront();
   Diff *prevDiff = NULL;
@@ -816,17 +818,35 @@ void diff_match_patch::diff_cleanupSemantic(QList<Diff> &diffs) {
         thisDiff->operation == INSERT) {
       QString deletion = prevDiff->text;
       QString insertion = thisDiff->text;
-      int overlap_length = diff_commonOverlap(deletion, insertion);
-      if (overlap_length >= deletion.length() / 2.0 ||
-          overlap_length >= insertion.length() / 2.0) {
-        // Overlap found.  Insert an equality and trim the surrounding edits.
-        pointer.previous();
-        pointer.insert(Diff(EQUAL, insertion.left(overlap_length)));
-        prevDiff->text =
-            deletion.left(deletion.length() - overlap_length);
-        thisDiff->text = safeMid(insertion, overlap_length);
-        // pointer.insert inserts the element before the cursor, so there is
-        // no need to step past the new element.
+      int overlap_length1 = diff_commonOverlap(deletion, insertion);
+      int overlap_length2 = diff_commonOverlap(insertion, deletion);
+      if (overlap_length1 >= overlap_length2) {
+        if (overlap_length1 >= deletion.length() / 2.0 ||
+            overlap_length1 >= insertion.length() / 2.0) {
+          // Overlap found.  Insert an equality and trim the surrounding edits.
+          pointer.previous();
+          pointer.insert(Diff(EQUAL, insertion.left(overlap_length1)));
+          prevDiff->text =
+              deletion.left(deletion.length() - overlap_length1);
+          thisDiff->text = safeMid(insertion, overlap_length1);
+          // pointer.insert inserts the element before the cursor, so there is
+          // no need to step past the new element.
+        }
+      } else {
+        if (overlap_length2 >= deletion.length() / 2.0 ||
+            overlap_length2 >= insertion.length() / 2.0) {
+          // Reverse overlap found.
+          // Insert an equality and swap and trim the surrounding edits.
+          pointer.previous();
+          pointer.insert(Diff(EQUAL, deletion.left(overlap_length2)));
+          prevDiff->operation = INSERT;
+          prevDiff->text =
+              insertion.left(insertion.length() - overlap_length2);
+          thisDiff->operation = DELETE;
+          thisDiff->text = safeMid(deletion, overlap_length2);
+          // pointer.insert inserts the element before the cursor, so there is
+          // no need to step past the new element.
+        }
       }
       thisDiff = pointer.hasNext() ? &pointer.next() : NULL;
     }

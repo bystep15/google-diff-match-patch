@@ -310,6 +310,11 @@ class DiffTest(DiffMatchPatchTest):
     self.dmp.diff_cleanupSemantic(diffs)
     self.assertEqual([(self.dmp.DIFF_DELETE, "abc"), (self.dmp.DIFF_EQUAL, "xxx"), (self.dmp.DIFF_INSERT, "def")], diffs)
 
+    # Reverse overlap elimination.
+    diffs = [(self.dmp.DIFF_DELETE, "xxxabc"), (self.dmp.DIFF_INSERT, "defxxx")]
+    self.dmp.diff_cleanupSemantic(diffs)
+    self.assertEqual([(self.dmp.DIFF_INSERT, "def"), (self.dmp.DIFF_EQUAL, "xxx"), (self.dmp.DIFF_DELETE, "abc")], diffs)
+
     # Two overlap eliminations.
     diffs = [(self.dmp.DIFF_DELETE, "abcd1212"), (self.dmp.DIFF_INSERT, "1212efghi"), (self.dmp.DIFF_EQUAL, "----"), (self.dmp.DIFF_DELETE, "A3"), (self.dmp.DIFF_INSERT, "3BC")]
     self.dmp.diff_cleanupSemantic(diffs)

@@ -285,7 +285,7 @@ public class diff_match_patch {
 
     return diff_bisect(text1, text2, deadline);
   }
-  
+
   /**
    * Do a quick line-level diff on both strings, then rediff the parts for
    * greater accuracy.
@@ -502,10 +502,10 @@ public class diff_match_patch {
     LinkedList<Diff> diffsb = diff_main(text1b, text2b, false, deadline);
 
     diffs.addAll(diffsb);
-    return diffs;  
+    return diffs;
   }
 
-  
+
   /**
    * Split two texts into a list of strings.  Reduce the texts to a string of
    * hashes where each Unicode character represents one line.
@@ -853,6 +853,8 @@ public class diff_match_patch {
     // Find any overlaps between deletions and insertions.
     // e.g: <del>abcxxx</del><ins>xxxdef</ins>
     //   -> <del>abc</del>xxx<ins>def</ins>
+    // e.g: <del>xxxabc</del><ins>defxxx</ins>
+    //   -> <ins>def</ins>xxx<del>abc</del>
     // Only extract an overlap if it is as big as the edit ahead or behind it.
     pointer = diffs.listIterator();
     Diff prevDiff = null;
@@ -868,18 +870,37 @@ public class diff_match_patch {
           thisDiff.operation == Operation.INSERT) {
         String deletion = prevDiff.text;
         String insertion = thisDiff.text;
-        int overlap_length = this.diff_commonOverlap(deletion, insertion);
-        if (overlap_length >= deletion.length() / 2.0 ||
-            overlap_length >= insertion.length() / 2.0) {
-          // Overlap found.  Insert an equality and trim the surrounding edits.
-          pointer.previous();
-          pointer.add(new Diff(Operation.EQUAL,
-                               insertion.substring(0, overlap_length)));
-          prevDiff.text =
-              deletion.substring(0, deletion.length() - overlap_length);
-          thisDiff.text = insertion.substring(overlap_length);
-          // pointer.add inserts the element before the cursor, so there is
-          // no need to step past the new element.
+        int overlap_length1 = this.diff_commonOverlap(deletion, insertion);
+        int overlap_length2 = this.diff_commonOverlap(insertion, deletion);
+        if (overlap_length1 >= overlap_length2) {
+          if (overlap_length1 >= deletion.length() / 2.0 ||
+              overlap_length1 >= insertion.length() / 2.0) {
+            // Overlap found.  Insert an equality and trim the surrounding edits.
+            pointer.previous();
+            pointer.add(new Diff(Operation.EQUAL,
+                                 insertion.substring(0, overlap_length1)));
+            prevDiff.text =
+                deletion.substring(0, deletion.length() - overlap_length1);
+            thisDiff.text = insertion.substring(overlap_length1);
+            // pointer.add inserts the element before the cursor, so there is
+            // no need to step past the new element.
+          }
+        } else {
+          if (overlap_length2 >= deletion.length() / 2.0 ||
+              overlap_length2 >= insertion.length() / 2.0) {
+            // Reverse overlap found.
+            // Insert an equality and swap and trim the surrounding edits.
+            pointer.previous();
+            pointer.add(new Diff(Operation.EQUAL,
+                                 deletion.substring(0, overlap_length2)));
+            prevDiff.operation = Operation.INSERT;
+            prevDiff.text =
+              insertion.substring(0, insertion.length() - overlap_length2);
+            thisDiff.operation = Operation.DELETE;
+            thisDiff.text = deletion.substring(overlap_length2);
+            // pointer.add inserts the element before the cursor, so there is
+            // no need to step past the new element.
+          }
         }
         thisDiff = pointer.hasNext() ? pointer.next() : null;
       }
@@ -2459,4 +2480,3 @@ public class diff_match_patch {
         .replace("%2C", ",").replace("%23", "#");
   }
 }
-

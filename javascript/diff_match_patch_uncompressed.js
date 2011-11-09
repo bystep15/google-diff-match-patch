@@ -789,6 +789,8 @@ diff_match_patch.prototype.diff_cleanupSemantic = function(diffs) {
   // Find any overlaps between deletions and insertions.
   // e.g: <del>abcxxx</del><ins>xxxdef</ins>
   //   -> <del>abc</del>xxx<ins>def</ins>
+  // e.g: <del>xxxabc</del><ins>defxxx</ins>
+  //   -> <ins>def</ins>xxx<del>abc</del>
   // Only extract an overlap if it is as big as the edit ahead or behind it.
   pointer = 1;
   while (pointer < diffs.length) {
@@ -796,16 +798,32 @@ diff_match_patch.prototype.diff_cleanupSemantic = function(diffs) {
         diffs[pointer][0] == DIFF_INSERT) {
       var deletion = /** @type {string} */(diffs[pointer - 1][1]);
       var insertion = /** @type {string} */(diffs[pointer][1]);
-      var overlap_length = this.diff_commonOverlap_(deletion, insertion);
-      if (overlap_length >= deletion.length / 2 ||
-          overlap_length >= insertion.length / 2) {
-        // Overlap found.  Insert an equality and trim the surrounding edits.
-        diffs.splice(pointer, 0,
-            [DIFF_EQUAL, insertion.substring(0, overlap_length)]);
-        diffs[pointer - 1][1] =
-            deletion.substring(0, deletion.length - overlap_length);
-        diffs[pointer + 1][1] = insertion.substring(overlap_length);
-        pointer++;
+      var overlap_length1 = this.diff_commonOverlap_(deletion, insertion);
+      var overlap_length2 = this.diff_commonOverlap_(insertion, deletion);
+      if (overlap_length1 >= overlap_length2) {
+        if (overlap_length1 >= deletion.length / 2 ||
+            overlap_length1 >= insertion.length / 2) {
+          // Overlap found.  Insert an equality and trim the surrounding edits.
+          diffs.splice(pointer, 0,
+              [DIFF_EQUAL, insertion.substring(0, overlap_length1)]);
+          diffs[pointer - 1][1] =
+              deletion.substring(0, deletion.length - overlap_length1);
+          diffs[pointer + 1][1] = insertion.substring(overlap_length1);
+          pointer++;
+        }
+      } else {
+        if (overlap_length2 >= deletion.length / 2 ||
+            overlap_length2 >= insertion.length / 2) {
+          // Reverse overlap found.
+          // Insert an equality and swap and trim the surrounding edits.
+          diffs.splice(pointer, 0,
+              [DIFF_EQUAL, deletion.substring(0, overlap_length2)]);
+          diffs[pointer - 1] = [DIFF_INSERT,
+              insertion.substring(0, insertion.length - overlap_length2)];
+          diffs[pointer + 1] = [DIFF_DELETE,
+              deletion.substring(overlap_length2)];
+          pointer++;
+        }
       }
       pointer++;
     }
@@ -2153,9 +2171,9 @@ diff_match_patch.patch_obj.prototype.toString = function() {
 
 // Export these global variables so that they survive Google's JS compiler.
 // In a browser, 'this' will be 'window'.
-// In node.js 'this' will be a global object.
+// Users of node.js should 'require' the uncompressed version since Google's
+// JS compiler may break the following exports for non-browser environments.
 this['diff_match_patch'] = diff_match_patch;
 this['DIFF_DELETE'] = DIFF_DELETE;
 this['DIFF_INSERT'] = DIFF_INSERT;
 this['DIFF_EQUAL'] = DIFF_EQUAL;
-
