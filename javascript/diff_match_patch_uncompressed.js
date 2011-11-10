@@ -1201,7 +1201,6 @@ diff_match_patch.prototype.diff_xIndex = function(diffs, loc) {
  */
 diff_match_patch.prototype.diff_prettyHtml = function(diffs) {
   var html = [];
-  var i = 0;
   var pattern_amp = /&/g;
   var pattern_lt = /</g;
   var pattern_gt = />/g;
@@ -1221,9 +1220,6 @@ diff_match_patch.prototype.diff_prettyHtml = function(diffs) {
       case DIFF_EQUAL:
         html[x] = '<span>' + text + '</span>';
         break;
-    }
-    if (op !== DIFF_DELETE) {
-      i += data.length;
     }
   }
   return html.join('');

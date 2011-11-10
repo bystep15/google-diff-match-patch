@@ -1332,7 +1332,6 @@ namespace DiffMatchPatch {
      */
     public string diff_prettyHtml(List<Diff> diffs) {
       StringBuilder html = new StringBuilder();
-      int i = 0;
       foreach (Diff aDiff in diffs) {
         string text = aDiff.text.Replace("&", "&amp;").Replace("<", "&lt;")
           .Replace(">", "&gt;").Replace("\n", "&para;<br>");
@@ -1348,9 +1347,6 @@ namespace DiffMatchPatch {
           case Operation.EQUAL:
             html.Append("<span>").Append(text).Append("</span>");
             break;
-        }
-        if (aDiff.operation != Operation.DELETE) {
-          i += aDiff.text.Length;
         }
       }
       return html.ToString();

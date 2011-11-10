@@ -1054,7 +1054,6 @@ class diff_match_patch:
       HTML representation.
     """
     html = []
-    i = 0
     for (op, data) in diffs:
       text = (data.replace("&", "&amp;").replace("<", "&lt;")
                  .replace(">", "&gt;").replace("\n", "&para;<br>"))
@@ -1064,8 +1063,6 @@ class diff_match_patch:
         html.append("<del style=\"background:#ffe6e6;\">%s</del>" % text)
       elif op == self.DIFF_EQUAL:
         html.append("<span>%s</span>" % text)
-      if op != self.DIFF_DELETE:
-        i += len(data)
     return "".join(html)
 
   def diff_text1(self, diffs):

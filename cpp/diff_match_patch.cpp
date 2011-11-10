@@ -1266,7 +1266,6 @@ int diff_match_patch::diff_xIndex(const QList<Diff> &diffs, int loc) {
 QString diff_match_patch::diff_prettyHtml(const QList<Diff> &diffs) {
   QString html;
   QString text;
-  int i = 0;
   foreach(Diff aDiff, diffs) {
     text = aDiff.text;
     text.replace("&", "&amp;").replace("<", "&lt;")
@@ -1283,9 +1282,6 @@ QString diff_match_patch::diff_prettyHtml(const QList<Diff> &diffs) {
       case EQUAL:
         html += QString("<span>") + text + QString("</span>");
         break;
-    }
-    if (aDiff.operation != DELETE) {
-      i += aDiff.text.length();
     }
   }
   return html;

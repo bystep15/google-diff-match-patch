@@ -33,7 +33,6 @@ import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 /*
  * Functions for diff, match and patch.
  * Computes the difference between two texts to create a patch.
@@ -116,7 +115,6 @@ public class diff_match_patch {
   public enum Operation {
     DELETE, INSERT, EQUAL
   }
-
 
   /**
    * Find the differences between two texts.
@@ -207,7 +205,6 @@ public class diff_match_patch {
     diff_cleanupMerge(diffs);
     return diffs;
   }
-
 
   /**
    * Find the differences between two texts.  Assumes that the texts do not
@@ -356,7 +353,6 @@ public class diff_match_patch {
     return diffs;
   }
 
-
   /**
    * Find the 'middle snake' of a diff, split the problem in two
    * and return the recursively constructed diff.
@@ -479,7 +475,6 @@ public class diff_match_patch {
     return diffs;
   }
 
-
   /**
    * Given the location of the 'middle snake', split the diff in two parts
    * and recurse.
@@ -505,7 +500,6 @@ public class diff_match_patch {
     return diffs;
   }
 
-
   /**
    * Split two texts into a list of strings.  Reduce the texts to a string of
    * hashes where each Unicode character represents one line.
@@ -529,7 +523,6 @@ public class diff_match_patch {
     String chars2 = diff_linesToCharsMunge(text2, lineArray, lineHash);
     return new LinesToCharsResult(chars1, chars2, lineArray);
   }
-
 
   /**
    * Split a text into a list of strings.  Reduce the texts to a string of
@@ -567,7 +560,6 @@ public class diff_match_patch {
     return chars.toString();
   }
 
-
   /**
    * Rehydrate the text in a diff from a string of line hashes to real lines of
    * text.
@@ -586,7 +578,6 @@ public class diff_match_patch {
     }
   }
 
-
   /**
    * Determine the common prefix of two strings
    * @param text1 First string.
@@ -603,7 +594,6 @@ public class diff_match_patch {
     }
     return n;
   }
-
 
   /**
    * Determine the common suffix of two strings
@@ -623,7 +613,6 @@ public class diff_match_patch {
     }
     return n;
   }
-
 
   /**
    * Determine if the suffix of one string is the prefix of another.
@@ -671,7 +660,6 @@ public class diff_match_patch {
       }
     }
   }
-
 
   /**
    * Do the two texts share a substring which is at least half the length of
@@ -721,7 +709,6 @@ public class diff_match_patch {
     }
   }
 
-
   /**
    * Does a substring of shorttext exist within longtext such that the
    * substring is at least half the length of longtext?
@@ -760,7 +747,6 @@ public class diff_match_patch {
       return null;
     }
   }
-
 
   /**
    * Reduce the number of edits by eliminating semantically trivial equalities.
@@ -909,7 +895,6 @@ public class diff_match_patch {
     }
   }
 
-
   /**
    * Look for single edits surrounded on both sides by equalities
    * which can be shifted sideways to align the edit to a word boundary.
@@ -995,7 +980,6 @@ public class diff_match_patch {
     }
   }
 
-
   /**
    * Given two strings, compute a score representing whether the internal
    * boundary falls on logical boundaries.
@@ -1039,12 +1023,10 @@ public class diff_match_patch {
     return score;
   }
 
-
   private Pattern BLANKLINEEND
       = Pattern.compile("\\n\\r?\\n\\Z", Pattern.DOTALL);
   private Pattern BLANKLINESTART
       = Pattern.compile("\\A\\r?\\n\\r?\\n", Pattern.DOTALL);
-
 
   /**
    * Reduce the number of edits by eliminating operationally trivial equalities.
@@ -1152,7 +1134,6 @@ public class diff_match_patch {
       diff_cleanupMerge(diffs);
     }
   }
-
 
   /**
    * Reorder and merge like edit sections.  Merge equalities.
@@ -1304,7 +1285,6 @@ public class diff_match_patch {
     }
   }
 
-
   /**
    * loc is a location in text1, compute and return the equivalent location in
    * text2.
@@ -1344,7 +1324,6 @@ public class diff_match_patch {
     return last_chars2 + (loc - last_chars1);
   }
 
-
   /**
    * Convert a Diff list into a pretty HTML report.
    * @param diffs LinkedList of Diff objects.
@@ -1352,7 +1331,6 @@ public class diff_match_patch {
    */
   public String diff_prettyHtml(LinkedList<Diff> diffs) {
     StringBuilder html = new StringBuilder();
-    int i = 0;
     for (Diff aDiff : diffs) {
       String text = aDiff.text.replace("&", "&amp;").replace("<", "&lt;")
           .replace(">", "&gt;").replace("\n", "&para;<br>");
@@ -1369,13 +1347,9 @@ public class diff_match_patch {
         html.append("<span>").append(text).append("</span>");
         break;
       }
-      if (aDiff.operation != Operation.DELETE) {
-        i += aDiff.text.length();
-      }
     }
     return html.toString();
   }
-
 
   /**
    * Compute and return the source text (all equalities and deletions).
@@ -1392,7 +1366,6 @@ public class diff_match_patch {
     return text.toString();
   }
 
-
   /**
    * Compute and return the destination text (all equalities and insertions).
    * @param diffs LinkedList of Diff objects.
@@ -1407,7 +1380,6 @@ public class diff_match_patch {
     }
     return text.toString();
   }
-
 
   /**
    * Compute the Levenshtein distance; the number of inserted, deleted or
@@ -1438,7 +1410,6 @@ public class diff_match_patch {
     levenshtein += Math.max(insertions, deletions);
     return levenshtein;
   }
-
 
   /**
    * Crush the diff into an encoded string which describes the operations
@@ -1477,7 +1448,6 @@ public class diff_match_patch {
     }
     return delta;
   }
-
 
   /**
    * Given the original text1, and an encoded string which describes the
@@ -1592,7 +1562,6 @@ public class diff_match_patch {
     }
   }
 
-
   /**
    * Locate the best instance of 'pattern' in 'text' near 'loc' using the
    * Bitap algorithm.  Returns -1 if no match found.
@@ -1696,7 +1665,6 @@ public class diff_match_patch {
     return best_loc;
   }
 
-
   /**
    * Compute and return the score for a match with e errors and x location.
    * @param e Number of errors in match.
@@ -1714,7 +1682,6 @@ public class diff_match_patch {
     }
     return accuracy + (proximity / (float) Match_Distance);
   }
-
 
   /**
    * Initialise the alphabet for the Bitap algorithm.
@@ -1784,7 +1751,6 @@ public class diff_match_patch {
     patch.length2 += prefix.length() + suffix.length();
   }
 
-
   /**
    * Compute a list of patches to turn text1 into text2.
    * A set of diffs will be computed.
@@ -1805,7 +1771,6 @@ public class diff_match_patch {
     return patch_make(text1, diffs);
   }
 
-
   /**
    * Compute a list of patches to turn text1 into text2.
    * text1 will be derived from the provided diffs.
@@ -1821,7 +1786,6 @@ public class diff_match_patch {
     return patch_make(text1, diffs);
   }
 
-
   /**
    * Compute a list of patches to turn text1 into text2.
    * text2 is ignored, diffs are the delta between text1 and text2.
@@ -1835,7 +1799,6 @@ public class diff_match_patch {
       LinkedList<Diff> diffs) {
     return patch_make(text1, diffs);
   }
-
 
   /**
    * Compute a list of patches to turn text1 into text2.
@@ -1924,7 +1887,6 @@ public class diff_match_patch {
     return patches;
   }
 
-
   /**
    * Given an array of patches, return another array that is identical.
    * @param patches Array of patch objects.
@@ -1946,7 +1908,6 @@ public class diff_match_patch {
     }
     return patchesCopy;
   }
-
 
   /**
    * Merge a set of patches onto the text.  Return a patched text, as well
@@ -2059,7 +2020,6 @@ public class diff_match_patch {
     return new Object[]{text, results};
   }
 
-
   /**
    * Add some padding on text start and end so that edges can match something.
    * Intended to be called only from within patch_apply.
@@ -2120,7 +2080,6 @@ public class diff_match_patch {
 
     return nullPadding;
   }
-
 
   /**
    * Look through the patches and break up any which are longer than the
@@ -2226,7 +2185,6 @@ public class diff_match_patch {
     }
   }
 
-
   /**
    * Take a list of patches and return a textual representation.
    * @param patches List of Patch objects.
@@ -2239,7 +2197,6 @@ public class diff_match_patch {
     }
     return text.toString();
   }
-
 
   /**
    * Parse a textual representation of patches and return a List of Patch
@@ -2361,7 +2318,6 @@ public class diff_match_patch {
       this.text = text;
     }
 
-
     /**
      * Display a human-readable version of this Diff.
      * @return text version.
@@ -2371,19 +2327,47 @@ public class diff_match_patch {
       return "Diff(" + this.operation + ",\"" + prettyText + "\")";
     }
 
+    /**
+     * Create a numeric hash value for a Diff.
+     * This function is not used by DMP.
+     * @return Hash value.
+     */
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = (operation == null) ? 0 : operation.hashCode();
+      result += prime * ((text == null) ? 0 : text.hashCode());
+      return result;
+    }
 
     /**
      * Is this Diff equivalent to another Diff?
-     * @param d Another Diff to compare against.
+     * @param obj Another Diff to compare against.
      * @return true or false.
      */
-    public boolean equals(Object d) {
-      try {
-        return (((Diff) d).operation == this.operation)
-               && (((Diff) d).text.equals(this.text));
-      } catch (ClassCastException e) {
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null) {
         return false;
       }
+      if (getClass() != obj.getClass()) {
+        return false;
+      }
+      Diff other = (Diff) obj;
+      if (operation != other.operation) {
+        return false;
+      }
+      if (text == null) {
+        if (other.text != null) {
+          return false;
+        }
+      } else if (!text.equals(other.text)) {
+        return false;
+      }
+      return true;
     }
   }
 
@@ -2398,14 +2382,12 @@ public class diff_match_patch {
     public int length1;
     public int length2;
 
-
     /**
      * Constructor.  Initializes with an empty list of diffs.
      */
     public Patch() {
       this.diffs = new LinkedList<Diff>();
     }
-
 
     /**
      * Emmulate GNU diff's format.
@@ -2456,7 +2438,6 @@ public class diff_match_patch {
       return unescapeForEncodeUriCompatability(text.toString());
     }
   }
-
 
   /**
    * Unescape selected chars for compatability with JavaScript's encodeURI.

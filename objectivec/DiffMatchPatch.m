@@ -1249,7 +1249,6 @@ void splice(NSMutableArray *input, NSUInteger start, NSUInteger count, NSArray *
 - (NSString *)diff_prettyHtml:(NSMutableArray *)diffs;
 {
   NSMutableString *html = [NSMutableString string];
-  NSUInteger i = 0;
   for (Diff *aDiff in diffs) {
     NSMutableString *text = [[aDiff.text mutableCopy] autorelease];
     [text replaceOccurrencesOfString:@"&" withString:@"&amp;" options:NSLiteralSearch range:NSMakeRange(0, text.length)];
@@ -1267,9 +1266,6 @@ void splice(NSMutableArray *input, NSUInteger start, NSUInteger count, NSArray *
       case DIFF_EQUAL:
         [html appendFormat:@"<span>%@</span>", text];
         break;
-    }
-    if (aDiff.operation != DIFF_DELETE) {
-      i += aDiff.text.length;
     }
   }
   return html;

@@ -869,13 +869,11 @@ public class diff_match_patch_test extends TestCase {
     assertEquals("patch_apply: Edge partial match.", "x123\ttrue", resultStr);
   }
 
-
   private void assertArrayEquals(String error_msg, Object[] a, Object[] b) {
     List<Object> list_a = Arrays.asList(a);
     List<Object> list_b = Arrays.asList(b);
     assertEquals(error_msg, list_a, list_b);
   }
-
 
   private void assertLinesToCharsResultEquals(String error_msg,
       LinesToCharsResult a, LinesToCharsResult b) {
@@ -897,7 +895,6 @@ public class diff_match_patch_test extends TestCase {
     }
     return text;
   }
-
 
   // Private function for quickly building lists of diffs.
   private static LinkedList<Diff> diffList(Diff... diffs) {

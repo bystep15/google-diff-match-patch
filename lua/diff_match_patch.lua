@@ -516,7 +516,6 @@ end
 --]]
 function diff_prettyHtml(diffs)
   local html = {}
-  local i = 0
   for x, diff in ipairs(diffs) do
     local op = diff[1]   -- Operation (insert, delete, equal)
     local data = diff[2]  -- Text of change.
@@ -527,9 +526,6 @@ function diff_prettyHtml(diffs)
       html[x] = '<del style="background:#ffe6e6;">' .. text .. '</del>'
     elseif op == DIFF_EQUAL then
       html[x] = '<span>' .. text .. '</span>'
-    end
-    if op ~= DIFF_DELETE then
-      i = i + #data
     end
   end
   return tconcat(html)
