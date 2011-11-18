@@ -340,6 +340,17 @@ namespace nicTest {
       CollectionAssert.AreEqual(new List<Diff> {
           new Diff(Operation.EQUAL, "xaa"),
           new Diff(Operation.DELETE, "a")}, diffs);
+
+      // Sentence boundaries.
+      diffs = new List<Diff> {
+          new Diff(Operation.EQUAL, "The xxx. The "),
+          new Diff(Operation.INSERT, "zzz. The "),
+          new Diff(Operation.EQUAL, "yyy.")};
+      dmp.diff_cleanupSemanticLossless(diffs);
+      CollectionAssert.AreEqual(new List<Diff> {
+          new Diff(Operation.EQUAL, "The xxx."),
+          new Diff(Operation.INSERT, " The zzz."),
+          new Diff(Operation.EQUAL, " The yyy.")}, diffs);
     }
 
     [Test()]

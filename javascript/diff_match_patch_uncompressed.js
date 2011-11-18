@@ -839,18 +839,11 @@ diff_match_patch.prototype.diff_cleanupSemantic = function(diffs) {
  * @param {!Array.<!diff_match_patch.Diff>} diffs Array of diff tuples.
  */
 diff_match_patch.prototype.diff_cleanupSemanticLossless = function(diffs) {
-  // Define some regex patterns for matching boundaries.
-  var punctuation = /[^a-zA-Z0-9]/;
-  var whitespace = /\s/;
-  var linebreak = /[\r\n]/;
-  var blanklineEnd = /\n\r?\n$/;
-  var blanklineStart = /^\r?\n\r?\n/;
-
   /**
    * Given two strings, compute a score representing whether the internal
    * boundary falls on logical boundaries.
-   * Scores range from 5 (best) to 0 (worst).
-   * Closure, makes reference to regex patterns defined above.
+   * Scores range from 6 (best) to 0 (worst).
+   * Closure, but does not reference any external variables.
    * @param {string} one First string.
    * @param {string} two Second string.
    * @return {number} The score.
@@ -859,7 +852,7 @@ diff_match_patch.prototype.diff_cleanupSemanticLossless = function(diffs) {
   function diff_cleanupSemanticScore_(one, two) {
     if (!one || !two) {
       // Edges are the best.
-      return 5;
+      return 6;
     }
 
     // Each port of this function behaves slightly differently due to
@@ -867,27 +860,40 @@ diff_match_patch.prototype.diff_cleanupSemanticLossless = function(diffs) {
     // 'whitespace'.  Since this function's purpose is largely cosmetic,
     // the choice has been made to use each language's native features
     // rather than force total conformity.
-    var score = 0;
-    // One point for non-alphanumeric.
-    if (one.charAt(one.length - 1).match(punctuation) ||
-        two.charAt(0).match(punctuation)) {
-      score++;
+    var char1 = one.charAt(one.length - 1);
+    var char2 = two.charAt(0);
+    var nonAlphaNumeric1 = char1.match(diff_match_patch.nonAlphaNumericRegex_);
+    var nonAlphaNumeric2 = char2.match(diff_match_patch.nonAlphaNumericRegex_);
+    var whitespace1 = nonAlphaNumeric1 &&
+        char1.match(diff_match_patch.whitespaceRegex_);
+    var whitespace2 = nonAlphaNumeric2 &&
+        char2.match(diff_match_patch.whitespaceRegex_);
+    var lineBreak1 = whitespace1 &&
+        char1.match(diff_match_patch.linebreakRegex_);
+    var lineBreak2 = whitespace2 &&
+        char2.match(diff_match_patch.linebreakRegex_);
+    var blankLine1 = lineBreak1 &&
+        one.match(diff_match_patch.blanklineEndRegex_);
+    var blankLine2 = lineBreak2 &&
+        two.match(diff_match_patch.blanklineStartRegex_);
+
+    if (blankLine1 || blankLine2) {
+      // Five points for blank lines.
+      return 5;
+    } else if (lineBreak1 || lineBreak2) {
+      // Four points for line breaks.
+      return 4;
+    } else if (nonAlphaNumeric1 && !whitespace1 && whitespace2) {
+      // Three points for end of sentences.
+      return 3;
+    } else if (whitespace1 || whitespace2) {
       // Two points for whitespace.
-      if (one.charAt(one.length - 1).match(whitespace) ||
-          two.charAt(0).match(whitespace)) {
-        score++;
-        // Three points for line breaks.
-        if (one.charAt(one.length - 1).match(linebreak) ||
-            two.charAt(0).match(linebreak)) {
-          score++;
-          // Four points for blank lines.
-          if (one.match(blanklineEnd) || two.match(blanklineStart)) {
-            score++;
-          }
-        }
-      }
+      return 2;
+    } else if (nonAlphaNumeric1 || nonAlphaNumeric2) {
+      // One point for non-alphanumeric.
+      return 1;
     }
-    return score;
+    return 0;
   }
 
   var pointer = 1;
@@ -951,6 +957,12 @@ diff_match_patch.prototype.diff_cleanupSemanticLossless = function(diffs) {
   }
 };
 
+// Define some regex patterns for matching boundaries.
+diff_match_patch.nonAlphaNumericRegex_ = /[^a-zA-Z0-9]/;
+diff_match_patch.whitespaceRegex_ = /\s/;
+diff_match_patch.linebreakRegex_ = /[\r\n]/;
+diff_match_patch.blanklineEndRegex_ = /\n\r?\n$/;
+diff_match_patch.blanklineStartRegex_ = /^\r?\n\r?\n/;
 
 /**
  * Reduce the number of edits by eliminating operationally trivial equalities.

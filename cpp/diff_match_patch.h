@@ -150,6 +150,11 @@ class diff_match_patch {
   // The number of bits in an int.
   short Match_MaxBits;
 
+ private:
+  // Define some regex patterns for matching boundaries.
+  static QRegExp BLANKLINEEND;
+  static QRegExp BLANKLINESTART;
+
 
  public:
 
@@ -351,7 +356,7 @@ class diff_match_patch {
   /**
    * Given two strings, compute a score representing whether the internal
    * boundary falls on logical boundaries.
-   * Scores range from 5 (best) to 0 (worst).
+   * Scores range from 6 (best) to 0 (worst).
    * @param one First string.
    * @param two Second string.
    * @return The score.

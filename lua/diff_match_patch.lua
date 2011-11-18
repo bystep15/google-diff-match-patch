@@ -1110,18 +1110,10 @@ function _diff_halfMatch(text1, text2)
   return text1_a, text1_b, text2_a, text2_b, mid_common
 end
 
--- Define some string matching patterns for matching boundaries.
-local punctuation = '^[^a-zA-Z0-9]'
-local whitespace = '^%s'
-local linebreak = '^[\r\n]'
-local blanklineEnd = '\n\r?\n$'
-local blanklineStart = '^\r?\n\r?\n'
-
 --[[
 * Given two strings, compute a score representing whether the internal
 * boundary falls on logical boundaries.
-* Scores range from 5 (best) to 0 (worst).
-* Closure, makes reference to regex patterns defined above.
+* Scores range from 6 (best) to 0 (worst).
 * @param {string} one First string.
 * @param {string} two Second string.
 * @return {number} The score.
@@ -1130,7 +1122,7 @@ local blanklineStart = '^\r?\n\r?\n'
 function _diff_cleanupSemanticScore(one, two)
   if (#one == 0) or (#two == 0) then
     -- Edges are the best.
-    return 5
+    return 6
   end
 
   -- Each port of this function behaves slightly differently due to
@@ -1138,25 +1130,34 @@ function _diff_cleanupSemanticScore(one, two)
   -- 'whitespace'.  Since this function's purpose is largely cosmetic,
   -- the choice has been made to use each language's native features
   -- rather than force total conformity.
-  local score = 0
-  -- One point for non-alphanumeric.
-  if strmatch(one, punctuation, -1) or strmatch(two, punctuation) then
-    score = score + 1
+  local char1 = strsub(one, -1)
+  local char2 = strsub(two, 1, 1)
+  local nonAlphaNumeric1 = strmatch(char1, '%W')
+  local nonAlphaNumeric2 = strmatch(char2, '%W')
+  local whitespace1 = nonAlphaNumeric1 and strmatch(char1, '%s')
+  local whitespace2 = nonAlphaNumeric2 and strmatch(char2, '%s')
+  local lineBreak1 = whitespace1 and strmatch(char1, '%c')
+  local lineBreak2 = whitespace2 and strmatch(char2, '%c')
+  local blankLine1 = lineBreak1 and strmatch(one, '\n\r?\n$')
+  local blankLine2 = lineBreak2 and strmatch(two, '^\r?\n\r?\n')
+
+  if blankLine1 or blankLine2 then
+    -- Five points for blank lines.
+    return 5
+  elseif lineBreak1 or lineBreak2 then
+    -- Four points for line breaks.
+    return 4
+  elseif nonAlphaNumeric1 and not whitespace1 and whitespace2 then
+    -- Three points for end of sentences.
+    return 3
+  elseif whitespace1 or whitespace2 then
     -- Two points for whitespace.
-    if strmatch(one, whitespace, -1) or strmatch(two, whitespace) then
-      score = score + 1
-      -- Three points for line breaks.
-      if strmatch(one, linebreak, -1) or strmatch(two, linebreak) then
-        score = score + 1
-        -- Four points for blank lines.
-        if strmatch(strsub(one, -3), blanklineEnd)
-            or strmatch(two, blanklineStart) then
-          score = score + 1
-        end
-      end
-    end
+    return 2
+  elseif nonAlphaNumeric1 or nonAlphaNumeric2 then
+    -- One point for non-alphanumeric.
+    return 1
   end
-  return score
+  return 0
 end
 
 --[[

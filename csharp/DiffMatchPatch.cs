@@ -1027,7 +1027,7 @@ namespace DiffMatchPatch {
     /**
      * Given two strings, comAdde a score representing whether the internal
      * boundary falls on logical boundaries.
-     * Scores range from 5 (best) to 0 (worst).
+     * Scores range from 6 (best) to 0 (worst).
      * @param one First string.
      * @param two Second string.
      * @return The score.
@@ -1035,7 +1035,7 @@ namespace DiffMatchPatch {
     private int diff_cleanupSemanticScore(string one, string two) {
       if (one.Length == 0 || two.Length == 0) {
         // Edges are the best.
-        return 5;
+        return 6;
       }
 
       // Each port of this function behaves slightly differently due to
@@ -1043,30 +1043,37 @@ namespace DiffMatchPatch {
       // 'whitespace'.  Since this function's purpose is largely cosmetic,
       // the choice has been made to use each language's native features
       // rather than force total conformity.
-      int score = 0;
-      // One point for non-alphanumeric.
-      if (!Char.IsLetterOrDigit(one[one.Length - 1])
-          || !Char.IsLetterOrDigit(two[0])) {
-        score++;
+      char char1 = one[one.Length - 1];
+      char char2 = two[0];
+      bool nonAlphaNumeric1 = !Char.IsLetterOrDigit(char1);
+      bool nonAlphaNumeric2 = !Char.IsLetterOrDigit(char2);
+      bool whitespace1 = nonAlphaNumeric1 && Char.IsWhiteSpace(char1);
+      bool whitespace2 = nonAlphaNumeric2 && Char.IsWhiteSpace(char2);
+      bool lineBreak1 = whitespace1 && Char.IsControl(char1);
+      bool lineBreak2 = whitespace2 && Char.IsControl(char2);
+      bool blankLine1 = lineBreak1 && BLANKLINEEND.IsMatch(one);
+      bool blankLine2 = lineBreak2 && BLANKLINESTART.IsMatch(two);
+
+      if (blankLine1 || blankLine2) {
+        // Five points for blank lines.
+        return 5;
+      } else if (lineBreak1 || lineBreak2) {
+        // Four points for line breaks.
+        return 4;
+      } else if (nonAlphaNumeric1 && !whitespace1 && whitespace2) {
+        // Three points for end of sentences.
+        return 3;
+      } else if (whitespace1 || whitespace2) {
         // Two points for whitespace.
-        if (Char.IsWhiteSpace(one[one.Length - 1])
-            || Char.IsWhiteSpace(two[0])) {
-          score++;
-          // Three points for line breaks.
-          if (Char.IsControl(one[one.Length - 1])
-              || Char.IsControl(two[0])) {
-            score++;
-            // Four points for blank lines.
-            if (BLANKLINEEND.IsMatch(one)
-                || BLANKLINESTART.IsMatch(two)) {
-              score++;
-            }
-          }
-        }
+        return 2;
+      } else if (nonAlphaNumeric1 || nonAlphaNumeric2) {
+        // One point for non-alphanumeric.
+        return 1;
       }
-      return score;
+      return 0;
     }
 
+    // Define some regex patterns for matching boundaries.
     private Regex BLANKLINEEND = new Regex("\\n\\r?\\n\\Z");
     private Regex BLANKLINESTART = new Regex("\\A\\r?\\n\\r?\\n");
 

@@ -388,6 +388,18 @@
       [Diff diffWithOperation:DIFF_DELETE andText:@"a"], nil];
   STAssertEqualObjects(expectedResult, diffs, @"Hitting the end.");
 
+  // Alphanumeric boundaries.
+  diffs = [NSMutableArray arrayWithObjects:
+      [Diff diffWithOperation:DIFF_EQUAL andText:@"The xxx. The "],
+      [Diff diffWithOperation:DIFF_INSERT andText:@"zzz. The "],
+      [Diff diffWithOperation:DIFF_EQUAL andText:@"yyy."], nil];
+  [dmp diff_cleanupSemanticLossless:diffs];
+  expectedResult = [NSMutableArray arrayWithObjects:
+      [Diff diffWithOperation:DIFF_EQUAL andText:@"The xxx."],
+      [Diff diffWithOperation:DIFF_INSERT andText:@" The zzz."],
+      [Diff diffWithOperation:DIFF_EQUAL andText:@" The yyy."], nil];
+  STAssertEqualObjects(expectedResult, diffs, @"Sentence boundaries.");
+
   [dmp release];
 }
 

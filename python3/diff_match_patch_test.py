@@ -263,6 +263,11 @@ class DiffTest(DiffMatchPatchTest):
     self.dmp.diff_cleanupSemanticLossless(diffs)
     self.assertEqual([(self.dmp.DIFF_EQUAL, "xaa"), (self.dmp.DIFF_DELETE, "a")], diffs)
 
+    # Sentence boundaries.
+    diffs = [(self.dmp.DIFF_EQUAL, "The xxx. The "), (self.dmp.DIFF_INSERT, "zzz. The "), (self.dmp.DIFF_EQUAL, "yyy.")]
+    self.dmp.diff_cleanupSemanticLossless(diffs)
+    self.assertEqual([(self.dmp.DIFF_EQUAL, "The xxx."), (self.dmp.DIFF_INSERT, " The zzz."), (self.dmp.DIFF_EQUAL, " The yyy.")], diffs)
+
   def testDiffCleanupSemantic(self):
     # Cleanup semantically trivial equalities.
     # Null case.

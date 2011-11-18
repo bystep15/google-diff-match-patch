@@ -311,6 +311,10 @@ void diff_match_patch_test::testDiffCleanupSemanticLossless() {
   diffs = diffList(Diff(EQUAL, "xa"), Diff(DELETE, "a"), Diff(EQUAL, "a"));
   dmp.diff_cleanupSemanticLossless(diffs);
   assertEquals("diff_cleanupSemantic: Hitting the end.", diffList(Diff(EQUAL, "xaa"), Diff(DELETE, "a")), diffs);
+
+  diffs = diffList(Diff(EQUAL, "The xxx. The "), Diff(INSERT, "zzz. The "), Diff(EQUAL, "yyy."));
+  dmp.diff_cleanupSemanticLossless(diffs);
+  assertEquals("diff_cleanupSemantic: Sentence boundaries.", diffList(Diff(EQUAL, "The xxx."), Diff(INSERT, " The zzz."), Diff(EQUAL, " The yyy.")), diffs);
 }
 
 void diff_match_patch_test::testDiffCleanupSemantic() {

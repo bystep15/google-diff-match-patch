@@ -304,6 +304,11 @@ function testDiffCleanupSemanticLossless() {
   diffs = [[DIFF_EQUAL, 'xa'], [DIFF_DELETE, 'a'], [DIFF_EQUAL, 'a']];
   dmp.diff_cleanupSemanticLossless(diffs);
   assertEquivalent([[DIFF_EQUAL, 'xaa'], [DIFF_DELETE, 'a']], diffs);
+
+  // Sentence boundaries.
+  diffs = [[DIFF_EQUAL, 'The xxx. The '], [DIFF_INSERT, 'zzz. The '], [DIFF_EQUAL, 'yyy.']];
+  dmp.diff_cleanupSemanticLossless(diffs);
+  assertEquivalent([[DIFF_EQUAL, 'The xxx.'], [DIFF_INSERT, ' The zzz.'], [DIFF_EQUAL, ' The yyy.']], diffs);
 }
 
 function testDiffCleanupSemantic() {

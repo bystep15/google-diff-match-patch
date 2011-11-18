@@ -941,7 +941,7 @@ int diff_match_patch::diff_cleanupSemanticScore(const QString &one,
                                                 const QString &two) {
   if (one.isEmpty() || two.isEmpty()) {
     // Edges are the best.
-    return 10;
+    return 6;
   }
 
   // Each port of this function behaves slightly differently due to
@@ -949,30 +949,40 @@ int diff_match_patch::diff_cleanupSemanticScore(const QString &one,
   // 'whitespace'.  Since this function's purpose is largely cosmetic,
   // the choice has been made to use each language's native features
   // rather than force total conformity.
-  int score = 0;
-  // One point for non-alphanumeric.
-  if (!one[one.length() - 1].isLetterOrNumber()
-      || !two[0].isLetterOrNumber()) {
-    score++;
+  QChar char1 = one[one.length() - 1];
+  QChar char2 = two[0];
+  bool nonAlphaNumeric1 = !char1.isLetterOrNumber();
+  bool nonAlphaNumeric2 = !char2.isLetterOrNumber();
+  bool whitespace1 = nonAlphaNumeric1 && char1.isSpace();
+  bool whitespace2 = nonAlphaNumeric2 && char2.isSpace();
+  bool lineBreak1 = whitespace1 && char1.category() == QChar::Other_Control;
+  bool lineBreak2 = whitespace2 && char2.category() == QChar::Other_Control;
+  bool blankLine1 = lineBreak1 && BLANKLINEEND.indexIn(one) != -1;
+  bool blankLine2 = lineBreak2 && BLANKLINESTART.indexIn(two) != -1;
+
+  if (blankLine1 || blankLine2) {
+    // Five points for blank lines.
+    return 5;
+  } else if (lineBreak1 || lineBreak2) {
+    // Four points for line breaks.
+    return 4;
+  } else if (nonAlphaNumeric1 && !whitespace1 && whitespace2) {
+    // Three points for end of sentences.
+    return 3;
+  } else if (whitespace1 || whitespace2) {
     // Two points for whitespace.
-    if (one[one.length() - 1].isSpace() || two[0].isSpace()) {
-      score++;
-      // Three points for line breaks.
-      if (one[one.length() - 1].category() == QChar::Other_Control
-          || two[0].category() == QChar::Other_Control) {
-        score++;
-        // Four points for blank lines.
-        QRegExp blankLineEnd("\\n\\r?\\n$");
-        QRegExp blankLineStart("^\\r?\\n\\r?\\n");
-        if (blankLineEnd.indexIn(one) != -1
-            || blankLineStart.indexIn(two) != -1) {
-          score++;
-        }
-      }
-    }
+    return 2;
+  } else if (nonAlphaNumeric1 || nonAlphaNumeric2) {
+    // One point for non-alphanumeric.
+    return 1;
   }
-  return score;
+  return 0;
 }
+
+
+// Define some regex patterns for matching boundaries.
+QRegExp diff_match_patch::BLANKLINEEND = QRegExp("\\n\\r?\\n$");
+QRegExp diff_match_patch::BLANKLINESTART = QRegExp("^\\r?\\n\\r?\\n");
 
 
 void diff_match_patch::diff_cleanupEfficiency(QList<Diff> &diffs) {

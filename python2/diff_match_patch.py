@@ -742,7 +742,7 @@ class diff_match_patch:
     def diff_cleanupSemanticScore(one, two):
       """Given two strings, compute a score representing whether the
       internal boundary falls on logical boundaries.
-      Scores range from 5 (best) to 0 (worst).
+      Scores range from 6 (best) to 0 (worst).
       Closure, but does not reference any external variables.
 
       Args:
@@ -754,29 +754,40 @@ class diff_match_patch:
       """
       if not one or not two:
         # Edges are the best.
-        return 5
+        return 6
 
       # Each port of this function behaves slightly differently due to
       # subtle differences in each language's definition of things like
       # 'whitespace'.  Since this function's purpose is largely cosmetic,
       # the choice has been made to use each language's native features
       # rather than force total conformity.
-      score = 0
-      # One point for non-alphanumeric.
-      if not one[-1].isalnum() or not two[0].isalnum():
-        score += 1
+      char1 = one[-1]
+      char2 = two[0]
+      nonAlphaNumeric1 = not char1.isalnum()
+      nonAlphaNumeric2 = not char2.isalnum()
+      whitespace1 = nonAlphaNumeric1 and char1.isspace()
+      whitespace2 = nonAlphaNumeric2 and char2.isspace()
+      lineBreak1 = whitespace1 and (char1 == "\r" or char1 == "\n")
+      lineBreak2 = whitespace2 and (char2 == "\r" or char2 == "\n")
+      blankLine1 = lineBreak1 and self.BLANKLINEEND.search(one)
+      blankLine2 = lineBreak2 and self.BLANKLINESTART.match(two)
+
+      if blankLine1 or blankLine2:
+        # Five points for blank lines.
+        return 5
+      elif lineBreak1 or lineBreak2:
+        # Four points for line breaks.
+        return 4
+      elif nonAlphaNumeric1 and not whitespace1 and whitespace2:
+        # Three points for end of sentences.
+        return 3
+      elif whitespace1 or whitespace2:
         # Two points for whitespace.
-        if one[-1].isspace() or two[0].isspace():
-          score += 1
-          # Three points for line breaks.
-          if (one[-1] == "\r" or one[-1] == "\n" or
-              two[0] == "\r" or two[0] == "\n"):
-            score += 1
-            # Four points for blank lines.
-            if (re.search("\\n\\r?\\n$", one) or
-                re.match("^\\r?\\n\\r?\\n", two)):
-              score += 1
-      return score
+        return 2
+      elif nonAlphaNumeric1 or nonAlphaNumeric2:
+        # One point for non-alphanumeric.
+        return 1
+      return 0
 
     pointer = 1
     # Intentionally ignore the first and last element (don't need checking).
@@ -829,6 +840,10 @@ class diff_match_patch:
             del diffs[pointer + 1]
             pointer -= 1
       pointer += 1
+
+  # Define some regex patterns for matching boundaries.
+  BLANKLINEEND = re.compile(r"\n\r?\n$");
+  BLANKLINESTART = re.compile(r"^\r?\n\r?\n");
 
   def diff_cleanupEfficiency(self, diffs):
     """Reduce the number of edits by eliminating operationally trivial
