@@ -26,7 +26,7 @@ local DIFF_INSERT = dmp.DIFF_INSERT
 local DIFF_DELETE = dmp.DIFF_DELETE
 local DIFF_EQUAL = dmp.DIFF_EQUAL
 
--- Utility functions
+-- Utility functions.
 
 local function pretty(v)
   if (type(v) == 'string') then
@@ -208,51 +208,6 @@ function testDiffHalfMatch()
   -- Optimal no halfmatch.
   dmp.settings{Diff_Timeout = 0}
   assertEquivalent({nill}, {dmp.diff_halfMatch('qHilloHelloHew', 'xHelloHeHulloy')})
-end
-
-function testDiffToLines()
-  -- Convert lines down to index arrays.
-  assertEquivalent({{1, 2, 1}, {2, 1, 2}, {'alpha\n', 'beta\n'}},
-      {dmp.diff_toLines('alpha\nbeta\nalpha\n', 'beta\nalpha\nbeta\n')})
-  assertEquivalent({{}, {1, 2, 3, 3}, {'alpha\r\n', 'beta\r\n', '\r\n'}},
-      {dmp.diff_toLines('', 'alpha\r\nbeta\r\n\r\n\r\n')})
-  assertEquivalent({{1}, {2}, {'a', 'b'}}, {dmp.diff_toLines('a', 'b')})
-
-  -- More than 256 to reveal any 8-bit limitations.
-  local n = 300
-  local lineList = {}
-  local lineIndexList = {}
-  for x = 1, n do
-    lineList[x] = x .. '\n'
-    lineIndexList[x] = x
-  end
-  assertEquals(n, #lineList)
-  local lines = table.concat(lineList)
-  assertEquivalent({lineIndexList, {}, lineList}, {dmp.diff_toLines(lines, '')})
-end
-
-function testDiffFromLines()
-  -- Convert chars up to lines.
-  local diffs
-
-  diffs = {{DIFF_EQUAL, {1, 2, 1}}, {DIFF_INSERT, {2, 1, 2}}}
-  dmp.diff_fromLines(diffs, {'alpha\n', 'beta\n'})
-  assertEquivalent(
-      {{DIFF_EQUAL, 'alpha\nbeta\nalpha\n'}, {DIFF_INSERT, 'beta\nalpha\nbeta\n'}},
-      diffs)
-
-  -- More than 256 to reveal any 8-bit limitations.
-  local n = 300
-  local lineList = {}
-  local lineIndexList = {}
-  for x = 1, n do
-    lineList[x] = x .. '\n'
-    lineIndexList[x] = x
-  end
-  local lines = table.concat(lineList)
-  diffs = {{DIFF_DELETE, lineIndexList}}
-  dmp.diff_fromLines(diffs, lineList)
-  assertEquivalent({{DIFF_DELETE, lines}}, diffs)
 end
 
 function testDiffCleanupMerge()
@@ -712,6 +667,8 @@ function testDiffMain()
         {DIFF_EQUAL, ' fruit.'}
       }, dmp.diff_main('Apples are a fruit.', 'Bananas are also fruit.', false))
 
+  --[[
+  -- LUANOTE: No ability to handle Unicode.
   assertEquivalent({
         {DIFF_DELETE, 'a'},
         {DIFF_INSERT, '\u0680'},
@@ -719,6 +676,7 @@ function testDiffMain()
         {DIFF_DELETE, '\t'},
         {DIFF_INSERT, '\0'}
       }, dmp.diff_main('ax\t', '\u0680x\0', false))
+  ]]--
 
   -- Overlaps.
   assertEquivalent({

@@ -422,11 +422,11 @@ namespace DiffMatchPatch {
             // Upon reaching an equality, check for prior redundancies.
             if (count_delete >= 1 && count_insert >= 1) {
               // Delete the offending records and add the merged ones.
-              List<Diff> a =
-                  this.diff_main(text_delete, text_insert, false, deadline);
               diffs.RemoveRange(pointer - count_delete - count_insert,
                   count_delete + count_insert);
               pointer = pointer - count_delete - count_insert;
+              List<Diff> a =
+                  this.diff_main(text_delete, text_insert, false, deadline);
               diffs.InsertRange(pointer, a);
               pointer = pointer + a.Count;
             }
@@ -1220,11 +1220,11 @@ namespace DiffMatchPatch {
               }
               // Delete the offending records and add the merged ones.
               if (count_delete == 0) {
-                diffs.Splice(pointer - count_delete - count_insert,
+                diffs.Splice(pointer - count_insert,
                     count_delete + count_insert,
                     new Diff(Operation.INSERT, text_insert));
               } else if (count_insert == 0) {
-                diffs.Splice(pointer - count_delete - count_insert,
+                diffs.Splice(pointer - count_delete,
                     count_delete + count_insert,
                     new Diff(Operation.DELETE, text_delete));
               } else {
@@ -2088,92 +2088,93 @@ namespace DiffMatchPatch {
     public void patch_splitMax(List<Patch> patches) {
       short patch_size = this.Match_MaxBits;
       for (int x = 0; x < patches.Count; x++) {
-        if (patches[x].length1 > patch_size) {
-          Patch bigpatch = patches[x];
-          // Remove the big old patch.
-          patches.Splice(x--, 1);
-          int start1 = bigpatch.start1;
-          int start2 = bigpatch.start2;
-          string precontext = string.Empty;
-          while (bigpatch.diffs.Count != 0) {
-            // Create one of several smaller patches.
-            Patch patch = new Patch();
-            bool empty = true;
-            patch.start1 = start1 - precontext.Length;
-            patch.start2 = start2 - precontext.Length;
-            if (precontext.Length != 0) {
-              patch.length1 = patch.length2 = precontext.Length;
-              patch.diffs.Add(new Diff(Operation.EQUAL, precontext));
-            }
-            while (bigpatch.diffs.Count != 0
-                && patch.length1 < patch_size - this.Patch_Margin) {
-              Operation diff_type = bigpatch.diffs[0].operation;
-              string diff_text = bigpatch.diffs[0].text;
-              if (diff_type == Operation.INSERT) {
-                // Insertions are harmless.
+        if (patches[x].length1 <= patch_size) {
+          continue;
+        }
+        Patch bigpatch = patches[x];
+        // Remove the big old patch.
+        patches.Splice(x--, 1);
+        int start1 = bigpatch.start1;
+        int start2 = bigpatch.start2;
+        string precontext = string.Empty;
+        while (bigpatch.diffs.Count != 0) {
+          // Create one of several smaller patches.
+          Patch patch = new Patch();
+          bool empty = true;
+          patch.start1 = start1 - precontext.Length;
+          patch.start2 = start2 - precontext.Length;
+          if (precontext.Length != 0) {
+            patch.length1 = patch.length2 = precontext.Length;
+            patch.diffs.Add(new Diff(Operation.EQUAL, precontext));
+          }
+          while (bigpatch.diffs.Count != 0
+              && patch.length1 < patch_size - this.Patch_Margin) {
+            Operation diff_type = bigpatch.diffs[0].operation;
+            string diff_text = bigpatch.diffs[0].text;
+            if (diff_type == Operation.INSERT) {
+              // Insertions are harmless.
+              patch.length2 += diff_text.Length;
+              start2 += diff_text.Length;
+              patch.diffs.Add(bigpatch.diffs.First());
+              bigpatch.diffs.RemoveAt(0);
+              empty = false;
+            } else if (diff_type == Operation.DELETE && patch.diffs.Count == 1
+                && patch.diffs.First().operation == Operation.EQUAL
+                && diff_text.Length > 2 * patch_size) {
+              // This is a large deletion.  Let it pass in one chunk.
+              patch.length1 += diff_text.Length;
+              start1 += diff_text.Length;
+              empty = false;
+              patch.diffs.Add(new Diff(diff_type, diff_text));
+              bigpatch.diffs.RemoveAt(0);
+            } else {
+              // Deletion or equality.  Only take as much as we can stomach.
+              diff_text = diff_text.Substring(0, Math.Min(diff_text.Length,
+                  patch_size - patch.length1 - Patch_Margin));
+              patch.length1 += diff_text.Length;
+              start1 += diff_text.Length;
+              if (diff_type == Operation.EQUAL) {
                 patch.length2 += diff_text.Length;
                 start2 += diff_text.Length;
-                patch.diffs.Add(bigpatch.diffs.First());
-                bigpatch.diffs.RemoveAt(0);
+              } else {
                 empty = false;
-              } else if (diff_type == Operation.DELETE && patch.diffs.Count == 1
-                  && patch.diffs.First().operation == Operation.EQUAL
-                  && diff_text.Length > 2 * patch_size) {
-                // This is a large deletion.  Let it pass in one chunk.
-                patch.length1 += diff_text.Length;
-                start1 += diff_text.Length;
-                empty = false;
-                patch.diffs.Add(new Diff(diff_type, diff_text));
+              }
+              patch.diffs.Add(new Diff(diff_type, diff_text));
+              if (diff_text == bigpatch.diffs[0].text) {
                 bigpatch.diffs.RemoveAt(0);
               } else {
-                // Deletion or equality.  Only take as much as we can stomach.
-                diff_text = diff_text.Substring(0, Math.Min(diff_text.Length,
-                    patch_size - patch.length1 - Patch_Margin));
-                patch.length1 += diff_text.Length;
-                start1 += diff_text.Length;
-                if (diff_type == Operation.EQUAL) {
-                  patch.length2 += diff_text.Length;
-                  start2 += diff_text.Length;
-                } else {
-                  empty = false;
-                }
-                patch.diffs.Add(new Diff(diff_type, diff_text));
-                if (diff_text == bigpatch.diffs[0].text) {
-                  bigpatch.diffs.RemoveAt(0);
-                } else {
-                  bigpatch.diffs[0].text =
-                      bigpatch.diffs[0].text.Substring(diff_text.Length);
-                }
+                bigpatch.diffs[0].text =
+                    bigpatch.diffs[0].text.Substring(diff_text.Length);
               }
             }
-            // Compute the head context for the next patch.
-            precontext = this.diff_text2(patch.diffs);
-            precontext = precontext.Substring(Math.Max(0,
-                precontext.Length - this.Patch_Margin));
+          }
+          // Compute the head context for the next patch.
+          precontext = this.diff_text2(patch.diffs);
+          precontext = precontext.Substring(Math.Max(0,
+              precontext.Length - this.Patch_Margin));
 
-            string postcontext = null;
-            // Append the end context for this patch.
-            if (diff_text1(bigpatch.diffs).Length > Patch_Margin) {
-              postcontext = diff_text1(bigpatch.diffs)
-                  .Substring(0, Patch_Margin);
+          string postcontext = null;
+          // Append the end context for this patch.
+          if (diff_text1(bigpatch.diffs).Length > Patch_Margin) {
+            postcontext = diff_text1(bigpatch.diffs)
+                .Substring(0, Patch_Margin);
+          } else {
+            postcontext = diff_text1(bigpatch.diffs);
+          }
+
+          if (postcontext.Length != 0) {
+            patch.length1 += postcontext.Length;
+            patch.length2 += postcontext.Length;
+            if (patch.diffs.Count != 0
+                && patch.diffs[patch.diffs.Count - 1].operation
+                == Operation.EQUAL) {
+              patch.diffs[patch.diffs.Count - 1].text += postcontext;
             } else {
-              postcontext = diff_text1(bigpatch.diffs);
+              patch.diffs.Add(new Diff(Operation.EQUAL, postcontext));
             }
-
-            if (postcontext.Length != 0) {
-              patch.length1 += postcontext.Length;
-              patch.length2 += postcontext.Length;
-              if (patch.diffs.Count != 0
-                  && patch.diffs[patch.diffs.Count - 1].operation
-                  == Operation.EQUAL) {
-                patch.diffs[patch.diffs.Count - 1].text += postcontext;
-              } else {
-                patch.diffs.Add(new Diff(Operation.EQUAL, postcontext));
-              }
-            }
-            if (!empty) {
-              patches.Splice(++x, 0, patch);
-            }
+          }
+          if (!empty) {
+            patches.Splice(++x, 0, patch);
           }
         }
       }

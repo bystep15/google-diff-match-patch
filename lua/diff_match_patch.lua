@@ -4,8 +4,8 @@
 * Copyright 2006 Google Inc.
 * http://code.google.com/p/google-diff-match-patch/
 *
-* Based on the JavaScript implementation by Neil Fraser
-* Ported to Lua by Duncan Cross
+* Based on the JavaScript implementation by Neil Fraser.
+* Ported to Lua by Duncan Cross.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -20,10 +20,16 @@
 * limitations under the License.
 --]]
 
+--[[
+-- Lua 5.1 and earlier requires the external BitOp library.
+-- This library is built-in from Lua 5.2 and later as 'bit32'.
 require 'bit'   -- <http://bitop.luajit.org/>
-
 local band, bor, lshift
     = bit.band, bit.bor, bit.lshift
+--]]
+
+local band, bor, lshift
+    = bit32.band, bit32.bor, bit32.lshift
 local type, setmetatable, ipairs, select
     = type, setmetatable, ipairs, select
 local unpack, tonumber, error
@@ -37,12 +43,11 @@ local tinsert, tremove, tconcat
 local max, min, floor, ceil, abs
     = math.max, math.min, math.floor, math.ceil, math.abs
 local clock = os.clock
-local print = print
 
 module 'diff_match_patch'
 
 
--- Utility functions
+-- Utility functions.
 
 local percentEncode_pattern = '[^A-Za-z0-9%-=;\',./~!@#$%&*%(%)_%+ %?]'
 local function percentEncode_replace(v)
@@ -60,46 +65,8 @@ local function tsplice(t, idx, deletions, ...)
   end
 end
 
-local function tsub(t, i, j)
-  if (i < 0) then
-    local sz = #t
-    i = sz + 1 + i
-    if j and (j < 0) then
-      j = sz + 1 + j
-    end
-  elseif j and (j < 0) then
-    j = #t + 1 + j
-  end
-  return {unpack(t, i, j)}
-end
-
 local function strelement(str, i)
   return strsub(str, i, i)
-end
-
-local function telement(t, i)
-  if (i < 0) then
-    i = #t + 1 + i
-  end
-  return t[i]
-end
-
-local function tprepend(t, v)
-  tinsert(t, 1, v)
-  return t
-end
-
-local function tappend(t, v)
-  t[#t + 1] = v
-  return t
-end
-
-local function strappend(str, v)
-  return str .. v
-end
-
-local function strprepend(str, v)
-  return v .. str
 end
 
 local function indexOf(a, b, start)
@@ -200,18 +167,14 @@ local _diff_compute,
       _diff_text1,
       _diff_text2,
       _diff_toDelta,
-      _diff_fromDelta,
-      _diff_toLines,
-      _diff_fromLines
+      _diff_fromDelta
 
 --[[
 * Find the differences between two texts.  Simplifies the problem by stripping
 * any common prefix or suffix off the texts before diffing.
 * @param {string} text1 Old string to be diffed.
 * @param {string} text2 New string to be diffed.
-* @param {boolean} opt_checklines Optional speedup flag.  If present and false,
-*    then don't run a line-level diff first to identify the changed areas.
-*    Defaults to true, which does a faster, slightly less optimal diff
+* @param {boolean} opt_checklines Has no effect in Lua.
 * @param {number} opt_deadline Optional time when the diff should be complete
 *     by.  Used internally for recursive calls.  Users should set DiffTimeout
 *     instead.
@@ -241,10 +204,9 @@ function diff_main(text1, text2, opt_checklines, opt_deadline)
     return {}
   end
 
-  if opt_checklines == nil then
-    opt_checklines = true
-  end
-  local checklines = opt_checklines
+  -- LUANOTE: Due to the lack of Unicode support, Lua is incapable of
+  -- implementing the line-mode speedup.
+  local checklines = false
 
   -- Trim off common prefix (speedup).
   local commonlength = _diff_commonPrefix(text1, text2)
@@ -287,7 +249,8 @@ function diff_cleanupSemantic(diffs)
   local changes = false
   local equalities = {}  -- Stack of indices where equalities are found.
   local equalitiesLength = 0  -- Keeping our own length var is faster.
-  local lastequality = nil  -- Always equal to equalities[equalitiesLength][2]
+  local lastequality = nil
+  -- Always equal to diffs[equalities[equalitiesLength]][2]
   local pointer = 1  -- Index of current position.
   -- Number of characters that changed prior to the equality.
   local length_insertions1 = 0
@@ -397,7 +360,7 @@ function diff_cleanupEfficiency(diffs)
   -- Keeping our own length var is faster.
   local equalitiesLength = 0
   -- Always equal to diffs[equalities[equalitiesLength]][2]
-  local lastequality = ''
+  local lastequality = nil
   -- Index of current position.
   local pointer = 1
 
@@ -429,7 +392,7 @@ function diff_cleanupEfficiency(diffs)
       else
         -- Not a candidate, and can never become one.
         equalitiesLength = 0
-        lastequality = ''
+        lastequality = nil
       end
       post_ins, post_del = 0, 0
     else  -- An insertion or deletion.
@@ -446,7 +409,7 @@ function diff_cleanupEfficiency(diffs)
       * <ins>A</del>X<ins>C</ins><del>D</del>
       * <ins>A</ins><del>B</del>X<del>C</del>
       --]]
-      if (#lastequality > 0) and (
+      if lastequality and (
           (pre_ins+pre_del+post_ins+post_del == 4)
           or
           (
@@ -461,7 +424,7 @@ function diff_cleanupEfficiency(diffs)
         diffs[equalities[equalitiesLength] + 1][1] = DIFF_INSERT
         -- Throw away the equality we just deleted.
         equalitiesLength = equalitiesLength - 1
-        lastequality = ''
+        lastequality = nil
         if (pre_ins == 1) and (pre_del == 1) then
           -- No changes made which could affect previous entry, keep going.
           post_ins, post_del = 1, 1
@@ -540,9 +503,7 @@ end
 * have any common prefix or suffix.
 * @param {string} text1 Old string to be diffed.
 * @param {string} text2 New string to be diffed.
-* @param {boolean} checklines Speedup flag.  If false, then don't run a
-*    line-level diff first to identify the changed areas.
-*    If true, then run a faster, slightly less optimal diff
+* @param {boolean} checklines Has no effect in Lua.
 * @param {number} deadline Time when the diff should be complete by.
 * @return {Array.<Array.<number|string>>} Array of diff tuples.
 * @private
@@ -608,77 +569,7 @@ function _diff_compute(text1, text2, checklines, deadline)
     end
   end
 
-  -- LUANOTE: Until Unicode is supported by Lua efficiently, the line-mode
-  -- speedup is impractical.
-  checklines = false
-  if checklines and #text1 > 100 and #text2 > 100 then
-    return _diff_lineMode(text1, text2, deadline)
-  end
-
   return _diff_bisect(text1, text2, deadline)
-end
-
---[[
-* Do a quick line-level diff on both strings, then rediff the parts for
-* greater accuracy.
-* This speedup can produce non-minimal diffs.
-* @param {string} text1 Old string to be diffed.
-* @param {string} text2 New string to be diffed.
-* @param {number} deadline Time when the diff should be complete by.
-* @return {Array.<Array.<number|string>>} Array of diff tuples.
-* @private
---]]
-function _diff_lineMode(text1, text2, deadline)
-  local linearray
-  -- Scan the text on a line-by-line basis first.
-  text1, text2, linearray = _diff_toLines(text1, text2)
-
-  local diffs = _diff_main(text1, text2, false, deadline)
-
-  -- Convert the diff back to original text.
-  _diff_fromLines(diffs, linearray)
-  -- Eliminate freak matches (e.g. blank lines)
-  diff_cleanupSemantic(diffs)
-  -- Rediff any replacement blocks, this time character-by-character.
-  -- Add a dummy entry at the end.
-  diffs[#diffs + 1] = {DIFF_EQUAL, ''}
-  local pointer = 1
-  local count_delete = 0
-  local count_insert = 0
-  local text_delete = ''
-  local text_insert = ''
-  while (pointer <= #diffs) do
-    local diff_type = diffs[pointer][1]
-    if (diff_type == DIFF_INSERT) then
-      count_insert = count_insert + 1
-      text_insert = text_insert .. diffs[pointer][2]
-    elseif (diff_type == DIFF_DELETE) then
-      count_delete = count_delete + 1
-      text_delete = text_delete .. diffs[pointer][2]
-    elseif (diff_type == DIFF_EQUAL) then
-      -- Upon reaching an equality, check for prior redundancies.
-      if (count_delete >= 1) and (count_insert >= 1) then
-        -- Delete the offending records and add the merged ones.
-        local a = diff_main(text_delete, text_insert, false, deadline)
-        pointer = pointer - count_delete - count_insert
-        for i = 1, count_delete + count_insert do
-          tremove(diffs, pointer)
-        end
-        for j = #a, 1, -1 do
-          tinsert(diffs, pointer, a[j])
-        end
-        pointer = pointer + #a
-      end
-      count_insert = 0
-      count_delete = 0
-      text_delete = ''
-      text_insert = ''
-    end
-    pointer = pointer + 1
-  end
-  diffs[#diffs] = nil  -- Remove the dummy entry at the end.
-
-  return diffs
 end
 
 --[[
@@ -829,79 +720,6 @@ function _diff_bisectSplit(text1, text2, x, y, deadline)
     diffs[diffs_len + i] = v
   end
   return diffs
-end
-
-
---[[
-* Split two texts into an array of strings.  Reduce the texts to an array of
-* pointers where each integer represents one line.
-* @param {string} text1 First string.
-* @param {string} text2 Second string.
-* @return {Array.<Array.<number>|Array.<string>>} Three element Array,
-*     containing the encoded text1, the encoded text2 and the array of
-*     unique strings.
-* @private
---]]
-function _diff_toLines(text1, text2)
-  local lineArray = {}  -- e.g. lineArray[4] == 'Hello\n'
-  local lineHash = {}   -- e.g. lineHash['Hello\n'] == 4
-
-  --[[
-  * Split a text into an array of strings.  Reduce the texts to an array of
-  * pointers where each integer represents one line.
-  * Modifies linearray and linehash through being a closure.
-  * @param {string} text String to encode.
-  * @return {Array.<number>} Encoded string.
-  * @private
-  --]]
-  local _diff_toLinesMunge = function(text)
-    local lines = {}
-    -- Walk the text, pulling out a substring for each line.
-    -- text.split('\n') would would temporarily double our memory footprint.
-    -- Modifying text would create many large strings to garbage collect.
-    local lineStart = 1
-    local lineEnd = 0
-    -- Keeping our own length variable is faster than looking it up.
-    local lineArrayLength = #lineArray
-    while (lineEnd < #text) do
-      lineEnd = indexOf(text, '\n', lineStart) or #text
-      local line = strsub(text, lineStart, lineEnd)
-      lineStart = lineEnd + 1
-
-      local hash = lineHash[line]
-      if hash then
-        lines[#lines + 1] = hash
-      else
-        lineArrayLength = lineArrayLength + 1
-        lines[#lines + 1] = lineArrayLength
-        lineHash[line] = lineArrayLength
-        lineArray[lineArrayLength] = line
-      end
-    end
-    return lines
-  end
-
-  local lines1 = _diff_toLinesMunge(text1)
-  local lines2 = _diff_toLinesMunge(text2)
-  return lines1, lines2, lineArray
-end
-
---[[
-* Rehydrate the text in a diff from a string of line hashes to real lines of
-* text.
-* @param {Array.<Array.<number|string>>} diffs Array of diff tuples.
-* @param {Array.<string>} lineArray Array of unique strings.
-* @private
---]]
-function _diff_fromLines(diffs, lineArray)
-  for x, diff in ipairs(diffs) do
-    local lines = diff[2]
-    local text = {}
-    for idx, line in ipairs(lines) do
-      text[idx] = lineArray[line]
-    end
-    diff[2] = tconcat(text)
-  end
 end
 
 --[[
@@ -2361,8 +2179,6 @@ _M.diff_commonPrefix = _diff_commonPrefix
 _M.diff_commonSuffix = _diff_commonSuffix
 _M.diff_commonOverlap = _diff_commonOverlap
 _M.diff_halfMatch = _diff_halfMatch
-_M.diff_toLines = _diff_toLines
-_M.diff_fromLines = _diff_fromLines
 _M.diff_bisect = _diff_bisect
 _M.diff_cleanupMerge = _diff_cleanupMerge
 _M.diff_cleanupSemanticLossless = _diff_cleanupSemanticLossless

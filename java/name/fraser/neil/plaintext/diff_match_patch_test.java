@@ -115,20 +115,20 @@ public class diff_match_patch_test extends TestCase {
     tmpVector.add("");
     tmpVector.add("alpha\n");
     tmpVector.add("beta\n");
-    assertLinesToCharsResultEquals("diff_linesToChars:", new LinesToCharsResult("\u0001\u0002\u0001", "\u0002\u0001\u0002", tmpVector), dmp.diff_linesToChars("alpha\nbeta\nalpha\n", "beta\nalpha\nbeta\n"));
+    assertLinesToCharsResultEquals("diff_linesToChars: Shared lines.", new LinesToCharsResult("\u0001\u0002\u0001", "\u0002\u0001\u0002", tmpVector), dmp.diff_linesToChars("alpha\nbeta\nalpha\n", "beta\nalpha\nbeta\n"));
 
     tmpVector.clear();
     tmpVector.add("");
     tmpVector.add("alpha\r\n");
     tmpVector.add("beta\r\n");
     tmpVector.add("\r\n");
-    assertLinesToCharsResultEquals("diff_linesToChars:", new LinesToCharsResult("", "\u0001\u0002\u0003\u0003", tmpVector), dmp.diff_linesToChars("", "alpha\r\nbeta\r\n\r\n\r\n"));
+    assertLinesToCharsResultEquals("diff_linesToChars: Empty string and blank lines.", new LinesToCharsResult("", "\u0001\u0002\u0003\u0003", tmpVector), dmp.diff_linesToChars("", "alpha\r\nbeta\r\n\r\n\r\n"));
 
     tmpVector.clear();
     tmpVector.add("");
     tmpVector.add("a");
     tmpVector.add("b");
-    assertLinesToCharsResultEquals("diff_linesToChars:", new LinesToCharsResult("\u0001", "\u0002", tmpVector), dmp.diff_linesToChars("a", "b"));
+    assertLinesToCharsResultEquals("diff_linesToChars: No linebreaks.", new LinesToCharsResult("\u0001", "\u0002", tmpVector), dmp.diff_linesToChars("a", "b"));
 
     // More than 256 to reveal any 8-bit limitations.
     int n = 300;
@@ -150,18 +150,18 @@ public class diff_match_patch_test extends TestCase {
 
   public void testDiffCharsToLines() {
     // First check that Diff equality works.
-    assertTrue("diff_charsToLines:", new Diff(EQUAL, "a").equals(new Diff(EQUAL, "a")));
+    assertTrue("diff_charsToLines: Equality #1.", new Diff(EQUAL, "a").equals(new Diff(EQUAL, "a")));
 
-    assertEquals("diff_charsToLines:", new Diff(EQUAL, "a"), new Diff(EQUAL, "a"));
+    assertEquals("diff_charsToLines: Equality #2.", new Diff(EQUAL, "a"), new Diff(EQUAL, "a"));
 
-    // Convert chars up to lines
+    // Convert chars up to lines.
     LinkedList<Diff> diffs = diffList(new Diff(EQUAL, "\u0001\u0002\u0001"), new Diff(INSERT, "\u0002\u0001\u0002"));
     ArrayList<String> tmpVector = new ArrayList<String>();
     tmpVector.add("");
     tmpVector.add("alpha\n");
     tmpVector.add("beta\n");
     dmp.diff_charsToLines(diffs, tmpVector);
-    assertEquals("diff_charsToLines:", diffList(new Diff(EQUAL, "alpha\nbeta\nalpha\n"), new Diff(INSERT, "beta\nalpha\nbeta\n")), diffs);
+    assertEquals("diff_charsToLines: Shared lines.", diffList(new Diff(EQUAL, "alpha\nbeta\nalpha\n"), new Diff(INSERT, "beta\nalpha\nbeta\n")), diffs);
 
     // More than 256 to reveal any 8-bit limitations.
     int n = 300;

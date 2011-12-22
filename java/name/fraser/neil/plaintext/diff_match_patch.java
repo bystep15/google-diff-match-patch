@@ -398,7 +398,7 @@ public class diff_match_patch {
       for (int k1 = -d + k1start; k1 <= d - k1end; k1 += 2) {
         int k1_offset = v_offset + k1;
         int x1;
-        if (k1 == -d || k1 != d && v1[k1_offset - 1] < v1[k1_offset + 1]) {
+        if (k1 == -d || (k1 != d && v1[k1_offset - 1] < v1[k1_offset + 1])) {
           x1 = v1[k1_offset + 1];
         } else {
           x1 = v1[k1_offset - 1] + 1;
@@ -433,7 +433,7 @@ public class diff_match_patch {
       for (int k2 = -d + k2start; k2 <= d - k2end; k2 += 2) {
         int k2_offset = v_offset + k2;
         int x2;
-        if (k2 == -d || k2 != d && v2[k2_offset - 1] < v2[k2_offset + 1]) {
+        if (k2 == -d || (k2 != d && v2[k2_offset - 1] < v2[k2_offset + 1])) {
           x2 = v2[k2_offset + 1];
         } else {
           x2 = v2[k2_offset - 1] + 1;
@@ -1644,7 +1644,7 @@ public class diff_match_patch {
           rd[j] = ((rd[j + 1] << 1) | 1) & charMatch;
         } else {
           // Subsequent passes: fuzzy match.
-          rd[j] = ((rd[j + 1] << 1) | 1) & charMatch
+          rd[j] = (((rd[j + 1] << 1) | 1) & charMatch)
               | (((last_rd[j + 1] | last_rd[j]) << 1) | 1) | last_rd[j + 1];
         }
         if ((rd[j] & matchmask) != 0) {

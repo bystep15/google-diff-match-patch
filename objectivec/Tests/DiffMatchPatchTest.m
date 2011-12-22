@@ -139,14 +139,14 @@
   NSArray *result;
 
   // Convert lines down to characters.
-  NSMutableArray *tmpVector = [NSMutableArray array];  // array of NSString objects
+  NSMutableArray *tmpVector = [NSMutableArray array];  // Array of NSString objects.
   [tmpVector addObject:@""];
   [tmpVector addObject:@"alpha\n"];
   [tmpVector addObject:@"beta\n"];
   result = [dmp diff_linesToCharsForFirstString:@"alpha\nbeta\nalpha\n" andSecondString:@"beta\nalpha\nbeta\n"];
-  STAssertEqualObjects(@"\001\002\001", [result objectAtIndex:0], @"Convert lines down to characters #1");
-  STAssertEqualObjects(@"\002\001\002", [result objectAtIndex:1], @"Convert lines down to characters #2");
-  STAssertEqualObjects(tmpVector, (NSArray *)[result objectAtIndex:2], @"Convert lines down to characters #3");
+  STAssertEqualObjects(@"\001\002\001", [result objectAtIndex:0], @"Shared lines #1.");
+  STAssertEqualObjects(@"\002\001\002", [result objectAtIndex:1], @"Shared lines #2.");
+  STAssertEqualObjects(tmpVector, (NSArray *)[result objectAtIndex:2], @"Shared lines #3.");
 
   [tmpVector removeAllObjects];
   [tmpVector addObject:@""];
@@ -154,18 +154,18 @@
   [tmpVector addObject:@"beta\r\n"];
   [tmpVector addObject:@"\r\n"];
   result = [dmp diff_linesToCharsForFirstString:@"" andSecondString:@"alpha\r\nbeta\r\n\r\n\r\n"];
-  STAssertEqualObjects(@"", [result objectAtIndex:0], @"Convert lines down to characters #4");
-  STAssertEqualObjects(@"\001\002\003\003", [result objectAtIndex:1], @"Convert lines down to characters #5");
-  STAssertEqualObjects(tmpVector, (NSArray *)[result objectAtIndex:2], @"Convert lines down to characters #6");
+  STAssertEqualObjects(@"", [result objectAtIndex:0], @"Empty string and blank lines #1.");
+  STAssertEqualObjects(@"\001\002\003\003", [result objectAtIndex:1], @"Empty string and blank lines #2.");
+  STAssertEqualObjects(tmpVector, (NSArray *)[result objectAtIndex:2], @"Empty string and blank lines #3.");
 
   [tmpVector removeAllObjects];
   [tmpVector addObject:@""];
   [tmpVector addObject:@"a"];
   [tmpVector addObject:@"b"];
   result = [dmp diff_linesToCharsForFirstString:@"a" andSecondString:@"b"];
-  STAssertEqualObjects(@"\001", [result objectAtIndex:0], @"Convert lines down to characters #7");
-  STAssertEqualObjects(@"\002", [result objectAtIndex:1], @"Convert lines down to characters #8");
-  STAssertEqualObjects(tmpVector, (NSArray *)[result objectAtIndex:2], @"Convert lines down to characters #9");
+  STAssertEqualObjects(@"\001", [result objectAtIndex:0], @"No linebreaks #1.");
+  STAssertEqualObjects(@"\002", [result objectAtIndex:1], @"No linebreaks #2.");
+  STAssertEqualObjects(tmpVector, (NSArray *)[result objectAtIndex:2], @"No linebreaks #3.");
 
   // More than 256 to reveal any 8-bit limitations.
   unichar n = 300;
@@ -179,13 +179,13 @@
     [lines appendString:currentLine];
     [chars appendString:[NSString stringWithFormat:@"%C", x]];
   }
-  STAssertEquals((NSUInteger)n, tmpVector.count, @"Convert lines down to characters #10");
-  STAssertEquals((NSUInteger)n, chars.length, @"Convert lines down to characters #11");
+  STAssertEquals((NSUInteger)n, tmpVector.count, @"More than 256 #1.");
+  STAssertEquals((NSUInteger)n, chars.length, @"More than 256 #2.");
   [tmpVector insertObject:@"" atIndex:0];
   result = [dmp diff_linesToCharsForFirstString:lines andSecondString:@""];
-  STAssertEqualObjects(chars, [result objectAtIndex:0], @"Convert lines down to characters #12");
-  STAssertEqualObjects(@"", [result objectAtIndex:1], @"Convert lines down to characters #13");
-  STAssertEqualObjects(tmpVector, (NSArray *)[result objectAtIndex:2], @"Convert lines down to characters #14");
+  STAssertEqualObjects(chars, [result objectAtIndex:0], @"More than 256 #3.");
+  STAssertEqualObjects(@"", [result objectAtIndex:1], @"More than 256 #4.");
+  STAssertEqualObjects(tmpVector, (NSArray *)[result objectAtIndex:2], @"More than 256 #5.");
 
   [dmp release];
 }
@@ -197,7 +197,7 @@
   NSArray *diffs = [NSArray arrayWithObjects:
       [Diff diffWithOperation:DIFF_EQUAL andText:@"\001\002\001"],
       [Diff diffWithOperation:DIFF_INSERT andText:@"\002\001\002"], nil];
-  NSMutableArray *tmpVector = [NSMutableArray array]; // array of NSString objects
+  NSMutableArray *tmpVector = [NSMutableArray array]; // Array of NSString objects.
   [tmpVector addObject:@""];
   [tmpVector addObject:@"alpha\n"];
   [tmpVector addObject:@"beta\n"];
@@ -205,7 +205,7 @@
   NSArray *expectedResult = [NSArray arrayWithObjects:
       [Diff diffWithOperation:DIFF_EQUAL andText:@"alpha\nbeta\nalpha\n"],
       [Diff diffWithOperation:DIFF_INSERT andText:@"beta\nalpha\nbeta\n"], nil];
-  STAssertEqualObjects(expectedResult, diffs, @"Convert chars up to lines #1");
+  STAssertEqualObjects(expectedResult, diffs, @"Shared lines.");
 
   // More than 256 to reveal any 8-bit limitations.
   unichar n = 300;
@@ -219,12 +219,12 @@
     [lines appendString:currentLine];
     [chars appendString:[NSString stringWithFormat:@"%C", x]];
   }
-  STAssertEquals((NSUInteger)n, tmpVector.count, @"Convert chars up to lines #2");
-  STAssertEquals((NSUInteger)n, chars.length, @"Convert chars up to lines #3");
+  STAssertEquals((NSUInteger)n, tmpVector.count, @"More than 256 #1.");
+  STAssertEquals((NSUInteger)n, chars.length, @"More than 256 #2.");
   [tmpVector insertObject:@"" atIndex:0];
   diffs = [NSArray arrayWithObject:[Diff diffWithOperation:DIFF_DELETE andText:chars]];
   [dmp diff_chars:diffs toLines:tmpVector];
-  STAssertEqualObjects([NSArray arrayWithObject:[Diff diffWithOperation:DIFF_DELETE andText:lines]], diffs, @"Convert chars up to lines #4");
+  STAssertEqualObjects([NSArray arrayWithObject:[Diff diffWithOperation:DIFF_DELETE andText:lines]], diffs, @"More than 256 #3.");
 
   [dmp release];
 }
