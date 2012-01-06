@@ -199,7 +199,7 @@ namespace DiffMatchPatch {
     // 1.0 to the score (0.0 is a perfect match).
     public int Match_Distance = 1000;
     // When deleting a large block of text (over ~64 characters), how close
-    // does the contents have to match the expected contents. (0.0 =
+    // do the contents have to be to match the expected contents. (0.0 =
     // perfection, 1.0 = very loose).  Note that Match_Threshold controls
     // how closely the end points of a delete need to match.
     public float Patch_DeleteThreshold = 0.5f;
@@ -328,27 +328,29 @@ namespace DiffMatchPatch {
         return diffs;
       }
 
-      string longtext = text1.Length > text2.Length ? text1 : text2;
-      string shorttext = text1.Length > text2.Length ? text2 : text1;
-      int i = longtext.IndexOf(shorttext, StringComparison.Ordinal);
-      if (i != -1) {
-        // Shorter text is inside the longer text (speedup).
-        Operation op = (text1.Length > text2.Length) ?
-            Operation.DELETE : Operation.INSERT;
-        diffs.Add(new Diff(op, longtext.Substring(0, i)));
-        diffs.Add(new Diff(Operation.EQUAL, shorttext));
-        diffs.Add(new Diff(op, longtext.Substring(i + shorttext.Length)));
-        return diffs;
-      }
+      {
+        // New scope so as to garbage collect longtext and shorttext.
+        string longtext = text1.Length > text2.Length ? text1 : text2;
+        string shorttext = text1.Length > text2.Length ? text2 : text1;
+        int i = longtext.IndexOf(shorttext, StringComparison.Ordinal);
+        if (i != -1) {
+          // Shorter text is inside the longer text (speedup).
+          Operation op = (text1.Length > text2.Length) ?
+              Operation.DELETE : Operation.INSERT;
+          diffs.Add(new Diff(op, longtext.Substring(0, i)));
+          diffs.Add(new Diff(Operation.EQUAL, shorttext));
+          diffs.Add(new Diff(op, longtext.Substring(i + shorttext.Length)));
+          return diffs;
+        }
 
-      if (shorttext.Length == 1) {
-        // Single character string.
-        // After the previous speedup, the character can't be an equality.
-        diffs.Add(new Diff(Operation.DELETE, text1));
-        diffs.Add(new Diff(Operation.INSERT, text2));
-        return diffs;
+        if (shorttext.Length == 1) {
+          // Single character string.
+          // After the previous speedup, the character can't be an equality.
+          diffs.Add(new Diff(Operation.DELETE, text1));
+          diffs.Add(new Diff(Operation.INSERT, text2));
+          return diffs;
+        }
       }
-      longtext = shorttext = null;  // Garbage collect.
 
       // Check to see if the problem can be split in two.
       string[] hm = diff_halfMatch(text1, text2);
@@ -1425,7 +1427,7 @@ namespace DiffMatchPatch {
      * E.g. =3\t-2\t+ing  -> Keep 3 chars, delete 2 chars, insert 'ing'.
      * Operations are tab-separated.  Inserted text is escaped using %xx
      * notation.
-     * @param diffs Array of diff tuples.
+     * @param diffs Array of Diff objects.
      * @return Delta text.
      */
     public string diff_toDelta(List<Diff> diffs) {
@@ -1458,7 +1460,7 @@ namespace DiffMatchPatch {
      * operations required to transform text1 into text2, comAdde the full diff.
      * @param text1 Source string for the diff.
      * @param delta Delta text.
-     * @return Array of diff tuples or null if invalid.
+     * @return Array of Diff objects or null if invalid.
      * @throws ArgumentException If invalid input.
      */
     public List<Diff> diff_fromDelta(string text1, string delta) {
@@ -1780,7 +1782,7 @@ namespace DiffMatchPatch {
     /**
      * Compute a list of patches to turn text1 into text2.
      * text1 will be derived from the provided diffs.
-     * @param diffs Array of diff tuples for text1 to text2.
+     * @param diffs Array of Diff objects for text1 to text2.
      * @return List of Patch objects.
      */
     public List<Patch> patch_make(List<Diff> diffs) {
@@ -1795,7 +1797,7 @@ namespace DiffMatchPatch {
      * text2 is ignored, diffs are the delta between text1 and text2.
      * @param text1 Old text
      * @param text2 Ignored.
-     * @param diffs Array of diff tuples for text1 to text2.
+     * @param diffs Array of Diff objects for text1 to text2.
      * @return List of Patch objects.
      * @deprecated Prefer patch_make(string text1, List<Diff> diffs).
      */
@@ -1808,7 +1810,7 @@ namespace DiffMatchPatch {
      * Compute a list of patches to turn text1 into text2.
      * text2 is not provided, diffs are the delta between text1 and text2.
      * @param text1 Old text.
-     * @param diffs Array of diff tuples for text1 to text2.
+     * @param diffs Array of Diff objects for text1 to text2.
      * @return List of Patch objects.
      */
     public List<Patch> patch_make(string text1, List<Diff> diffs) {
@@ -1889,8 +1891,8 @@ namespace DiffMatchPatch {
 
     /**
      * Given an array of patches, return another array that is identical.
-     * @param patches Array of patch objects.
-     * @return Array of patch objects.
+     * @param patches Array of Patch objects.
+     * @return Array of Patch objects.
      */
     public List<Patch> patch_deepCopy(List<Patch> patches) {
       List<Patch> patchesCopy = new List<Patch>();
@@ -1912,7 +1914,7 @@ namespace DiffMatchPatch {
     /**
      * Merge a set of patches onto the text.  Return a patched text, as well
      * as an array of true/false values indicating which patches were applied.
-     * @param patches Array of patch objects
+     * @param patches Array of Patch objects
      * @param text Old text.
      * @return Two element Object array, containing the new text and an array of
      *      bool values.
@@ -2021,7 +2023,7 @@ namespace DiffMatchPatch {
     /**
      * Add some padding on text start and end so that edges can match something.
      * Intended to be called only from within patch_apply.
-     * @param patches Array of patch objects.
+     * @param patches Array of Patch objects.
      * @return The padding string added to each side.
      */
     public string patch_addPadding(List<Patch> patches) {

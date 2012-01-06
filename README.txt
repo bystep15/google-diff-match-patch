@@ -12,6 +12,10 @@ C++:
 C#:
 * Ported by Matthaeus G. Chajdas.
 
+Dart:
+* The Dart language is still growing and evolving, so this port is only as
+  stable as the underlying language.
+
 Java:
 * Included is both the source and a Maven package.
 

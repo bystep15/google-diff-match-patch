@@ -100,7 +100,7 @@ typedef enum {
   NSInteger Match_Distance;
 
   // When deleting a large block of text (over ~64 characters), how close
-  // does the contents have to match the expected contents. (0.0 =
+  // do the contents have to be to match the expected contents. (0.0 =
   // perfection, 1.0 = very loose).  Note that Match_Threshold controls
   // how closely the end points of a delete need to match.
   float Patch_DeleteThreshold;

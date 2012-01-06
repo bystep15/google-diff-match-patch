@@ -158,12 +158,18 @@ function testDiffHalfMatch() {
 }
 
 function testDiffLinesToChars() {
+  function assertLinesToCharsResultEquals(a, b) {
+    assertEquals(a.chars1, b.chars1);
+    assertEquals(a.chars2, b.chars2);
+    assertEquivalent(a.lineArray, b.lineArray);
+  }
+
   // Convert lines down to characters.
-  assertEquivalent(['\x01\x02\x01', '\x02\x01\x02', ['', 'alpha\n', 'beta\n']], dmp.diff_linesToChars_('alpha\nbeta\nalpha\n', 'beta\nalpha\nbeta\n'));
+  assertLinesToCharsResultEquals({chars1: '\x01\x02\x01', chars2: '\x02\x01\x02', lineArray: ['', 'alpha\n', 'beta\n']}, dmp.diff_linesToChars_('alpha\nbeta\nalpha\n', 'beta\nalpha\nbeta\n'));
 
-  assertEquivalent(['', '\x01\x02\x03\x03', ['', 'alpha\r\n', 'beta\r\n', '\r\n']], dmp.diff_linesToChars_('', 'alpha\r\nbeta\r\n\r\n\r\n'));
+  assertLinesToCharsResultEquals({chars1: '', chars2: '\x01\x02\x03\x03', lineArray: ['', 'alpha\r\n', 'beta\r\n', '\r\n']}, dmp.diff_linesToChars_('', 'alpha\r\nbeta\r\n\r\n\r\n'));
 
-  assertEquivalent(['\x01', '\x02', ['', 'a', 'b']], dmp.diff_linesToChars_('a', 'b'));
+  assertLinesToCharsResultEquals({chars1: '\x01', chars2: '\x02', lineArray: ['', 'a', 'b']}, dmp.diff_linesToChars_('a', 'b'));
 
   // More than 256 to reveal any 8-bit limitations.
   var n = 300;
@@ -178,7 +184,7 @@ function testDiffLinesToChars() {
   var chars = charList.join('');
   assertEquals(n, chars.length);
   lineList.unshift('');
-  assertEquivalent([chars, '', lineList], dmp.diff_linesToChars_(lines, ''));
+  assertLinesToCharsResultEquals({chars1: chars, chars2: '', lineArray: lineList}, dmp.diff_linesToChars_(lines, ''));
 }
 
 function testDiffCharsToLines() {

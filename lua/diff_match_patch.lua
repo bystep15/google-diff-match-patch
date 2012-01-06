@@ -116,8 +116,8 @@ local Match_Threshold = 0.5
 -- A match this many characters away from the expected location will add
 -- 1.0 to the score (0.0 is a perfect match).
 local Match_Distance = 1000
--- When deleting a large block of text (over ~64 characters), how close does
--- the contents have to match the expected contents. (0.0 = perfection,
+-- When deleting a large block of text (over ~64 characters), how close do
+-- the contents have to be to match the expected contents. (0.0 = perfection,
 -- 1.0 = very loose).  Note that Match_Threshold controls how closely the
 -- end points of a delete need to match.
 local Patch_DeleteThreshold = 0.5

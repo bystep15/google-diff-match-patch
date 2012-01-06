@@ -53,8 +53,8 @@ class diff_match_patch:
     # A match this many characters away from the expected location will add
     # 1.0 to the score (0.0 is a perfect match).
     self.Match_Distance = 1000
-    # When deleting a large block of text (over ~64 characters), how close does
-    # the contents have to match the expected contents. (0.0 = perfection,
+    # When deleting a large block of text (over ~64 characters), how close do
+    # the contents have to be to match the expected contents. (0.0 = perfection,
     # 1.0 = very loose).  Note that Match_Threshold controls how closely the
     # end points of a delete need to match.
     self.Patch_DeleteThreshold = 0.5
@@ -1428,7 +1428,7 @@ class diff_match_patch:
           undefined (methods 1,2,3).
 
     Returns:
-      Array of patch objects.
+      Array of Patch objects.
     """
     text1 = None
     diffs = None
@@ -1522,10 +1522,10 @@ class diff_match_patch:
     """Given an array of patches, return another array that is identical.
 
     Args:
-      patches: Array of patch objects.
+      patches: Array of Patch objects.
 
     Returns:
-      Array of patch objects.
+      Array of Patch objects.
     """
     patchesCopy = []
     for patch in patches:
@@ -1544,7 +1544,7 @@ class diff_match_patch:
     as a list of true/false values indicating which patches were applied.
 
     Args:
-      patches: Array of patch objects.
+      patches: Array of Patch objects.
       text: Old text.
 
     Returns:
@@ -1632,7 +1632,7 @@ class diff_match_patch:
     something.  Intended to be called only from within patch_apply.
 
     Args:
-      patches: Array of patch objects.
+      patches: Array of Patch objects.
 
     Returns:
       The padding string added to each side.
@@ -1691,7 +1691,7 @@ class diff_match_patch:
     Intended to be called only from within patch_apply.
 
     Args:
-      patches: Array of patch objects.
+      patches: Array of Patch objects.
     """
     patch_size = self.Match_MaxBits
     if patch_size == 0:
@@ -1777,7 +1777,7 @@ class diff_match_patch:
     """Take a list of patches and return a textual representation.
 
     Args:
-      patches: Array of patch objects.
+      patches: Array of Patch objects.
 
     Returns:
       Text representation of patches.
@@ -1795,7 +1795,7 @@ class diff_match_patch:
       textline: Text representation of patches.
 
     Returns:
-      Array of patch objects.
+      Array of Patch objects.
 
     Raises:
       ValueError: If invalid input.
