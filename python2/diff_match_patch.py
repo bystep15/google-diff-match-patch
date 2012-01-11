@@ -180,7 +180,6 @@ class diff_match_patch:
       # Single character string.
       # After the previous speedup, the character can't be an equality.
       return [(self.DIFF_DELETE, text1), (self.DIFF_INSERT, text2)]
-    longtext = shorttext = None  # Garbage collect.
 
     # Check to see if the problem can be split in two.
     hm = self.diff_halfMatch(text1, text2)

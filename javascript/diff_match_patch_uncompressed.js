@@ -167,9 +167,7 @@ diff_match_patch.prototype.diff_compute_ = function(text1, text2, checklines,
     return [[DIFF_DELETE, text1]];
   }
 
-  /** @type {?string} */
   var longtext = text1.length > text2.length ? text1 : text2;
-  /** @type {?string} */
   var shorttext = text1.length > text2.length ? text2 : text1;
   var i = longtext.indexOf(shorttext);
   if (i != -1) {
@@ -189,7 +187,6 @@ diff_match_patch.prototype.diff_compute_ = function(text1, text2, checklines,
     // After the previous speedup, the character can't be an equality.
     return [[DIFF_DELETE, text1], [DIFF_INSERT, text2]];
   }
-  longtext = shorttext = null;  // Garbage collect.
 
   // Check to see if the problem can be split in two.
   var hm = this.diff_halfMatch_(text1, text2);

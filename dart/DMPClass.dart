@@ -177,28 +177,25 @@ class DiffMatchPatch {
       return diffs;
     }
 
-    {
-      // New scope so as to garbage collect longtext and shorttext.
-      String longtext = text1.length > text2.length ? text1 : text2;
-      String shorttext = text1.length > text2.length ? text2 : text1;
-      int i = longtext.indexOf(shorttext);
-      if (i != -1) {
-        // Shorter text is inside the longer text (speedup).
-        int op = (text1.length > text2.length) ?
-                       DIFF_DELETE : DIFF_INSERT;
-        diffs.add(new Diff(op, longtext.substring(0, i)));
-        diffs.add(new Diff(DIFF_EQUAL, shorttext));
-        diffs.add(new Diff(op, longtext.substring(i + shorttext.length)));
-        return diffs;
-      }
+    String longtext = text1.length > text2.length ? text1 : text2;
+    String shorttext = text1.length > text2.length ? text2 : text1;
+    int i = longtext.indexOf(shorttext);
+    if (i != -1) {
+      // Shorter text is inside the longer text (speedup).
+      int op = (text1.length > text2.length) ?
+                     DIFF_DELETE : DIFF_INSERT;
+      diffs.add(new Diff(op, longtext.substring(0, i)));
+      diffs.add(new Diff(DIFF_EQUAL, shorttext));
+      diffs.add(new Diff(op, longtext.substring(i + shorttext.length)));
+      return diffs;
+    }
 
-      if (shorttext.length == 1) {
-        // Single character string.
-        // After the previous speedup, the character can't be an equality.
-        diffs.add(new Diff(DIFF_DELETE, text1));
-        diffs.add(new Diff(DIFF_INSERT, text2));
-        return diffs;
-      }
+    if (shorttext.length == 1) {
+      // Single character string.
+      // After the previous speedup, the character can't be an equality.
+      diffs.add(new Diff(DIFF_DELETE, text1));
+      diffs.add(new Diff(DIFF_INSERT, text2));
+      return diffs;
     }
 
     // Check to see if the problem can be split in two.

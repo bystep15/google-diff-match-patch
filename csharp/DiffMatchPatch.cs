@@ -328,28 +328,25 @@ namespace DiffMatchPatch {
         return diffs;
       }
 
-      {
-        // New scope so as to garbage collect longtext and shorttext.
-        string longtext = text1.Length > text2.Length ? text1 : text2;
-        string shorttext = text1.Length > text2.Length ? text2 : text1;
-        int i = longtext.IndexOf(shorttext, StringComparison.Ordinal);
-        if (i != -1) {
-          // Shorter text is inside the longer text (speedup).
-          Operation op = (text1.Length > text2.Length) ?
-              Operation.DELETE : Operation.INSERT;
-          diffs.Add(new Diff(op, longtext.Substring(0, i)));
-          diffs.Add(new Diff(Operation.EQUAL, shorttext));
-          diffs.Add(new Diff(op, longtext.Substring(i + shorttext.Length)));
-          return diffs;
-        }
+      string longtext = text1.Length > text2.Length ? text1 : text2;
+      string shorttext = text1.Length > text2.Length ? text2 : text1;
+      int i = longtext.IndexOf(shorttext, StringComparison.Ordinal);
+      if (i != -1) {
+        // Shorter text is inside the longer text (speedup).
+        Operation op = (text1.Length > text2.Length) ?
+            Operation.DELETE : Operation.INSERT;
+        diffs.Add(new Diff(op, longtext.Substring(0, i)));
+        diffs.Add(new Diff(Operation.EQUAL, shorttext));
+        diffs.Add(new Diff(op, longtext.Substring(i + shorttext.Length)));
+        return diffs;
+      }
 
-        if (shorttext.Length == 1) {
-          // Single character string.
-          // After the previous speedup, the character can't be an equality.
-          diffs.Add(new Diff(Operation.DELETE, text1));
-          diffs.Add(new Diff(Operation.INSERT, text2));
-          return diffs;
-        }
+      if (shorttext.Length == 1) {
+        // Single character string.
+        // After the previous speedup, the character can't be an equality.
+        diffs.Add(new Diff(Operation.DELETE, text1));
+        diffs.Add(new Diff(Operation.INSERT, text2));
+        return diffs;
       }
 
       // Check to see if the problem can be split in two.

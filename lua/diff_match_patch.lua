@@ -44,8 +44,6 @@ local max, min, floor, ceil, abs
     = math.max, math.min, math.floor, math.ceil, math.abs
 local clock = os.clock
 
-module 'diff_match_patch'
-
 
 -- Utility functions.
 
@@ -544,7 +542,6 @@ function _diff_compute(text1, text2, checklines, deadline)
     -- After the previous speedup, the character can't be an equality.
     return {{DIFF_DELETE, text1}, {DIFF_INSERT, text2}}
   end
-  longtext, shorttext = nil, nil  -- Garbage collect.
 
   -- Check to see if the problem can be split in two.
   do
@@ -2157,6 +2154,8 @@ function _patch_appendText(patch, text)
 end
 
 -- Expose the API
+local _M = {}
+
 _M.DIFF_DELETE = DIFF_DELETE
 _M.DIFF_INSERT = DIFF_INSERT
 _M.DIFF_EQUAL = DIFF_EQUAL
@@ -2193,3 +2192,6 @@ _M.new_patch_obj = _new_patch_obj
 _M.patch_addContext = _patch_addContext
 _M.patch_splitMax = _patch_splitMax
 _M.patch_addPadding = _patch_addPadding
+_M.settings = settings
+
+return _M

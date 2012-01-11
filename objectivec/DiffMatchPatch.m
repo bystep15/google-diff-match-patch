@@ -494,27 +494,24 @@ void splice(NSMutableArray *input, NSUInteger start, NSUInteger count, NSArray *
     return diffs;
   }
 
-  {
-    // New scope so as to garbage collect longtext and shorttext.
-    NSString *longtext = text1.length > text2.length ? text1 : text2;
-    NSString *shorttext = text1.length > text2.length ? text2 : text1;
-    NSUInteger i = [longtext rangeOfString:shorttext].location;
-    if (i != NSNotFound) {
-      // Shorter text is inside the longer text (speedup).
-      Operation op = (text1.length > text2.length) ? DIFF_DELETE : DIFF_INSERT;
-      [diffs addObject:[Diff diffWithOperation:op andText:[longtext substringWithRange:NSMakeRange(0, i)]]];
-      [diffs addObject:[Diff diffWithOperation:DIFF_EQUAL andText:shorttext]];
-      [diffs addObject:[Diff diffWithOperation:op andText:[longtext substringFromIndex:(i + shorttext.length)]]];
-      return diffs;
-    }
+  NSString *longtext = text1.length > text2.length ? text1 : text2;
+  NSString *shorttext = text1.length > text2.length ? text2 : text1;
+  NSUInteger i = [longtext rangeOfString:shorttext].location;
+  if (i != NSNotFound) {
+    // Shorter text is inside the longer text (speedup).
+    Operation op = (text1.length > text2.length) ? DIFF_DELETE : DIFF_INSERT;
+    [diffs addObject:[Diff diffWithOperation:op andText:[longtext substringWithRange:NSMakeRange(0, i)]]];
+    [diffs addObject:[Diff diffWithOperation:DIFF_EQUAL andText:shorttext]];
+    [diffs addObject:[Diff diffWithOperation:op andText:[longtext substringFromIndex:(i + shorttext.length)]]];
+    return diffs;
+  }
 
-    if (shorttext.length == 1) {
-      // Single character string.
-      // After the previous speedup, the character can't be an equality.
-      [diffs addObject:[Diff diffWithOperation:DIFF_DELETE andText:text1]];
-      [diffs addObject:[Diff diffWithOperation:DIFF_INSERT andText:text2]];
-      return diffs;
-    }
+  if (shorttext.length == 1) {
+    // Single character string.
+    // After the previous speedup, the character can't be an equality.
+    [diffs addObject:[Diff diffWithOperation:DIFF_DELETE andText:text1]];
+    [diffs addObject:[Diff diffWithOperation:DIFF_INSERT andText:text2]];
+    return diffs;
   }
 
   // Check to see if the problem can be split in two.
