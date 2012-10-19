@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+part of DiffMatchPatch;
+
 /**
  * Class representing one diff operation.
  */
@@ -43,7 +45,7 @@ class Diff {
    */
   String toString() {
     String prettyText = this.text.replaceAll('\n', '\u00b6');
-    return 'Diff(' + this.operation + ',"' + prettyText + '")';
+    return 'Diff(${this.operation},"$prettyText")';
   }
 
   /**

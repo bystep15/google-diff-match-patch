@@ -19,24 +19,25 @@
 
 // Can't import DiffMatchPatch library since the private functions would be
 // unavailable.  Instead, import all the source files.
-#import('EncodeDecode.dart');
-#source('DMPClass.dart');
-#source('DiffClass.dart');
-#source('PatchClass.dart');
+import 'dart:math';
+import 'dart:uri';
+part 'DMPClass.dart';
+part 'DiffClass.dart';
+part 'PatchClass.dart';
 
 List<String> _diff_rebuildtexts(diffs) {
   // Construct the two texts which made up the diff originally.
-  String text1 = '';
-  String text2 = '';
+  final text1 = new StringBuffer();
+  final text2 = new StringBuffer();
   for (int x = 0; x < diffs.length; x++) {
     if (diffs[x].operation != DIFF_INSERT) {
-      text1 += diffs[x].text;
+      text1.add(diffs[x].text);
     }
     if (diffs[x].operation != DIFF_DELETE) {
-      text2 += diffs[x].text;
+      text2.add(diffs[x].text);
     }
   }
-  return [text1, text2];
+  return [text1.toString(), text2.toString()];
 }
 
 DiffMatchPatch dmp;
@@ -124,7 +125,7 @@ void testDiffLinesToChars() {
   List<String> lineList = [];
   StringBuffer charList = new StringBuffer();
   for (int x = 1; x < n + 1; x++) {
-    lineList.add(x.toString() + '\n');
+    lineList.add('$x\n');
     charList.add(new String.fromCharCodes([x]));
   }
   Expect.equals(n, lineList.length);
@@ -151,7 +152,7 @@ void testDiffCharsToLines() {
   List<String> lineList = [];
   StringBuffer charList = new StringBuffer();
   for (int x = 1; x < n + 1; x++) {
-    lineList.add(x.toString() + '\n');
+    lineList.add('$x\n');
     charList.add(new String.fromCharCodes([x]));
   }
   Expect.equals(n, lineList.length);
@@ -353,7 +354,7 @@ void testDiffDelta() {
   Expect.listEquals(diffs, dmp.diff_fromDelta(text1, delta), 'diff_fromDelta: Normal.');
 
   // Generates error (19 < 20).
-  Expect.throws(() => dmp.diff_fromDelta(text1 + 'x', delta), null, 'diff_fromDelta: Too long.');
+  Expect.throws(() => dmp.diff_fromDelta('${text1}x', delta), null, 'diff_fromDelta: Too long.');
 
   // Generates error (19 > 18).
   Expect.throws(() => dmp.diff_fromDelta(text1.substring(1), delta), null, 'diff_fromDelta: Too short.');
@@ -412,13 +413,13 @@ void testDiffBisect() {
   // If the order changes, tweak this test as required.
   List<Diff> diffs = [new Diff(DIFF_DELETE, 'c'), new Diff(DIFF_INSERT, 'm'), new Diff(DIFF_EQUAL, 'a'), new Diff(DIFF_DELETE, 't'), new Diff(DIFF_INSERT, 'p')];
   // One year should be sufficient.
-  Date deadline = new Date.now().add(new Duration(365, 0, 0, 0, 0));
+  Date deadline = new Date.now().add(new Duration(days : 365));
   Expect.listEquals(diffs, dmp._diff_bisect(a, b, deadline), 'diff_bisect: Normal.');
 
   // Timeout.
   diffs = [new Diff(DIFF_DELETE, 'cat'), new Diff(DIFF_INSERT, 'map')];
   // Set deadline to one year ago.
-  deadline = new Date.now().subtract(new Duration(365, 0, 0, 0, 0));
+  deadline = new Date.now().subtract(new Duration(days : 365));
   Expect.listEquals(diffs, dmp._diff_bisect(a, b, deadline), 'diff_bisect: Timeout.');
 }
 
@@ -471,8 +472,8 @@ void testDiffMain() {
   String b = 'I am the very model of a modern major general,\nI\'ve information vegetable, animal, and mineral,\nI know the kings of England, and I quote the fights historical,\nFrom Marathon to Waterloo, in order categorical.\n';
   // Increase the text lengths by 1024 times to ensure a timeout.
   for (int x = 0; x < 10; x++) {
-    a = a + a;
-    b = b + b;
+    a = '$a$a';
+    b = '$b$b';
   }
   Date startTime = new Date.now();
   dmp.diff_main(a, b);
@@ -691,11 +692,12 @@ void testPatchMake() {
   diffs = [new Diff(DIFF_DELETE, '`1234567890-=[]\\;\',./'), new Diff(DIFF_INSERT, '~!@#\$%^&*()_+{}|:"<>?')];
   Expect.listEquals(diffs, dmp.patch_fromText('@@ -1,21 +1,21 @@\n-%601234567890-=%5B%5D%5C;\',./\n+~!@#\$%25%5E&*()_+%7B%7D%7C:%22%3C%3E?\n')[0].diffs, 'patch_fromText: Character decoding.');
 
-  text1 = '';
+  final sb = new StringBuffer();
   for (int x = 0; x < 100; x++) {
-    text1 += 'abcdef';
+    sb.add('abcdef');
   }
-  text2 = text1 + '123';
+  text1 = sb.toString();
+  text2 = '${text1}123';
   expectedPatch = '@@ -573,28 +573,31 @@\n cdefabcdefabcdefabcdefabcdef\n+123\n';
   patches = dmp.patch_make(text1, text2);
   Expect.equals(expectedPatch, dmp.patch_toText(patches), 'patch_make: Long string with repeats.');
@@ -751,42 +753,42 @@ void testPatchApply() {
   patches = dmp.patch_make('', '');
   List results = dmp.patch_apply(patches, 'Hello world.');
   List boolArray = results[1];
-  String resultStr = results[0] + '\t' + boolArray.length;
+  String resultStr = '${results[0]}\t${boolArray.length}';
   Expect.equals('Hello world.\t0', resultStr, 'patch_apply: Null case.');
 
   patches = dmp.patch_make('The quick brown fox jumps over the lazy dog.', 'That quick brown fox jumped over a lazy dog.');
   results = dmp.patch_apply(patches, 'The quick brown fox jumps over the lazy dog.');
   boolArray = results[1];
-  resultStr = results[0] + '\t' + boolArray[0] + '\t' + boolArray[1];
+  resultStr = '${results[0]}\t${boolArray[0]}\t${boolArray[1]}';
   Expect.equals('That quick brown fox jumped over a lazy dog.\ttrue\ttrue', resultStr, 'patch_apply: Exact match.');
 
   results = dmp.patch_apply(patches, 'The quick red rabbit jumps over the tired tiger.');
   boolArray = results[1];
-  resultStr = results[0] + '\t' + boolArray[0] + '\t' + boolArray[1];
+  resultStr = '${results[0]}\t${boolArray[0]}\t${boolArray[1]}';
   Expect.equals('That quick red rabbit jumped over a tired tiger.\ttrue\ttrue', resultStr, 'patch_apply: Partial match.');
 
   results = dmp.patch_apply(patches, 'I am the very model of a modern major general.');
   boolArray = results[1];
-  resultStr = results[0] + '\t' + boolArray[0] + '\t' + boolArray[1];
+  resultStr = '${results[0]}\t${boolArray[0]}\t${boolArray[1]}';
   Expect.equals('I am the very model of a modern major general.\tfalse\tfalse', resultStr, 'patch_apply: Failed match.');
 
   patches = dmp.patch_make('x1234567890123456789012345678901234567890123456789012345678901234567890y', 'xabcy');
   results = dmp.patch_apply(patches, 'x123456789012345678901234567890-----++++++++++-----123456789012345678901234567890y');
   boolArray = results[1];
-  resultStr = results[0] + '\t' + boolArray[0] + '\t' + boolArray[1];
+  resultStr = '${results[0]}\t${boolArray[0]}\t${boolArray[1]}';
   Expect.equals('xabcy\ttrue\ttrue', resultStr, 'patch_apply: Big delete, small change.');
 
   patches = dmp.patch_make('x1234567890123456789012345678901234567890123456789012345678901234567890y', 'xabcy');
   results = dmp.patch_apply(patches, 'x12345678901234567890---------------++++++++++---------------12345678901234567890y');
   boolArray = results[1];
-  resultStr = results[0] + '\t' + boolArray[0] + '\t' + boolArray[1];
+  resultStr = '${results[0]}\t${boolArray[0]}\t${boolArray[1]}';
   Expect.equals('xabc12345678901234567890---------------++++++++++---------------12345678901234567890y\tfalse\ttrue', resultStr, 'patch_apply: Big delete, big change 1.');
 
   dmp.Patch_DeleteThreshold = 0.6;
   patches = dmp.patch_make('x1234567890123456789012345678901234567890123456789012345678901234567890y', 'xabcy');
   results = dmp.patch_apply(patches, 'x12345678901234567890---------------++++++++++---------------12345678901234567890y');
   boolArray = results[1];
-  resultStr = results[0] + '\t' + boolArray[0] + '\t' + boolArray[1];
+  resultStr = '${results[0]}\t${boolArray[0]}\t${boolArray[1]}';
   Expect.equals('xabcy\ttrue\ttrue', resultStr, 'patch_apply: Big delete, big change 2.');
   dmp.Patch_DeleteThreshold = 0.5;
 
@@ -796,7 +798,7 @@ void testPatchApply() {
   patches = dmp.patch_make('abcdefghijklmnopqrstuvwxyz--------------------1234567890', 'abcXXXXXXXXXXdefghijklmnopqrstuvwxyz--------------------1234567YYYYYYYYYY890');
   results = dmp.patch_apply(patches, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567890');
   boolArray = results[1];
-  resultStr = results[0] + '\t' + boolArray[0] + '\t' + boolArray[1];
+  resultStr = '${results[0]}\t${boolArray[0]}\t${boolArray[1]}';
   Expect.equals('ABCDEFGHIJKLMNOPQRSTUVWXYZ--------------------1234567YYYYYYYYYY890\tfalse\ttrue', resultStr, 'patch_apply: Compensate for failed patch.');
   dmp.Match_Threshold = 0.5;
   dmp.Match_Distance = 1000;
@@ -814,19 +816,19 @@ void testPatchApply() {
   patches = dmp.patch_make('', 'test');
   results = dmp.patch_apply(patches, '');
   boolArray = results[1];
-  resultStr = results[0] + '\t' + boolArray[0];
+  resultStr = '${results[0]}\t${boolArray[0]}';
   Expect.equals('test\ttrue', resultStr, 'patch_apply: Edge exact match.');
 
   patches = dmp.patch_make('XY', 'XtestY');
   results = dmp.patch_apply(patches, 'XY');
   boolArray = results[1];
-  resultStr = results[0] + '\t' + boolArray[0];
+  resultStr = '${results[0]}\t${boolArray[0]}';
   Expect.equals('XtestY\ttrue', resultStr, 'patch_apply: Near edge exact match.');
 
   patches = dmp.patch_make('y', 'y123');
   results = dmp.patch_apply(patches, 'x');
   boolArray = results[1];
-  resultStr = results[0] + '\t' + boolArray[0];
+  resultStr = '${results[0]}\t${boolArray[0]}';
   Expect.equals('x123\ttrue', resultStr, 'patch_apply: Edge partial match.');
 }
 

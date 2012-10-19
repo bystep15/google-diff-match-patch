@@ -17,10 +17,11 @@
  * limitations under the License.
  */
 
-#library('DiffMatchPatch');
+library DiffMatchPatch;
 
-#import('EncodeDecode.dart');
+import 'dart:math';
+import 'dart:uri';
 
-#source('DMPClass.dart');
-#source('DiffClass.dart');
-#source('PatchClass.dart');
+part 'DMPClass.dart';
+part 'DiffClass.dart';
+part 'PatchClass.dart';

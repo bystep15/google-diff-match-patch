@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+part of DiffMatchPatch;
+
 /**
  * Class representing one patch operation.
  */
@@ -43,22 +45,20 @@ class Patch {
   String toString() {
     String coords1, coords2;
     if (this.length1 == 0) {
-      coords1 = this.start1.toString() + ',0';
+      coords1 = '${this.start1},0';
     } else if (this.length1 == 1) {
       coords1 = (this.start1 + 1).toString();
     } else {
-      coords1 = (this.start1 + 1).toString() + ',' + this.length1.toString();
+      coords1 = '${this.start1 + 1},${this.length1}';
     }
     if (this.length2 == 0) {
-      coords2 = this.start2.toString() + ',0';
+      coords2 = '${this.start2},0';
     } else if (this.length2 == 1) {
       coords2 = (this.start2 + 1).toString();
     } else {
-      coords2 = (this.start2 + 1).toString() + ',' + this.length2.toString();
+      coords2 = '${this.start2 + 1},${this.length2}';
     }
-    final text = new StringBuffer();
-    text.add('@@ -').add(coords1).add(' +').add(coords2)
-        .add(' @@\n');
+    final text = new StringBuffer('@@ -$coords1 +$coords2 @@\n');
     // Escape the body of the patch with %xx notation.
     for (Diff aDiff in this.diffs) {
       switch (aDiff.operation) {
@@ -72,7 +72,7 @@ class Patch {
         text.add(' ');
         break;
       }
-      text.add(encodeURI(aDiff.text)).add('\n');
+      text.add(encodeUri(aDiff.text)).add('\n');
     }
     return text.toString().replaceAll('%20', ' ');
   }
