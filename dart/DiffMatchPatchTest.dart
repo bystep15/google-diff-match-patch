@@ -107,7 +107,7 @@ void testDiffHalfmatch() {
 }
 
 void testDiffLinesToChars() {
-  void assertLinesToCharsResultEquals(Map<String, Dynamic> a, Map<String, Dynamic> b, String error_msg) {
+  void assertLinesToCharsResultEquals(Map<String, dynamic> a, Map<String, dynamic> b, String error_msg) {
     Expect.equals(a['chars1'], b['chars1'], error_msg);
     Expect.equals(a['chars2'], b['chars2'], error_msg);
     Expect.listEquals(a['lineArray'], b['lineArray'], error_msg);
@@ -516,8 +516,8 @@ void testDiffMain() {
 
 void testMatchAlphabet() {
   void assertMapEquals(Map a, Map b, String error_msg) {
-    Expect.setEquals(a.getKeys(), b.getKeys(), error_msg);
-    for (var x in a.getKeys()) {
+    Expect.setEquals(a.keys, b.keys, error_msg);
+    for (var x in a.keys) {
       Expect.equals(a[x], b[x], "$error_msg [Key: $x]");
     }
   }
@@ -614,7 +614,7 @@ void testPatchObj() {
 }
 
 void testPatchFromText() {
-  Expect.isTrue(dmp.patch_fromText('').isEmpty(), 'patch_fromText: #0.');
+  Expect.isTrue(dmp.patch_fromText('').isEmpty, 'patch_fromText: #0.');
 
   String strp = '@@ -21,18 +22,17 @@\n jump\n-s\n+ed\n  over \n-the\n+a\n %0Alaz\n';
   Expect.equals(strp, dmp.patch_fromText(strp)[0].toString(), 'patch_fromText: #1.');
