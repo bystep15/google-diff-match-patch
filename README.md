@@ -57,7 +57,7 @@ The Diff Match and Patch libraries offer robust algorithms to perform the operat
 * Apply a list of patches onto plain text. Use best-effort to apply patch even when the underlying text doesn&#x27;t match.
 * [Patch Demo](http://neil.fraser.name/software/diff_match_patch/svn/trunk/demos/demo_patch.html)
 
-Currently available in Java, JavaScript, Dart, C++, C#, Objective C, Lua and Python. Regardless of language, each library features [the same API](/p/google-diff-match-patch/wiki/API) and the same functionality. All versions also have comprehensive test harnesses.
+Currently available in Java, JavaScript, Dart, C++, C#, Objective C, Lua and Python. Regardless of language, each library features [the same API](https://github.com/bystep15/google-diff-match-patch/blob/wiki/API.md) and the same functionality. All versions also have comprehensive test harnesses.
 
 ### Algorithms
 
