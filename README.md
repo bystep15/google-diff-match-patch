@@ -45,15 +45,15 @@ Demos:
 
 The Diff Match and Patch libraries offer robust algorithms to perform the operations required for synchronizing plain text.
 
-1. *Diff*:
+### Diff
 * Compare two blocks of plain text and efficiently return a list of differences.
 * [Diff Demo](http://neil.fraser.name/software/diff_match_patch/svn/trunk/demos/demo_diff.html)
 
-1. *Match*:
+### Match
 * Given a search string, find its best fuzzy match in a block of plain text.  Weighted for both accuracy and location.
 * [Match Demo](http://neil.fraser.name/software/diff_match_patch/svn/trunk/demos/demo_match.html)
 
-1. *Patch*:
+### Patch
 * Apply a list of patches onto plain text. Use best-effort to apply patch even when the underlying text doesn&#x27;t match.
 * [Patch Demo](http://neil.fraser.name/software/diff_match_patch/svn/trunk/demos/demo_patch.html)
 
